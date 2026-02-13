@@ -13,20 +13,28 @@ const NAV_ITEMS = [
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, mobileOpen = false }: SidebarProps) {
   return (
     <aside
       className={cn(
         "fixed left-0 top-0 z-40 h-screen flex flex-col bg-surface border-r border-border-subtle transition-all duration-300",
-        collapsed ? "w-16" : "w-60"
+        // Mobile: slide in/out, always full width when open
+        mobileOpen ? "translate-x-0" : "-translate-x-full",
+        "lg:translate-x-0",
+        // Desktop: respect collapsed state. Mobile: always w-60 when open.
+        "w-60",
+        collapsed && "lg:w-16"
       )}
     >
       {/* Logo */}
       <div className="flex items-center h-16 px-4 border-b border-border-subtle">
         <span className="font-display font-bold text-accent text-xl tracking-tight">
-          {collapsed ? "JJ" : "JJSMade"}
+          <span className={cn("hidden", collapsed && "lg:inline")}>JJ</span>
+          <span className={cn(collapsed && "lg:hidden")}>JJSMade</span>
         </span>
       </div>
 
@@ -47,7 +55,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             }
           >
             <Icon size={20} className="shrink-0" />
-            {!collapsed && <span>{label}</span>}
+            {/* Always show on mobile; on desktop, hide when collapsed */}
+            <span className={cn(collapsed && "lg:hidden")}>{label}</span>
           </NavLink>
         ))}
       </nav>
@@ -55,7 +64,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Collapse button */}
       <button
         onClick={onToggle}
-        className="flex items-center justify-center h-12 border-t border-border-subtle text-secondary hover:text-primary hover:bg-hover transition-colors"
+        className="hidden lg:flex items-center justify-center h-12 border-t border-border-subtle text-secondary hover:text-primary hover:bg-hover transition-colors"
       >
         {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
       </button>
