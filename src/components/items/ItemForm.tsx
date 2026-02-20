@@ -58,7 +58,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
   const [lalamoveFee, setLalamoveFee] = useState(existingItem?.lalamoveFee ?? 0);
   const [sellingPrice, setSellingPrice] = useState(existingItem?.sellingPrice ?? 0);
   const [customerName, setCustomerName] = useState(existingItem?.customerName ?? "");
-  const [status, setStatus] = useState(existingItem?.status ?? "ordered");
+  const [status, setStatus] = useState<Doc<"items">["status"]>(existingItem?.status ?? "ordered");
 
   const [photos, setPhotos] = useState<{ id: string; url: string }[]>([]);
   const [photoIds, setPhotoIds] = useState<Id<"_storage">[]>(existingItem?.qcPhotoIds ?? []);
@@ -246,7 +246,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
             )}
             <Input label="Customer Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Optional" />
             <Select label="Status" value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => setStatus(e.target.value as Doc<"items">["status"])}
               options={ALL_STATUSES.map((s) => ({ value: s, label: STATUS_CONFIG[s].label }))} />
           </CardContent>
         </Card>

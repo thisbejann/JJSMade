@@ -26,7 +26,7 @@ export function TopSellersChart() {
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
               <XAxis type="number" stroke={CHART_COLORS.text} fontSize={12} tickLine={false} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
               <YAxis type="category" dataKey="seller" stroke={CHART_COLORS.text} fontSize={11} tickLine={false} width={100} />
-              <Tooltip {...chartTooltipStyle} formatter={(value: number) => [formatPHP(value), "Profit"]} />
+              <Tooltip {...chartTooltipStyle} formatter={(value: number | string | undefined) => [formatPHP(Number(value ?? 0)), "Profit"]} />
               <Bar dataKey="profit" fill={CHART_COLORS.accent} radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>

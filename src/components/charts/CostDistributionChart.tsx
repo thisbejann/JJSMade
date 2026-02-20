@@ -36,7 +36,7 @@ export function CostDistributionChart() {
                   <Cell key={i} fill={CHART_CATEGORY_COLORS[i % CHART_CATEGORY_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip {...chartTooltipStyle} formatter={(value: number) => formatPHP(value)} />
+              <Tooltip {...chartTooltipStyle} formatter={(value: number | string | undefined) => formatPHP(Number(value ?? 0))} />
               <Legend wrapperStyle={{ fontSize: "12px", color: "#8a8a9a" }} />
             </PieChart>
           </ResponsiveContainer>

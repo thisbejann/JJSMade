@@ -30,7 +30,7 @@ export function CumulativeProfitChart() {
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
               <XAxis dataKey="dateLabel" stroke={CHART_COLORS.text} fontSize={11} tickLine={false} />
               <YAxis stroke={CHART_COLORS.text} fontSize={12} tickLine={false} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
-              <Tooltip {...chartTooltipStyle} formatter={(value: number) => [formatPHP(value), "Cumulative Profit"]} labelFormatter={(label) => label} />
+              <Tooltip {...chartTooltipStyle} formatter={(value: number | string | undefined) => [formatPHP(Number(value ?? 0)), "Cumulative Profit"]} labelFormatter={(label) => label} />
               <Line type="monotone" dataKey="profit" stroke={CHART_COLORS.success} strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
