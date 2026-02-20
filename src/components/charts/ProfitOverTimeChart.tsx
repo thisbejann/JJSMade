@@ -31,7 +31,7 @@ export function ProfitOverTimeChart() {
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
               <XAxis dataKey="month" stroke={CHART_COLORS.text} fontSize={12} tickLine={false} />
               <YAxis stroke={CHART_COLORS.text} fontSize={12} tickLine={false} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
-              <Tooltip {...chartTooltipStyle} formatter={(value: number) => [formatPHP(value), "Profit"]} />
+              <Tooltip {...chartTooltipStyle} formatter={(value: number | string | undefined) => [formatPHP(Number(value ?? 0)), "Profit"]} />
               <Area type="monotone" dataKey="profit" stroke={CHART_COLORS.accent} strokeWidth={2} fill="url(#profitGradient)" />
             </AreaChart>
           </ResponsiveContainer>

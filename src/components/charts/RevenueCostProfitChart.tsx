@@ -25,7 +25,7 @@ export function RevenueCostProfitChart() {
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
               <XAxis dataKey="month" stroke={CHART_COLORS.text} fontSize={12} tickLine={false} />
               <YAxis stroke={CHART_COLORS.text} fontSize={12} tickLine={false} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
-              <Tooltip {...chartTooltipStyle} formatter={(value: number, name: string) => [formatPHP(value), name]} />
+              <Tooltip {...chartTooltipStyle} formatter={(value: number | string | undefined, name: string | number | undefined) => [formatPHP(Number(value ?? 0)), String(name ?? "")]} />
               <Legend wrapperStyle={{ fontSize: "12px", color: "#8a8a9a" }} />
               <Bar dataKey="revenue" name="Revenue" fill={CHART_COLORS.info} radius={[4, 4, 0, 0]} />
               <Bar dataKey="cost" name="Cost" fill={CHART_COLORS.warning} radius={[4, 4, 0, 0]} />
