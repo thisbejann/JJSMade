@@ -93,6 +93,7 @@ Formula: `totalCost = pricePHP + localShippingPHP + forwarderFee + lalamoveFee`,
 - create a new branch named [`jannjaspher/branch-name`] for each feature, bugfix, or enhancement
 - NEVER commit directly to `master`
 - Open a PR against `master` when your work is ready for review
+- NEVER auto-merge PRs; wait for user review and explicit merge approval
 - Branch naming: `jannjaspher/<descriptive-name>` (e.g., `jannjaspher/add-transaction-form`)
 - Commit often with clear messages
 
