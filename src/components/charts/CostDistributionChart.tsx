@@ -14,6 +14,8 @@ export function CostDistributionChart() {
         { name: "Item Price", value: data.itemPrice },
         { name: "Local Shipping", value: data.localShipping },
         { name: "Forwarder Fee", value: data.forwarderFee },
+        { name: "Forwarder Buy Fee", value: data.forwarderBuyFee },
+        { name: "QC Service Fee", value: data.qcServiceFee },
         { name: "Lalamove", value: data.lalamoveFee },
       ].filter((d) => d.value > 0)
     : [];

@@ -30,6 +30,7 @@ export default function OrderForm() {
   return (
     <PageContainer>
       <ItemForm
+        key={id ?? "new"}
         existingItem={isEdit && existingItem ? existingItem : undefined}
         onSuccess={(itemId) => navigate(`/orders/${itemId}`)}
       />

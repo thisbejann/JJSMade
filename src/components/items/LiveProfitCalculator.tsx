@@ -5,6 +5,8 @@ interface LiveProfitCalculatorProps {
   pricePHP: number;
   localShippingPHP: number;
   forwarderFee: number;
+  forwarderBuyFeePHP: number;
+  qcServiceFeePHP: number;
   lalamoveFee: number;
   totalCost: number;
   sellingPrice: number;
@@ -17,20 +19,22 @@ export function LiveProfitCalculator(props: LiveProfitCalculatorProps) {
     { label: "Item Price", value: props.pricePHP },
     { label: "Local Shipping", value: props.localShippingPHP },
     { label: "Forwarder Fee", value: props.forwarderFee },
+    { label: "Forwarder Buy Fee", value: props.forwarderBuyFeePHP },
+    { label: "QC Service Fee", value: props.qcServiceFeePHP },
     { label: "Lalamove Fee", value: props.lalamoveFee },
-  ];
+  ].filter((row) => row.label === "Item Price" || row.value > 0);
 
   return (
     <div className="rounded-xl border border-border-subtle bg-surface p-4 space-y-3">
       <h3 className="font-display font-semibold text-sm text-primary">
-        Cost & Profit
+        Cost and Profit
       </h3>
 
       <div className="space-y-1.5">
-        {rows.map((r) => (
-          <div key={r.label} className="flex justify-between text-sm">
-            <span className="text-secondary">{r.label}</span>
-            <span className="font-mono text-primary">{formatPHP(r.value)}</span>
+        {rows.map((row) => (
+          <div key={row.label} className="flex justify-between text-sm">
+            <span className="text-secondary">{row.label}</span>
+            <span className="font-mono text-primary">{formatPHP(row.value)}</span>
           </div>
         ))}
       </div>
@@ -43,7 +47,7 @@ export function LiveProfitCalculator(props: LiveProfitCalculatorProps) {
         <div className="flex justify-between text-sm">
           <span className="text-secondary">Selling Price</span>
           <span className="font-mono text-primary">
-            {props.sellingPrice > 0 ? formatPHP(props.sellingPrice) : "—"}
+            {props.sellingPrice > 0 ? formatPHP(props.sellingPrice) : "--"}
           </span>
         </div>
       </div>
@@ -54,10 +58,14 @@ export function LiveProfitCalculator(props: LiveProfitCalculatorProps) {
           <span
             className={cn(
               "font-mono",
-              props.profit > 0 ? "text-success" : props.profit < 0 ? "text-danger" : "text-tertiary"
+              props.profit > 0
+                ? "text-success"
+                : props.profit < 0
+                  ? "text-danger"
+                  : "text-tertiary"
             )}
           >
-            {props.sellingPrice > 0 ? formatPHP(props.profit) : "—"}
+            {props.sellingPrice > 0 ? formatPHP(props.profit) : "--"}
           </span>
         </div>
         {props.sellingPrice > 0 && (
