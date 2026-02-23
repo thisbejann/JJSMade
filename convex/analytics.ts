@@ -114,7 +114,14 @@ export const getCostBreakdown = query({
     const soldItems = items.filter((i) => i.status === "sold");
 
     if (soldItems.length === 0) {
-      return { itemPrice: 0, localShipping: 0, forwarderFee: 0, lalamoveFee: 0 };
+      return {
+        itemPrice: 0,
+        localShipping: 0,
+        forwarderFee: 0,
+        forwarderBuyFee: 0,
+        qcServiceFee: 0,
+        lalamoveFee: 0,
+      };
     }
 
     const totals = soldItems.reduce(
@@ -122,9 +129,18 @@ export const getCostBreakdown = query({
         itemPrice: acc.itemPrice + (item.pricePHP ?? 0),
         localShipping: acc.localShipping + (item.localShippingPHP ?? 0),
         forwarderFee: acc.forwarderFee + (item.forwarderFee ?? 0),
+        forwarderBuyFee: acc.forwarderBuyFee + (item.forwarderBuyFeePHP ?? 0),
+        qcServiceFee: acc.qcServiceFee + (item.qcServiceFeePHP ?? 0),
         lalamoveFee: acc.lalamoveFee + (item.lalamoveFee ?? 0),
       }),
-      { itemPrice: 0, localShipping: 0, forwarderFee: 0, lalamoveFee: 0 }
+      {
+        itemPrice: 0,
+        localShipping: 0,
+        forwarderFee: 0,
+        forwarderBuyFee: 0,
+        qcServiceFee: 0,
+        lalamoveFee: 0,
+      }
     );
 
     const count = soldItems.length;
@@ -132,6 +148,9 @@ export const getCostBreakdown = query({
       itemPrice: Math.round((totals.itemPrice / count) * 100) / 100,
       localShipping: Math.round((totals.localShipping / count) * 100) / 100,
       forwarderFee: Math.round((totals.forwarderFee / count) * 100) / 100,
+      forwarderBuyFee:
+        Math.round((totals.forwarderBuyFee / count) * 100) / 100,
+      qcServiceFee: Math.round((totals.qcServiceFee / count) * 100) / 100,
       lalamoveFee: Math.round((totals.lalamoveFee / count) * 100) / 100,
     };
   },

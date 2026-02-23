@@ -11,6 +11,7 @@ export default defineSchema({
       v.literal("watches_accessories")
     ),
     imageUrl: v.optional(v.string()),
+    size: v.optional(v.string()),
 
     // Source Info
     seller: v.string(),
@@ -41,6 +42,10 @@ export default defineSchema({
     isBranded: v.boolean(),
     forwarderRatePerKg: v.number(),
     forwarderFee: v.optional(v.number()),
+    isForwarderBuy: v.optional(v.boolean()),
+    forwarderBuyRateUsed: v.optional(v.number()),
+    forwarderBuyFeePHP: v.optional(v.number()),
+    qcServiceFeePHP: v.optional(v.number()),
 
     // Selling & Delivery
     sellingPrice: v.optional(v.number()),
@@ -97,6 +102,7 @@ export default defineSchema({
 
   settings: defineTable({
     cnyToPhpRate: v.number(),
+    forwarderBuyServiceRate: v.optional(v.number()),
     defaultForwarderRate: v.number(),
     defaultMarkupMin: v.number(),
     defaultMarkupMax: v.number(),
