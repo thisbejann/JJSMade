@@ -2,6 +2,49 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { computeDerivedFields } from "./helpers";
 
+const CLOTHES_SIZES = new Set(["S", "M", "L", "XL"]);
+
+function normalizeSize(
+  category: "shoes" | "clothes" | "watches_accessories",
+  size?: string
+) {
+  const trimmed = size?.trim();
+  if (!trimmed) return undefined;
+  if (category === "clothes") return trimmed.toUpperCase();
+  if (category === "watches_accessories") return undefined;
+  return trimmed;
+}
+
+function validateItemRules(data: {
+  category: "shoes" | "clothes" | "watches_accessories";
+  size?: string;
+  isForwarderBuy: boolean;
+  forwarderBuyRateUsed?: number;
+}) {
+  if (data.category === "shoes") {
+    const parsed = Number(data.size);
+    if (!data.size || Number.isNaN(parsed) || parsed <= 0) {
+      throw new Error("Shoes must use a valid EU size");
+    }
+  }
+
+  if (data.category === "clothes") {
+    if (!data.size || !CLOTHES_SIZES.has(data.size)) {
+      throw new Error("Clothes size must be S, M, L, or XL");
+    }
+  }
+
+  if (data.isForwarderBuy) {
+    if (
+      data.forwarderBuyRateUsed == null ||
+      Number.isNaN(data.forwarderBuyRateUsed) ||
+      data.forwarderBuyRateUsed <= 0
+    ) {
+      throw new Error("Forwarder buy service rate is required");
+    }
+  }
+}
+
 // ── Mutations ──
 
 export const create = mutation({
@@ -9,6 +52,7 @@ export const create = mutation({
     name: v.string(),
     category: v.union(v.literal("shoes"), v.literal("clothes"), v.literal("watches_accessories")),
     imageUrl: v.optional(v.string()),
+    size: v.optional(v.string()),
     seller: v.string(),
     sellerContact: v.optional(v.string()),
     batch: v.optional(v.string()),
@@ -21,6 +65,8 @@ export const create = mutation({
     weightKg: v.optional(v.number()),
     isBranded: v.boolean(),
     forwarderRatePerKg: v.number(),
+    isForwarderBuy: v.optional(v.boolean()),
+    forwarderBuyRateUsed: v.optional(v.number()),
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
     customerName: v.optional(v.string()),
@@ -33,6 +79,19 @@ export const create = mutation({
     orderDate: v.number(),
   },
   handler: async (ctx, args) => {
+    const size = normalizeSize(args.category, args.size);
+    const isForwarderBuy = args.isForwarderBuy ?? false;
+    const forwarderBuyRateUsed = isForwarderBuy
+      ? args.forwarderBuyRateUsed
+      : undefined;
+
+    validateItemRules({
+      category: args.category,
+      size,
+      isForwarderBuy,
+      forwarderBuyRateUsed,
+    });
+
     const derived = computeDerivedFields({
       priceCNY: args.priceCNY,
       exchangeRateUsed: args.exchangeRateUsed,
@@ -40,6 +99,8 @@ export const create = mutation({
       localShippingCNY: args.localShippingCNY,
       weightKg: args.weightKg,
       forwarderRatePerKg: args.forwarderRatePerKg,
+      isForwarderBuy,
+      forwarderBuyRateUsed,
       lalamoveFee: args.lalamoveFee,
       sellingPrice: args.sellingPrice,
     });
@@ -47,9 +108,14 @@ export const create = mutation({
     const now = Date.now();
     const id = await ctx.db.insert("items", {
       ...args,
+      size,
+      isForwarderBuy,
+      forwarderBuyRateUsed,
       pricePHP: derived.pricePHP,
       localShippingPHP: derived.localShippingPHP,
       forwarderFee: derived.forwarderFee,
+      forwarderBuyFeePHP: derived.forwarderBuyFeePHP,
+      qcServiceFeePHP: derived.qcServiceFeePHP,
       totalCost: derived.totalCost,
       profit: derived.profit,
       soldDate: args.status === "sold" ? now : undefined,
@@ -66,6 +132,7 @@ export const update = mutation({
     name: v.optional(v.string()),
     category: v.optional(v.union(v.literal("shoes"), v.literal("clothes"), v.literal("watches_accessories"))),
     imageUrl: v.optional(v.string()),
+    size: v.optional(v.string()),
     seller: v.optional(v.string()),
     sellerContact: v.optional(v.string()),
     batch: v.optional(v.string()),
@@ -78,6 +145,8 @@ export const update = mutation({
     weightKg: v.optional(v.number()),
     isBranded: v.optional(v.boolean()),
     forwarderRatePerKg: v.optional(v.number()),
+    isForwarderBuy: v.optional(v.boolean()),
+    forwarderBuyRateUsed: v.optional(v.number()),
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
     customerName: v.optional(v.string()),
@@ -95,6 +164,19 @@ export const update = mutation({
     if (!existing) throw new Error("Item not found");
 
     const merged = { ...existing, ...updates };
+    const size = normalizeSize(merged.category, merged.size);
+    const isForwarderBuy = merged.isForwarderBuy ?? false;
+    const forwarderBuyRateUsed = isForwarderBuy
+      ? merged.forwarderBuyRateUsed
+      : undefined;
+
+    validateItemRules({
+      category: merged.category,
+      size,
+      isForwarderBuy,
+      forwarderBuyRateUsed,
+    });
+
     const derived = computeDerivedFields({
       priceCNY: merged.priceCNY,
       exchangeRateUsed: merged.exchangeRateUsed,
@@ -102,6 +184,8 @@ export const update = mutation({
       localShippingCNY: merged.localShippingCNY,
       weightKg: merged.weightKg,
       forwarderRatePerKg: merged.forwarderRatePerKg,
+      isForwarderBuy,
+      forwarderBuyRateUsed,
       lalamoveFee: merged.lalamoveFee,
       sellingPrice: merged.sellingPrice,
     });
@@ -114,9 +198,14 @@ export const update = mutation({
 
     await ctx.db.patch(id, {
       ...updates,
+      size,
+      isForwarderBuy,
+      forwarderBuyRateUsed,
       pricePHP: derived.pricePHP,
       localShippingPHP: derived.localShippingPHP,
       forwarderFee: derived.forwarderFee,
+      forwarderBuyFeePHP: derived.forwarderBuyFeePHP,
+      qcServiceFeePHP: derived.qcServiceFeePHP,
       totalCost: derived.totalCost,
       profit: derived.profit,
       soldDate,

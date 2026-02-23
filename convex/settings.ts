@@ -17,6 +17,7 @@ export const initialize = mutation({
 
     const id = await ctx.db.insert("settings", {
       cnyToPhpRate: 7.8,
+      forwarderBuyServiceRate: 8.6,
       defaultForwarderRate: 480,
       defaultMarkupMin: 700,
       defaultMarkupMax: 850,
@@ -29,6 +30,7 @@ export const initialize = mutation({
 export const update = mutation({
   args: {
     cnyToPhpRate: v.optional(v.number()),
+    forwarderBuyServiceRate: v.optional(v.number()),
     defaultForwarderRate: v.optional(v.number()),
     defaultMarkupMin: v.optional(v.number()),
     defaultMarkupMax: v.optional(v.number()),
@@ -39,6 +41,9 @@ export const update = mutation({
 
     const updates: Record<string, number> = { updatedAt: Date.now() };
     if (args.cnyToPhpRate !== undefined) updates.cnyToPhpRate = args.cnyToPhpRate;
+    if (args.forwarderBuyServiceRate !== undefined) {
+      updates.forwarderBuyServiceRate = args.forwarderBuyServiceRate;
+    }
     if (args.defaultForwarderRate !== undefined) updates.defaultForwarderRate = args.defaultForwarderRate;
     if (args.defaultMarkupMin !== undefined) updates.defaultMarkupMin = args.defaultMarkupMin;
     if (args.defaultMarkupMax !== undefined) updates.defaultMarkupMax = args.defaultMarkupMax;
