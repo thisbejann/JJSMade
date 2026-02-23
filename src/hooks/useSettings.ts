@@ -17,10 +17,11 @@ export function useSettings() {
   return {
     settings: settings ?? {
       cnyToPhpRate: DEFAULTS.exchangeRate,
+      forwarderBuyServiceRate: DEFAULTS.forwarderBuyServiceRate,
       defaultForwarderRate: DEFAULTS.forwarderRate,
       defaultMarkupMin: DEFAULTS.markupMin,
       defaultMarkupMax: DEFAULTS.markupMax,
-      updatedAt: Date.now(),
+      updatedAt: 0,
     },
     isLoading: settings === undefined,
     updateSettings,

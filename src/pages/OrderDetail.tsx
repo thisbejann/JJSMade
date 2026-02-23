@@ -47,7 +47,11 @@ export default function OrderDetail() {
       <PageContainer>
         <div className="text-center py-16">
           <p className="text-secondary">Item not found</p>
-          <Button variant="ghost" onClick={() => navigate("/orders")} className="mt-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/orders")}
+            className="mt-4"
+          >
             Back to Orders
           </Button>
         </div>
@@ -58,7 +62,11 @@ export default function OrderDetail() {
   const handleStatusChange = async (newStatus: string) => {
     try {
       await updateStatus({ id: item._id, status: newStatus as typeof item.status });
-      toast.success(`Status updated to ${STATUS_CONFIG[newStatus as keyof typeof STATUS_CONFIG].label}`);
+      toast.success(
+        `Status updated to ${
+          STATUS_CONFIG[newStatus as keyof typeof STATUS_CONFIG].label
+        }`
+      );
     } catch {
       toast.error("Failed to update status");
     }
@@ -79,10 +87,12 @@ export default function OrderDetail() {
   return (
     <PageContainer>
       <div className="space-y-6">
-        {/* Hero */}
         <div className="flex items-start justify-between">
           <div className="space-y-2">
-            <button onClick={() => navigate("/orders")} className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors cursor-pointer">
+            <button
+              onClick={() => navigate("/orders")}
+              className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors cursor-pointer"
+            >
               <ArrowLeft size={14} /> Back to Orders
             </button>
             <h1 className="font-display font-bold text-2xl text-primary">{item.name}</h1>
@@ -92,11 +102,15 @@ export default function OrderDetail() {
               <QcStatusBadge qcStatus={item.qcStatus} />
             </div>
             <p className="text-sm text-secondary">
-              {item.seller} {item.batch && `· ${item.batch}`}
+              {item.seller} {item.batch && `- ${item.batch}`}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => navigate(`/orders/${item._id}/edit`)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate(`/orders/${item._id}/edit`)}
+            >
               <Edit size={14} /> Edit
             </Button>
             <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
@@ -105,7 +119,6 @@ export default function OrderDetail() {
           </div>
         </div>
 
-        {/* Status Timeline */}
         <Card>
           <CardContent>
             <StatusTimeline currentStatus={item.status} />
@@ -114,26 +127,30 @@ export default function OrderDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
           <div className="space-y-6">
-            {/* QC Photos */}
             <Card>
               <CardHeader>
-                <h2 className="font-display font-semibold text-sm text-primary">QC Photos</h2>
+                <h2 className="font-display font-semibold text-sm text-primary">
+                  QC Photos
+                </h2>
               </CardHeader>
               <CardContent>
                 <QcPhotoGallery photoIds={item.qcPhotoIds} />
               </CardContent>
             </Card>
 
-            {/* Cost Breakdown */}
             <Card>
               <CardHeader>
-                <h2 className="font-display font-semibold text-sm text-primary">Cost Breakdown</h2>
+                <h2 className="font-display font-semibold text-sm text-primary">
+                  Cost Breakdown
+                </h2>
               </CardHeader>
               <CardContent>
                 <CostBreakdown
                   pricePHP={item.pricePHP}
                   localShippingPHP={item.localShippingPHP}
                   forwarderFee={item.forwarderFee}
+                  forwarderBuyFeePHP={item.forwarderBuyFeePHP}
+                  qcServiceFeePHP={item.qcServiceFeePHP}
                   lalamoveFee={item.lalamoveFee}
                   totalCost={item.totalCost}
                   sellingPrice={item.sellingPrice}
@@ -143,44 +160,92 @@ export default function OrderDetail() {
             </Card>
           </div>
 
-          {/* Info Grid */}
           <div className="space-y-4">
             <Card>
               <CardContent className="space-y-3">
-                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">Source</h3>
+                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+                  Source
+                </h3>
                 <InfoRow label="Seller" value={item.seller} />
                 <InfoRow label="Contact" value={item.sellerContact} />
                 <InfoRow label="Batch" value={item.batch} />
+                <InfoRow label="Size" value={item.size} />
                 <InfoRow label="Order Date" value={formatDate(item.orderDate)} />
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="space-y-3">
-                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">Pricing</h3>
+                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+                  Pricing
+                </h3>
                 <InfoRow label="Price (CNY)" value={formatCNY(item.priceCNY)} mono />
-                <InfoRow label="Exchange Rate" value={`₱${item.exchangeRateUsed.toFixed(2)}/¥1`} mono />
+                <InfoRow
+                  label="Exchange Rate"
+                  value={`PHP${item.exchangeRateUsed.toFixed(2)}/CNY1`}
+                  mono
+                />
                 <InfoRow label="Price (PHP)" value={formatPHP(item.pricePHP)} mono />
                 {item.localShippingPHP != null && item.localShippingPHP > 0 && (
-                  <InfoRow label="Local Shipping" value={formatPHP(item.localShippingPHP)} mono />
+                  <InfoRow
+                    label="Local Shipping"
+                    value={formatPHP(item.localShippingPHP)}
+                    mono
+                  />
+                )}
+                {item.isForwarderBuy && (
+                  <>
+                    <InfoRow label="Forwarder Buy" value="Yes" />
+                    <InfoRow
+                      label="Service Rate"
+                      value={`PHP${item.forwarderBuyRateUsed?.toFixed(2)}/CNY1`}
+                      mono
+                    />
+                    <InfoRow
+                      label="Forwarder Buy Fee"
+                      value={formatPHP(item.forwarderBuyFeePHP)}
+                      mono
+                    />
+                    <InfoRow
+                      label="QC Service Fee"
+                      value={formatPHP(item.qcServiceFeePHP)}
+                      mono
+                    />
+                  </>
                 )}
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="space-y-3">
-                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">Shipping</h3>
+                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+                  Shipping
+                </h3>
                 <InfoRow label="Weight" value={formatWeight(item.weightKg)} mono />
-                <InfoRow label="Rate" value={`₱${item.forwarderRatePerKg}/kg`} mono />
-                <InfoRow label="Forwarder Fee" value={formatPHP(item.forwarderFee)} mono />
+                <InfoRow
+                  label="Rate"
+                  value={`PHP${item.forwarderRatePerKg}/kg`}
+                  mono
+                />
+                <InfoRow
+                  label="Forwarder Fee"
+                  value={formatPHP(item.forwarderFee)}
+                  mono
+                />
                 <InfoRow label="Branded" value={item.isBranded ? "Yes" : "No"} />
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="space-y-3">
-                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">Sale</h3>
-                <InfoRow label="Selling Price" value={formatPHP(item.sellingPrice)} mono />
+                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+                  Sale
+                </h3>
+                <InfoRow
+                  label="Selling Price"
+                  value={formatPHP(item.sellingPrice)}
+                  mono
+                />
                 <InfoRow label="Lalamove Fee" value={formatPHP(item.lalamoveFee)} mono />
                 <InfoRow label="Customer" value={item.customerName} />
                 <InfoRow label="Sold Date" value={formatDate(item.soldDate)} />
@@ -188,9 +253,16 @@ export default function OrderDetail() {
                   <InfoRow label="Total Cost" value={formatPHP(item.totalCost)} mono bold />
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-secondary font-semibold">Profit</span>
-                    <span className={cn("font-mono text-sm font-bold",
-                      (item.profit ?? 0) > 0 ? "text-success" : (item.profit ?? 0) < 0 ? "text-danger" : "text-tertiary"
-                    )}>
+                    <span
+                      className={cn(
+                        "font-mono text-sm font-bold",
+                        (item.profit ?? 0) > 0
+                          ? "text-success"
+                          : (item.profit ?? 0) < 0
+                            ? "text-danger"
+                            : "text-tertiary"
+                      )}
+                    >
                       {formatPHP(item.profit)}
                     </span>
                   </div>
@@ -198,24 +270,32 @@ export default function OrderDetail() {
               </CardContent>
             </Card>
 
-            {/* Quick Status Update */}
             <Card>
               <CardContent className="space-y-3">
-                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">Quick Actions</h3>
+                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+                  Quick Actions
+                </h3>
                 <Select
                   label="Update Status"
                   value={item.status}
                   onChange={(e) => handleStatusChange(e.target.value)}
-                  options={ALL_STATUSES.map((s) => ({ value: s, label: STATUS_CONFIG[s].label }))}
+                  options={ALL_STATUSES.map((status) => ({
+                    value: status,
+                    label: STATUS_CONFIG[status].label,
+                  }))}
                 />
               </CardContent>
             </Card>
 
             {item.notes && (
               <Card>
-                <CardContent>
-                  <h3 className="text-xs font-medium text-secondary uppercase tracking-wider mb-2">Notes</h3>
-                  <p className="text-sm text-primary whitespace-pre-wrap">{item.notes}</p>
+                <CardContent className="min-w-0">
+                  <h3 className="text-xs font-medium text-secondary uppercase tracking-wider mb-2">
+                    Notes
+                  </h3>
+                  <p className="text-sm text-primary whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                    {item.notes}
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -223,13 +303,15 @@ export default function OrderDetail() {
         </div>
       </div>
 
-      {/* Delete Modal */}
       <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete Item">
         <p className="text-sm text-secondary mb-4">
-          Are you sure you want to delete "{item.name}"? This action cannot be undone.
+          Are you sure you want to delete "{item.name}"? This action cannot be
+          undone.
         </p>
         <div className="flex gap-3 justify-end">
-          <Button variant="ghost" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+          <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
+            Cancel
+          </Button>
           <Button variant="danger" onClick={handleDelete} disabled={deleting}>
             {deleting ? "Deleting..." : "Delete"}
           </Button>
@@ -239,12 +321,30 @@ export default function OrderDetail() {
   );
 }
 
-function InfoRow({ label, value, mono, bold }: { label: string; value?: string | null; mono?: boolean; bold?: boolean }) {
+function InfoRow({
+  label,
+  value,
+  mono,
+  bold,
+}: {
+  label: string;
+  value?: string | null;
+  mono?: boolean;
+  bold?: boolean;
+}) {
   return (
-    <div className="flex justify-between items-center">
-      <span className={cn("text-sm text-secondary", bold && "font-semibold")}>{label}</span>
-      <span className={cn("text-sm text-primary", mono && "font-mono", bold && "font-semibold")}>
-        {value ?? "—"}
+    <div className="flex justify-between items-start gap-3 min-w-0">
+      <span className={cn("text-sm text-secondary", bold && "font-semibold")}>
+        {label}
+      </span>
+      <span
+        className={cn(
+          "text-sm text-primary text-right min-w-0 max-w-[60%] break-words [overflow-wrap:anywhere]",
+          mono && "font-mono",
+          bold && "font-semibold"
+        )}
+      >
+        {value ?? "--"}
       </span>
     </div>
   );

@@ -51,6 +51,7 @@ export type SellerPlatform = keyof typeof PLATFORM_CONFIG;
 
 export const DEFAULTS = {
   exchangeRate: 7.8,
+  forwarderBuyServiceRate: 8.6,
   forwarderRate: 480,
   markupMin: 700,
   markupMax: 850,
