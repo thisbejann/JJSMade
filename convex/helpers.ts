@@ -5,9 +5,12 @@ export function computeDerivedFields(data: {
   localShippingCNY?: number;
   weightKg?: number;
   forwarderRatePerKg: number;
+  isForwarderBuy?: boolean;
+  forwarderBuyRateUsed?: number;
   lalamoveFee?: number;
   sellingPrice?: number;
 }) {
+  const isForwarderBuy = data.isForwarderBuy ?? false;
   const pricePHP = round(data.priceCNY * data.exchangeRateUsed);
 
   const localShippingPHP =
@@ -20,11 +23,19 @@ export function computeDerivedFields(data: {
       ? round(data.weightKg * data.forwarderRatePerKg)
       : undefined;
 
+  const forwarderBuyFeePHP = isForwarderBuy
+    ? round((data.priceCNY * 0.1 + 10) * (data.forwarderBuyRateUsed ?? 0))
+    : undefined;
+
+  const qcServiceFeePHP = isForwarderBuy ? 150 : undefined;
+
   const totalCost = round(
     pricePHP +
       (localShippingPHP ?? 0) +
       (forwarderFee ?? 0) +
-      (data.lalamoveFee ?? 0)
+      (data.lalamoveFee ?? 0) +
+      (forwarderBuyFeePHP ?? 0) +
+      (qcServiceFeePHP ?? 0)
   );
 
   const profit =
@@ -34,6 +45,8 @@ export function computeDerivedFields(data: {
     pricePHP,
     localShippingPHP,
     forwarderFee,
+    forwarderBuyFeePHP,
+    qcServiceFeePHP,
     totalCost,
     profit,
   };
