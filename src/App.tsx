@@ -10,6 +10,9 @@ import SellerDetail from "./pages/SellerDetail";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import LoginPage from "./pages/LoginPage";
+import PersonalList from "./pages/PersonalList";
+import PersonalForm from "./pages/PersonalForm";
+import PersonalDetail from "./pages/PersonalDetail";
 
 export default function App() {
   return (
@@ -27,6 +30,10 @@ export default function App() {
             <Route path="/sellers/:id" element={<SellerDetail />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/personal" element={<PersonalList />} />
+            <Route path="/personal/new" element={<PersonalForm />} />
+            <Route path="/personal/:id" element={<PersonalDetail />} />
+            <Route path="/personal/:id/edit" element={<PersonalForm />} />
           </Route>
         </Route>
       </Routes>

@@ -12,6 +12,7 @@ import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as helpers from "../helpers.js";
 import type * as items from "../items.js";
+import type * as personalItems from "../personalItems.js";
 import type * as sellers from "../sellers.js";
 import type * as settings from "../settings.js";
 import type * as storage from "../storage.js";
@@ -27,6 +28,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   helpers: typeof helpers;
   items: typeof items;
+  personalItems: typeof personalItems;
   sellers: typeof sellers;
   settings: typeof settings;
   storage: typeof storage;

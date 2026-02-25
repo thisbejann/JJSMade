@@ -1,5 +1,5 @@
 import { NavLink } from "react-router";
-import { LayoutDashboard, Package, Users, BarChart3, Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Package, Users, BarChart3, Settings, ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const NAV_ITEMS = [
@@ -60,6 +60,25 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false }: SidebarProp
           </NavLink>
         ))}
       </nav>
+
+      {/* Personal — subtle, below main nav */}
+      <div className="px-2 pb-2">
+        <div className="border-t border-border-subtle mb-2" />
+        <NavLink
+          to="/personal"
+          className={({ isActive }) =>
+            cn(
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-150",
+              isActive
+                ? "bg-hover text-secondary"
+                : "text-tertiary hover:text-secondary hover:bg-hover opacity-60 hover:opacity-100"
+            )
+          }
+        >
+          <ShoppingBag size={16} className="shrink-0" />
+          <span className={cn(collapsed && "lg:hidden")}>Personal</span>
+        </NavLink>
+      </div>
 
       {/* Collapse button */}
       <button

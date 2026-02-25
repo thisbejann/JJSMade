@@ -55,3 +55,24 @@ export const DEFAULTS = {
 export const ALL_STATUSES = Object.keys(STATUS_CONFIG) as ItemStatus[];
 export const ALL_QC_STATUSES = Object.keys(QC_STATUS_CONFIG) as QcStatus[];
 export const ALL_CATEGORIES = Object.keys(CATEGORY_CONFIG) as ItemCategory[];
+
+export const PERSONAL_STATUS_CONFIG = {
+  ordered:              { label: "Ordered",          color: "info" },
+  qc_sent:              { label: "QC Sent",           color: "warning" },
+  item_shipout:         { label: "Shipped",           color: "info" },
+  arrived_ph_warehouse: { label: "Arrived PH",        color: "warning" },
+  delivered_to_me:      { label: "Delivered to Me",   color: "success" },
+  cancelled:            { label: "Cancelled",          color: "danger" },
+} as const;
+
+export type PersonalItemStatus = keyof typeof PERSONAL_STATUS_CONFIG;
+
+export const PERSONAL_STATUS_FLOW: PersonalItemStatus[] = [
+  "ordered",
+  "qc_sent",
+  "item_shipout",
+  "arrived_ph_warehouse",
+  "delivered_to_me",
+];
+
+export const ALL_PERSONAL_STATUSES = Object.keys(PERSONAL_STATUS_CONFIG) as PersonalItemStatus[];

@@ -115,4 +115,70 @@ export default defineSchema({
     defaultMarkupMax: v.number(),
     updatedAt: v.number(),
   }),
+
+  personalItems: defineTable({
+    // Item Identity
+    name: v.string(),
+    category: v.union(
+      v.literal("shoes"),
+      v.literal("clothes"),
+      v.literal("watches_accessories")
+    ),
+    imageUrl: v.optional(v.string()),
+    size: v.optional(v.string()),
+
+    // Source Info
+    seller: v.string(),
+    sellerContact: v.optional(v.string()),
+    batch: v.optional(v.string()),
+
+    // Pricing
+    priceCNY: v.number(),
+    exchangeRateUsed: v.number(),
+    pricePHP: v.number(),
+
+    // Local CN Shipping
+    hasLocalShipping: v.boolean(),
+    localShippingCNY: v.optional(v.number()),
+    localShippingPHP: v.optional(v.number()),
+
+    // QC
+    qcPhotoIds: v.optional(v.array(v.id("_storage"))),
+    qcStatus: v.union(
+      v.literal("not_received"),
+      v.literal("pending_review"),
+      v.literal("gl"),
+      v.literal("rl")
+    ),
+
+    // Shipping & Weight
+    weightKg: v.optional(v.number()),
+    isBranded: v.boolean(),
+    forwarderRatePerKg: v.number(),
+    forwarderFee: v.optional(v.number()),
+    isForwarderBuy: v.optional(v.boolean()),
+    forwarderBuyRateUsed: v.optional(v.number()),
+    forwarderBuyFeePHP: v.optional(v.number()),
+    qcServiceFeePHP: v.optional(v.number()),
+
+    // Status (personal — no customer/sale statuses)
+    status: v.union(
+      v.literal("ordered"),
+      v.literal("qc_sent"),
+      v.literal("item_shipout"),
+      v.literal("arrived_ph_warehouse"),
+      v.literal("delivered_to_me"),
+      v.literal("cancelled")
+    ),
+
+    // Metadata
+    notes: v.optional(v.string()),
+    orderDate: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_category", ["category"])
+    .index("by_orderDate", ["orderDate"])
+    .index("by_qcStatus", ["qcStatus"]),
 });
