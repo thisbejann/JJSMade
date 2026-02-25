@@ -4,6 +4,25 @@ import { computeDerivedFields } from "./helpers";
 
 const CLOTHES_SIZES = new Set(["S", "M", "L", "XL"]);
 
+const statusValidator = v.union(
+  // Current statuses
+  v.literal("ordered"),
+  v.literal("qc_sent"),
+  v.literal("item_shipout"),
+  v.literal("arrived_ph_warehouse"),
+  v.literal("delivered_to_customer"),
+  v.literal("refunded"),
+  // Legacy statuses (kept so existing documents remain valid)
+  v.literal("shipped_to_warehouse"),
+  v.literal("at_cn_warehouse"),
+  v.literal("shipped_to_ph"),
+  v.literal("at_ph_warehouse"),
+  v.literal("delivered_to_me"),
+  v.literal("sold"),
+  v.literal("cancelled"),
+  v.literal("returned")
+);
+
 function normalizeSize(
   category: "shoes" | "clothes" | "watches_accessories",
   size?: string
@@ -70,11 +89,7 @@ export const create = mutation({
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
     customerName: v.optional(v.string()),
-    status: v.union(
-      v.literal("ordered"), v.literal("shipped_to_warehouse"), v.literal("at_cn_warehouse"),
-      v.literal("shipped_to_ph"), v.literal("at_ph_warehouse"), v.literal("delivered_to_me"),
-      v.literal("sold"), v.literal("cancelled"), v.literal("returned")
-    ),
+    status: statusValidator,
     notes: v.optional(v.string()),
     orderDate: v.number(),
   },
@@ -118,7 +133,7 @@ export const create = mutation({
       qcServiceFeePHP: derived.qcServiceFeePHP,
       totalCost: derived.totalCost,
       profit: derived.profit,
-      soldDate: args.status === "sold" ? now : undefined,
+      soldDate: args.status === "delivered_to_customer" ? now : undefined,
       createdAt: now,
       updatedAt: now,
     });
@@ -150,11 +165,7 @@ export const update = mutation({
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
     customerName: v.optional(v.string()),
-    status: v.optional(v.union(
-      v.literal("ordered"), v.literal("shipped_to_warehouse"), v.literal("at_cn_warehouse"),
-      v.literal("shipped_to_ph"), v.literal("at_ph_warehouse"), v.literal("delivered_to_me"),
-      v.literal("sold"), v.literal("cancelled"), v.literal("returned")
-    )),
+    status: v.optional(statusValidator),
     notes: v.optional(v.string()),
     orderDate: v.optional(v.number()),
   },
@@ -192,7 +203,7 @@ export const update = mutation({
 
     const now = Date.now();
     const soldDate =
-      updates.status === "sold" && existing.status !== "sold"
+      updates.status === "delivered_to_customer" && existing.status !== "delivered_to_customer"
         ? now
         : existing.soldDate;
 
@@ -217,11 +228,7 @@ export const update = mutation({
 export const updateStatus = mutation({
   args: {
     id: v.id("items"),
-    status: v.union(
-      v.literal("ordered"), v.literal("shipped_to_warehouse"), v.literal("at_cn_warehouse"),
-      v.literal("shipped_to_ph"), v.literal("at_ph_warehouse"), v.literal("delivered_to_me"),
-      v.literal("sold"), v.literal("cancelled"), v.literal("returned")
-    ),
+    status: statusValidator,
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db.get(args.id);
@@ -229,7 +236,7 @@ export const updateStatus = mutation({
 
     const now = Date.now();
     const soldDate =
-      args.status === "sold" && existing.status !== "sold" ? now : existing.soldDate;
+      args.status === "delivered_to_customer" && existing.status !== "delivered_to_customer" ? now : existing.soldDate;
 
     await ctx.db.patch(args.id, {
       status: args.status,
@@ -262,11 +269,7 @@ export const remove = mutation({
 export const bulkUpdateStatus = mutation({
   args: {
     ids: v.array(v.id("items")),
-    status: v.union(
-      v.literal("ordered"), v.literal("shipped_to_warehouse"), v.literal("at_cn_warehouse"),
-      v.literal("shipped_to_ph"), v.literal("at_ph_warehouse"), v.literal("delivered_to_me"),
-      v.literal("sold"), v.literal("cancelled"), v.literal("returned")
-    ),
+    status: statusValidator,
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -274,7 +277,7 @@ export const bulkUpdateStatus = mutation({
       const existing = await ctx.db.get(id);
       if (!existing) continue;
       const soldDate =
-        args.status === "sold" && existing.status !== "sold" ? now : existing.soldDate;
+        args.status === "delivered_to_customer" && existing.status !== "delivered_to_customer" ? now : existing.soldDate;
       await ctx.db.patch(id, { status: args.status, soldDate, updatedAt: now });
     }
   },

@@ -11,11 +11,12 @@ export function computeDerivedFields(data: {
   sellingPrice?: number;
 }) {
   const isForwarderBuy = data.isForwarderBuy ?? false;
-  const pricePHP = round(data.priceCNY * data.exchangeRateUsed);
+  const effectiveRate = isForwarderBuy ? (data.forwarderBuyRateUsed ?? data.exchangeRateUsed) : data.exchangeRateUsed;
+  const pricePHP = round(data.priceCNY * effectiveRate);
 
   const localShippingPHP =
     data.hasLocalShipping && data.localShippingCNY
-      ? round(data.localShippingCNY * data.exchangeRateUsed)
+      ? round(data.localShippingCNY * effectiveRate)
       : undefined;
 
   const forwarderFee =

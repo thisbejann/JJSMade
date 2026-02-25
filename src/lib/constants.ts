@@ -1,25 +1,20 @@
 export const STATUS_CONFIG = {
   ordered: { label: "Ordered", color: "info" },
-  shipped_to_warehouse: { label: "Shipped to CN", color: "info" },
-  at_cn_warehouse: { label: "At CN Warehouse", color: "warning" },
-  shipped_to_ph: { label: "Shipped to PH", color: "info" },
-  at_ph_warehouse: { label: "At PH Warehouse", color: "warning" },
-  delivered_to_me: { label: "Delivered", color: "accent" },
-  sold: { label: "Sold", color: "success" },
-  cancelled: { label: "Cancelled", color: "danger" },
-  returned: { label: "Returned", color: "danger" },
+  qc_sent: { label: "QC Sent", color: "warning" },
+  item_shipout: { label: "Item Shipout", color: "info" },
+  arrived_ph_warehouse: { label: "Arrived in PH", color: "warning" },
+  delivered_to_customer: { label: "Delivered", color: "success" },
+  refunded: { label: "Refunded", color: "danger" },
 } as const;
 
 export type ItemStatus = keyof typeof STATUS_CONFIG;
 
 export const STATUS_FLOW: ItemStatus[] = [
   "ordered",
-  "shipped_to_warehouse",
-  "at_cn_warehouse",
-  "shipped_to_ph",
-  "at_ph_warehouse",
-  "delivered_to_me",
-  "sold",
+  "qc_sent",
+  "item_shipout",
+  "arrived_ph_warehouse",
+  "delivered_to_customer",
 ];
 
 export const QC_STATUS_CONFIG = {

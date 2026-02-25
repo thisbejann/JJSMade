@@ -17,9 +17,10 @@ const FORWARDER_BUY_QC_FEE_PHP = 150;
 
 export function useComputedCosts(input: ComputedCostsInput) {
   return useMemo(() => {
-    const pricePHP = input.priceCNY * input.exchangeRate;
+    const effectiveRate = input.isForwarderBuy ? input.forwarderBuyRateUsed : input.exchangeRate;
+    const pricePHP = input.priceCNY * effectiveRate;
     const localShippingPHP = input.hasLocalShipping
-      ? input.localShippingCNY * input.exchangeRate
+      ? input.localShippingCNY * effectiveRate
       : 0;
     const forwarderFee =
       input.weightKg > 0 ? input.weightKg * input.forwarderRatePerKg : 0;

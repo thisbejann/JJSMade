@@ -28,7 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               "w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-tertiary",
               "focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all duration-150",
-              prefix && "pl-8",
+              prefix && "pl-12",
               suffix && "pr-8",
               error && "border-danger focus:ring-danger/40",
               className

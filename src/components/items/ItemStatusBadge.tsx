@@ -7,10 +7,10 @@ interface ItemStatusBadgeProps {
 }
 
 export function ItemStatusBadge({ status, className }: ItemStatusBadgeProps) {
-  const config = STATUS_CONFIG[status];
+  const config = STATUS_CONFIG[status] ?? { color: "tertiary", label: status };
 
   return (
-    <Badge variant={config.color} className={className}>
+    <Badge variant={config.color as "tertiary"} className={className}>
       {config.label}
     </Badge>
   );

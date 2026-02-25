@@ -10,9 +10,11 @@ import { DatePicker } from "../ui/DatePicker";
 import { Combobox } from "../ui/Combobox";
 import { Button } from "../ui/Button";
 import { Card, CardContent } from "../ui/Card";
+import { Modal } from "../ui/Modal";
 import { ImageUpload } from "../ui/ImageUpload";
 import { LiveProfitCalculator } from "./LiveProfitCalculator";
 import { MarkupIndicator } from "./MarkupIndicator";
+import { PriceCalculator } from "./PriceCalculator";
 import {
   ALL_STATUSES,
   ALL_QC_STATUSES,
@@ -36,32 +38,24 @@ const CATEGORY_ICONS = {
 const CLOTHES_SIZES = ["S", "M", "L", "XL"] as const;
 
 const QC_VISIBLE_STATUSES = new Set<Doc<"items">["status"]>([
-  "shipped_to_warehouse",
-  "at_cn_warehouse",
-  "shipped_to_ph",
-  "at_ph_warehouse",
-  "delivered_to_me",
-  "sold",
+  "qc_sent",
+  "item_shipout",
+  "arrived_ph_warehouse",
+  "delivered_to_customer",
+  "refunded",
 ]);
 
 const SHIPPING_VISIBLE_STATUSES = new Set<Doc<"items">["status"]>([
-  "at_cn_warehouse",
-  "shipped_to_ph",
-  "at_ph_warehouse",
-  "delivered_to_me",
-  "sold",
+  "item_shipout",
+  "arrived_ph_warehouse",
+  "delivered_to_customer",
 ]);
 
 const LALAMOVE_VISIBLE_STATUSES = new Set<Doc<"items">["status"]>([
-  "at_ph_warehouse",
-  "delivered_to_me",
-  "sold",
+  "arrived_ph_warehouse",
+  "delivered_to_customer",
 ]);
 
-const SALE_VISIBLE_STATUSES = new Set<Doc<"items">["status"]>([
-  "delivered_to_me",
-  "sold",
-]);
 
 interface ItemFormProps {
   existingItem?: Doc<"items">;
@@ -113,6 +107,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
     existingItem?.status ?? "ordered"
   );
   const [qcStatus, setQcStatus] = useState(existingItem?.qcStatus ?? "not_received");
+  const [rlModalOpen, setRlModalOpen] = useState(false);
 
   const [priceCNY, setPriceCNY] = useState(existingItem?.priceCNY ?? 0);
   const [exchangeRateInput, setExchangeRateInput] = useState(
@@ -128,7 +123,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
       : settings.cnyToPhpRate;
 
   const [hasLocalShipping, setHasLocalShipping] = useState(
-    existingItem?.hasLocalShipping ?? false
+    existingItem?.hasLocalShipping ?? true
   );
   const [localShippingCNY, setLocalShippingCNY] = useState(
     existingItem?.localShippingCNY ?? 0
@@ -177,7 +172,6 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
   const showQcSection = QC_VISIBLE_STATUSES.has(status);
   const showShippingSection = SHIPPING_VISIBLE_STATUSES.has(status);
   const showLalamoveField = LALAMOVE_VISIBLE_STATUSES.has(status);
-  const showSaleSection = SALE_VISIBLE_STATUSES.has(status);
 
   const costs = useComputedCosts({
     priceCNY,
@@ -441,27 +435,31 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
               step="0.01"
               prefix="CNY"
             />
-            <Input
-              label="Exchange Rate (CNY to PHP)"
-              type="number"
-              value={exchangeRate || ""}
-              onChange={(e) => {
-                setExchangeRateTouched(true);
-                setExchangeRateInput(Number(e.target.value));
-              }}
-              step="0.01"
-              suffix={`1 CNY = PHP ${exchangeRate.toFixed(2)}`}
-            />
+            {!isForwarderBuy && (
+              <>
+                <Input
+                  label="Exchange Rate (CNY to PHP)"
+                  type="number"
+                  value={exchangeRate || ""}
+                  onChange={(e) => {
+                    setExchangeRateTouched(true);
+                    setExchangeRateInput(Number(e.target.value));
+                  }}
+                  step="0.01"
+                  suffix={`1 CNY = PHP ${exchangeRate.toFixed(2)}`}
+                />
 
-            <div className="rounded-lg bg-accent-muted px-3 py-2">
-              <p className="text-xs text-secondary">Price in PHP</p>
-              <p className="font-mono text-lg font-semibold text-accent">
-                PHP{" "}
-                {costs.pricePHP.toLocaleString("en-PH", {
-                  minimumFractionDigits: 2,
-                })}
-              </p>
-            </div>
+                <div className="rounded-lg bg-accent-muted px-3 py-2">
+                  <p className="text-xs text-secondary">Price in PHP</p>
+                  <p className="font-mono text-lg font-semibold text-accent">
+                    PHP{" "}
+                    {costs.pricePHP.toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </p>
+                </div>
+              </>
+            )}
 
             <Toggle
               label="Has Local Shipping?"
@@ -550,7 +548,16 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
                     <button
                       key={currentQcStatus}
                       type="button"
-                      onClick={() => setQcStatus(currentQcStatus)}
+                      onClick={() => {
+                        setQcStatus(currentQcStatus);
+                        if (status === "qc_sent") {
+                          if (currentQcStatus === "gl") {
+                            setStatus("item_shipout");
+                          } else if (currentQcStatus === "rl") {
+                            setRlModalOpen(true);
+                          }
+                        }
+                      }}
                       className={cn(
                         "px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border",
                         qcStatus === currentQcStatus
@@ -620,35 +627,39 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
           </Card>
         )}
 
-        {showSaleSection && (
-          <Card>
-            <CardContent className="space-y-4">
-              <h2 className="font-display font-semibold text-base text-primary">
-                Sale Info
-              </h2>
-              <Input
-                label="Selling Price (PHP)"
-                type="number"
-                value={sellingPrice || ""}
-                onChange={(e) => setSellingPrice(Number(e.target.value))}
-                prefix="PHP"
+        <Card>
+          <CardContent className="space-y-4">
+            <h2 className="font-display font-semibold text-base text-primary">
+              Sale Info
+            </h2>
+            <Input
+              label="Selling Price (PHP)"
+              type="number"
+              value={sellingPrice || ""}
+              onChange={(e) => setSellingPrice(Number(e.target.value))}
+              prefix="PHP"
+            />
+            {sellingPrice > 0 && (
+              <MarkupIndicator
+                markup={costs.profit}
+                min={settings.defaultMarkupMin}
+                max={settings.defaultMarkupMax}
               />
-              {sellingPrice > 0 && (
-                <MarkupIndicator
-                  markup={costs.profit}
-                  min={settings.defaultMarkupMin}
-                  max={settings.defaultMarkupMax}
-                />
-              )}
-              <Input
-                label="Customer Name"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Optional"
-              />
-            </CardContent>
-          </Card>
-        )}
+            )}
+            <Input
+              label="Customer Name"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Optional"
+            />
+          </CardContent>
+        </Card>
+
+        <PriceCalculator
+          cnyToPhpRate={settings.cnyToPhpRate}
+          forwarderBuyServiceRate={settings.forwarderBuyServiceRate ?? 8.6}
+          priceCNY={priceCNY}
+        />
 
         <Button type="submit" size="lg" className="w-full" disabled={submitting}>
           {submitting ? "Saving..." : existingItem ? "Update Item" : "Save Item"}
@@ -671,6 +682,36 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
           />
         </div>
       </div>
+
+      <Modal
+        open={rlModalOpen}
+        onClose={() => setRlModalOpen(false)}
+        title="RL — What should happen?"
+      >
+        <p className="text-sm text-secondary mb-5">
+          The item was rejected (RL). Choose the next action:
+        </p>
+        <div className="flex gap-3 justify-end">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setStatus("ordered");
+              setRlModalOpen(false);
+            }}
+          >
+            Replace (back to Ordered)
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              setStatus("refunded");
+              setRlModalOpen(false);
+            }}
+          >
+            Refund
+          </Button>
+        </div>
+      </Modal>
     </form>
   );
 }

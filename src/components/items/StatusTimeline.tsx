@@ -14,7 +14,7 @@ const colorMap: Record<string, { text: string; dot: string; ring: string }> = {
 };
 
 export function StatusTimeline({ currentStatus }: StatusTimelineProps) {
-  const isTerminal = currentStatus === "cancelled" || currentStatus === "returned";
+  const isTerminal = currentStatus === "refunded";
   const terminalStatus = isTerminal ? (currentStatus as ItemStatus) : null;
   const steps: ItemStatus[] = terminalStatus
     ? [...STATUS_FLOW, terminalStatus]

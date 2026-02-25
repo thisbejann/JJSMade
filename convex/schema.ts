@@ -58,7 +58,14 @@ export default defineSchema({
 
     // Status
     status: v.union(
+      // Current statuses
       v.literal("ordered"),
+      v.literal("qc_sent"),
+      v.literal("item_shipout"),
+      v.literal("arrived_ph_warehouse"),
+      v.literal("delivered_to_customer"),
+      v.literal("refunded"),
+      // Legacy statuses (kept so existing documents remain valid)
       v.literal("shipped_to_warehouse"),
       v.literal("at_cn_warehouse"),
       v.literal("shipped_to_ph"),
