@@ -9,6 +9,7 @@
  */
 
 import type * as analytics from "../analytics.js";
+import type * as auth from "../auth.js";
 import type * as helpers from "../helpers.js";
 import type * as items from "../items.js";
 import type * as sellers from "../sellers.js";
@@ -23,6 +24,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
+  auth: typeof auth;
   helpers: typeof helpers;
   items: typeof items;
   sellers: typeof sellers;

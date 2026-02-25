@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router";
-import { Plus, Menu } from "lucide-react";
+import { Plus, Menu, LogOut } from "lucide-react";
 import { Button } from "../ui/Button";
+import { useAuth } from "../../context/AuthContext";
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "Dashboard",
@@ -18,6 +19,7 @@ interface TopBarProps {
 export function TopBar({ onMobileMenuToggle }: TopBarProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   let title = PAGE_TITLES[location.pathname] ?? "JJSMade";
 
@@ -41,6 +43,13 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
           <Plus size={16} />
           New Item
         </Button>
+        <button
+          onClick={() => { logout(); navigate("/login", { replace: true }); }}
+          className="p-2 text-secondary hover:text-primary hover:bg-hover rounded-lg transition-colors"
+          title="Sign out"
+        >
+          <LogOut size={16} />
+        </button>
       </div>
     </header>
   );
