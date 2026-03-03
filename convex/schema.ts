@@ -39,11 +39,13 @@ export default defineSchema({
 
     // Shipping & Weight
     weightKg: v.optional(v.number()),
+    trackingNumber: v.optional(v.string()),
     isBranded: v.boolean(),
     forwarderRatePerKg: v.number(),
     forwarderFee: v.optional(v.number()),
     isForwarderBuy: v.optional(v.boolean()),
     forwarderBuyRateUsed: v.optional(v.number()),
+    forwarderBuyCommissionPercent: v.optional(v.number()),
     forwarderBuyFeePHP: v.optional(v.number()),
     qcServiceFeePHP: v.optional(v.number()),
 
@@ -153,11 +155,13 @@ export default defineSchema({
 
     // Shipping & Weight
     weightKg: v.optional(v.number()),
+    trackingNumber: v.optional(v.string()),
     isBranded: v.boolean(),
     forwarderRatePerKg: v.number(),
     forwarderFee: v.optional(v.number()),
     isForwarderBuy: v.optional(v.boolean()),
     forwarderBuyRateUsed: v.optional(v.number()),
+    forwarderBuyCommissionPercent: v.optional(v.number()),
     forwarderBuyFeePHP: v.optional(v.number()),
     qcServiceFeePHP: v.optional(v.number()),
 

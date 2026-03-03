@@ -29,6 +29,7 @@ function validateItemRules(data: {
   size?: string;
   isForwarderBuy: boolean;
   forwarderBuyRateUsed?: number;
+  forwarderBuyCommissionPercent?: number;
 }) {
   if (data.category === "shoes") {
     const parsed = Number(data.size);
@@ -51,6 +52,14 @@ function validateItemRules(data: {
     ) {
       throw new Error("Forwarder buy service rate is required");
     }
+
+    if (
+      data.forwarderBuyCommissionPercent == null ||
+      Number.isNaN(data.forwarderBuyCommissionPercent) ||
+      data.forwarderBuyCommissionPercent < 0
+    ) {
+      throw new Error("Forwarder buy commission percent must be 0 or higher");
+    }
   }
 }
 
@@ -72,20 +81,32 @@ export const create = mutation({
     qcPhotoIds: v.optional(v.array(v.id("_storage"))),
     qcStatus: v.union(v.literal("not_received"), v.literal("pending_review"), v.literal("gl"), v.literal("rl")),
     weightKg: v.optional(v.number()),
+    trackingNumber: v.optional(v.string()),
     isBranded: v.boolean(),
     forwarderRatePerKg: v.number(),
     isForwarderBuy: v.optional(v.boolean()),
     forwarderBuyRateUsed: v.optional(v.number()),
+    forwarderBuyCommissionPercent: v.optional(v.number()),
     status: personalStatusValidator,
     notes: v.optional(v.string()),
     orderDate: v.number(),
   },
   handler: async (ctx, args) => {
     const size = normalizeSize(args.category, args.size);
+    const trackingNumber = args.trackingNumber?.trim() || undefined;
     const isForwarderBuy = args.isForwarderBuy ?? false;
     const forwarderBuyRateUsed = isForwarderBuy ? args.forwarderBuyRateUsed : undefined;
+    const forwarderBuyCommissionPercent = isForwarderBuy
+      ? args.forwarderBuyCommissionPercent ?? 10
+      : undefined;
 
-    validateItemRules({ category: args.category, size, isForwarderBuy, forwarderBuyRateUsed });
+    validateItemRules({
+      category: args.category,
+      size,
+      isForwarderBuy,
+      forwarderBuyRateUsed,
+      forwarderBuyCommissionPercent,
+    });
 
     const derived = computeDerivedFields({
       priceCNY: args.priceCNY,
@@ -96,6 +117,7 @@ export const create = mutation({
       forwarderRatePerKg: args.forwarderRatePerKg,
       isForwarderBuy,
       forwarderBuyRateUsed,
+      forwarderBuyCommissionPercent,
       lalamoveFee: undefined,
       sellingPrice: undefined,
     });
@@ -104,8 +126,10 @@ export const create = mutation({
     const id = await ctx.db.insert("personalItems", {
       ...args,
       size,
+      trackingNumber,
       isForwarderBuy,
       forwarderBuyRateUsed,
+      forwarderBuyCommissionPercent,
       pricePHP: derived.pricePHP,
       localShippingPHP: derived.localShippingPHP,
       forwarderFee: derived.forwarderFee,
@@ -135,10 +159,12 @@ export const update = mutation({
     qcPhotoIds: v.optional(v.array(v.id("_storage"))),
     qcStatus: v.optional(v.union(v.literal("not_received"), v.literal("pending_review"), v.literal("gl"), v.literal("rl"))),
     weightKg: v.optional(v.number()),
+    trackingNumber: v.optional(v.string()),
     isBranded: v.optional(v.boolean()),
     forwarderRatePerKg: v.optional(v.number()),
     isForwarderBuy: v.optional(v.boolean()),
     forwarderBuyRateUsed: v.optional(v.number()),
+    forwarderBuyCommissionPercent: v.optional(v.number()),
     status: v.optional(personalStatusValidator),
     notes: v.optional(v.string()),
     orderDate: v.optional(v.number()),
@@ -148,12 +174,42 @@ export const update = mutation({
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Personal item not found");
 
-    const merged = { ...existing, ...updates };
+    const hasTrackingNumberUpdate = Object.prototype.hasOwnProperty.call(
+      updates,
+      "trackingNumber"
+    );
+    const trackingNumber = hasTrackingNumberUpdate
+      ? updates.trackingNumber?.trim() || undefined
+      : existing.trackingNumber;
+
+    const hasForwarderBuyCommissionUpdate = Object.prototype.hasOwnProperty.call(
+      updates,
+      "forwarderBuyCommissionPercent"
+    );
+    const forwarderBuyCommissionPercent = hasForwarderBuyCommissionUpdate
+      ? updates.forwarderBuyCommissionPercent
+      : existing.forwarderBuyCommissionPercent;
+
+    const merged = {
+      ...existing,
+      ...updates,
+      trackingNumber,
+      forwarderBuyCommissionPercent,
+    };
     const size = normalizeSize(merged.category, merged.size);
     const isForwarderBuy = merged.isForwarderBuy ?? false;
     const forwarderBuyRateUsed = isForwarderBuy ? merged.forwarderBuyRateUsed : undefined;
+    const normalizedForwarderBuyCommissionPercent = isForwarderBuy
+      ? merged.forwarderBuyCommissionPercent ?? 10
+      : undefined;
 
-    validateItemRules({ category: merged.category, size, isForwarderBuy, forwarderBuyRateUsed });
+    validateItemRules({
+      category: merged.category,
+      size,
+      isForwarderBuy,
+      forwarderBuyRateUsed,
+      forwarderBuyCommissionPercent: normalizedForwarderBuyCommissionPercent,
+    });
 
     const derived = computeDerivedFields({
       priceCNY: merged.priceCNY,
@@ -164,6 +220,7 @@ export const update = mutation({
       forwarderRatePerKg: merged.forwarderRatePerKg,
       isForwarderBuy,
       forwarderBuyRateUsed,
+      forwarderBuyCommissionPercent: normalizedForwarderBuyCommissionPercent,
       lalamoveFee: undefined,
       sellingPrice: undefined,
     });
@@ -171,8 +228,10 @@ export const update = mutation({
     await ctx.db.patch(id, {
       ...updates,
       size,
+      trackingNumber,
       isForwarderBuy,
       forwarderBuyRateUsed,
+      forwarderBuyCommissionPercent: normalizedForwarderBuyCommissionPercent,
       pricePHP: derived.pricePHP,
       localShippingPHP: derived.localShippingPHP,
       forwarderFee: derived.forwarderFee,

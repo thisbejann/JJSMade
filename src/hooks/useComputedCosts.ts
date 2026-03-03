@@ -9,6 +9,7 @@ interface ComputedCostsInput {
   forwarderRatePerKg: number;
   isForwarderBuy: boolean;
   forwarderBuyRateUsed: number;
+  forwarderBuyCommissionPercent: number;
   lalamoveFee: number;
   sellingPrice: number;
 }
@@ -26,7 +27,7 @@ export function useComputedCosts(input: ComputedCostsInput) {
       input.weightKg > 0 ? input.weightKg * input.forwarderRatePerKg : 0;
 
     const forwarderBuyFeeCNY = input.isForwarderBuy
-      ? input.priceCNY * 0.1
+      ? input.priceCNY * (input.forwarderBuyCommissionPercent / 100)
       : 0;
     const forwarderBuyFeePHP = input.isForwarderBuy
       ? forwarderBuyFeeCNY * input.forwarderBuyRateUsed
@@ -66,6 +67,7 @@ export function useComputedCosts(input: ComputedCostsInput) {
     input.forwarderRatePerKg,
     input.isForwarderBuy,
     input.forwarderBuyRateUsed,
+    input.forwarderBuyCommissionPercent,
     input.lalamoveFee,
     input.sellingPrice,
   ]);

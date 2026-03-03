@@ -120,6 +120,9 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
     : forwarderBuyRateTouched
       ? forwarderBuyRateInput
       : (settings.forwarderBuyServiceRate ?? 8.6);
+  const [forwarderBuyCommissionPercent, setForwarderBuyCommissionPercent] = useState(
+    existingItem?.forwarderBuyCommissionPercent ?? 10
+  );
 
   const [isBranded, setIsBranded] = useState(existingItem?.isBranded ?? true);
   const [forwarderRateInput, setForwarderRateInput] = useState(
@@ -132,6 +135,9 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
       ? forwarderRateInput
       : settings.defaultForwarderRate;
   const [weightKg, setWeightKg] = useState(existingItem?.weightKg ?? 0);
+  const [trackingNumber, setTrackingNumber] = useState(
+    existingItem?.trackingNumber ?? ""
+  );
 
   const [photos, setPhotos] = useState<{ id: string; url: string }[]>([]);
   const [photoIds, setPhotoIds] = useState<Id<"_storage">[]>(existingItem?.qcPhotoIds ?? []);
@@ -140,16 +146,6 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
 
   const showQcSection = QC_VISIBLE_STATUSES.has(status);
   const showShippingSection = SHIPPING_VISIBLE_STATUSES.has(status);
-
-  const handleHasLocalShippingChange = (checked: boolean) => {
-    setHasLocalShipping(checked);
-    if (checked) setIsForwarderBuy(false);
-  };
-
-  const handleIsForwarderBuyChange = (checked: boolean) => {
-    setIsForwarderBuy(checked);
-    if (checked) setHasLocalShipping(false);
-  };
 
   const costs = useComputedCosts({
     priceCNY,
@@ -160,6 +156,7 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
     forwarderRatePerKg: forwarderRate,
     isForwarderBuy,
     forwarderBuyRateUsed,
+    forwarderBuyCommissionPercent,
     lalamoveFee: 0,
     sellingPrice: 0,
   });
@@ -230,6 +227,10 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
       toast.error("Forwarder buy service rate must be greater than 0");
       return;
     }
+    if (isForwarderBuy && forwarderBuyCommissionPercent < 0) {
+      toast.error("Forwarder buy commission percent must be 0 or higher");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -246,9 +247,13 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
         localShippingCNY: hasLocalShipping ? localShippingCNY : undefined,
         isForwarderBuy,
         forwarderBuyRateUsed: isForwarderBuy ? forwarderBuyRateUsed : undefined,
+        forwarderBuyCommissionPercent: isForwarderBuy
+          ? forwarderBuyCommissionPercent
+          : undefined,
         qcPhotoIds: photoIds.length > 0 ? photoIds : undefined,
         qcStatus: qcStatus as "not_received" | "pending_review" | "gl" | "rl",
         weightKg: weightKg > 0 ? weightKg : undefined,
+        trackingNumber: trackingNumber.trim() || undefined,
         isBranded,
         forwarderRatePerKg: forwarderRate,
         status,
@@ -421,17 +426,18 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
           <Toggle
             label="Has Local Shipping?"
             checked={hasLocalShipping}
-            onChange={handleHasLocalShippingChange}
+            onChange={setHasLocalShipping}
           />
           {hasLocalShipping && (
             <>
               <Input
-                label="Local Shipping (CNY)"
+                label="Local Shipping (CNY, Optional)"
                 type="number"
                 value={localShippingCNY || ""}
                 onChange={(e) => setLocalShippingCNY(Number(e.target.value))}
                 step="0.01"
                 prefix="CNY"
+                placeholder="Leave blank or 0 for free shipping"
               />
               <div className="rounded-lg bg-surface px-3 py-2 border border-border-subtle">
                 <p className="text-xs text-secondary">Local Shipping PHP</p>
@@ -445,7 +451,7 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
           <Toggle
             label="Bought by Forwarder?"
             checked={isForwarderBuy}
-            onChange={handleIsForwarderBuyChange}
+            onChange={setIsForwarderBuy}
           />
           {isForwarderBuy && (
             <>
@@ -459,8 +465,19 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
                 }}
                 step="0.01"
               />
+              <Input
+                label="Forwarder Buy Commission (%)"
+                type="number"
+                value={forwarderBuyCommissionPercent}
+                onChange={(e) =>
+                  setForwarderBuyCommissionPercent(Number(e.target.value))
+                }
+                step="0.01"
+              />
               <div className="rounded-lg bg-surface px-3 py-2 border border-border-subtle space-y-1">
-                <p className="text-xs text-secondary">Forwarder Buy Fee (10% of item)</p>
+                <p className="text-xs text-secondary">
+                  Forwarder Buy Fee ({forwarderBuyCommissionPercent.toFixed(2)}% of item)
+                </p>
                 <p className="text-xs text-secondary">CNY {costs.forwarderBuyFeeCNY.toFixed(2)}</p>
                 <p className="font-mono text-sm text-primary">PHP {costs.forwarderBuyFeePHP.toFixed(2)}</p>
               </div>
@@ -536,6 +553,12 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
               value={weightKg || ""}
               onChange={(e) => setWeightKg(Number(e.target.value))}
               step="0.01"
+            />
+            <Input
+              label="Tracking Number"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              placeholder="Optional"
             />
             {weightKg > 0 && (
               <div className="rounded-lg bg-surface px-3 py-2 border border-border-subtle">
