@@ -26,7 +26,7 @@ export function useComputedCosts(input: ComputedCostsInput) {
       input.weightKg > 0 ? input.weightKg * input.forwarderRatePerKg : 0;
 
     const forwarderBuyFeeCNY = input.isForwarderBuy
-      ? input.priceCNY * 0.1 + 10
+      ? input.priceCNY * 0.1
       : 0;
     const forwarderBuyFeePHP = input.isForwarderBuy
       ? forwarderBuyFeeCNY * input.forwarderBuyRateUsed

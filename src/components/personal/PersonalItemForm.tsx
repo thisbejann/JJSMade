@@ -141,6 +141,16 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
   const showQcSection = QC_VISIBLE_STATUSES.has(status);
   const showShippingSection = SHIPPING_VISIBLE_STATUSES.has(status);
 
+  const handleHasLocalShippingChange = (checked: boolean) => {
+    setHasLocalShipping(checked);
+    if (checked) setIsForwarderBuy(false);
+  };
+
+  const handleIsForwarderBuyChange = (checked: boolean) => {
+    setIsForwarderBuy(checked);
+    if (checked) setHasLocalShipping(false);
+  };
+
   const costs = useComputedCosts({
     priceCNY,
     exchangeRate,
@@ -411,7 +421,7 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
           <Toggle
             label="Has Local Shipping?"
             checked={hasLocalShipping}
-            onChange={setHasLocalShipping}
+            onChange={handleHasLocalShippingChange}
           />
           {hasLocalShipping && (
             <>
@@ -435,7 +445,7 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
           <Toggle
             label="Bought by Forwarder?"
             checked={isForwarderBuy}
-            onChange={setIsForwarderBuy}
+            onChange={handleIsForwarderBuyChange}
           />
           {isForwarderBuy && (
             <>
@@ -450,7 +460,7 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
                 step="0.01"
               />
               <div className="rounded-lg bg-surface px-3 py-2 border border-border-subtle space-y-1">
-                <p className="text-xs text-secondary">Forwarder Buy Fee (10% of item + 10 CNY)</p>
+                <p className="text-xs text-secondary">Forwarder Buy Fee (10% of item)</p>
                 <p className="text-xs text-secondary">CNY {costs.forwarderBuyFeeCNY.toFixed(2)}</p>
                 <p className="font-mono text-sm text-primary">PHP {costs.forwarderBuyFeePHP.toFixed(2)}</p>
               </div>

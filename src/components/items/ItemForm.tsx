@@ -173,6 +173,16 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
   const showShippingSection = SHIPPING_VISIBLE_STATUSES.has(status);
   const showLalamoveField = LALAMOVE_VISIBLE_STATUSES.has(status);
 
+  const handleHasLocalShippingChange = (checked: boolean) => {
+    setHasLocalShipping(checked);
+    if (checked) setIsForwarderBuy(false);
+  };
+
+  const handleIsForwarderBuyChange = (checked: boolean) => {
+    setIsForwarderBuy(checked);
+    if (checked) setHasLocalShipping(false);
+  };
+
   const costs = useComputedCosts({
     priceCNY,
     exchangeRate,
@@ -464,7 +474,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
             <Toggle
               label="Has Local Shipping?"
               checked={hasLocalShipping}
-              onChange={setHasLocalShipping}
+              onChange={handleHasLocalShippingChange}
             />
             {hasLocalShipping && (
               <>
@@ -491,7 +501,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
             <Toggle
               label="Bought by Forwarder?"
               checked={isForwarderBuy}
-              onChange={setIsForwarderBuy}
+              onChange={handleIsForwarderBuyChange}
             />
             {isForwarderBuy && (
               <>
@@ -507,7 +517,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
                 />
                 <div className="rounded-lg bg-surface px-3 py-2 border border-border-subtle space-y-1">
                   <p className="text-xs text-secondary">
-                    Forwarder Buy Fee (10% of item + 10 CNY)
+                    Forwarder Buy Fee (10% of item)
                   </p>
                   <p className="text-xs text-secondary">
                     CNY {costs.forwarderBuyFeeCNY.toFixed(2)}

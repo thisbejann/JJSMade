@@ -7,6 +7,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/": "Dashboard",
   "/orders": "Orders",
   "/orders/new": "New Order",
+  "/personal": "Personal Items",
+  "/personal/new": "New Personal Item",
   "/sellers": "Sellers",
   "/analytics": "Analytics",
   "/settings": "Settings",
@@ -22,10 +24,13 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
   const { logout } = useAuth();
 
   let title = PAGE_TITLES[location.pathname] ?? "JJSMade";
+  const isPersonalRoute = location.pathname.startsWith("/personal");
 
   if (location.pathname.match(/^\/orders\/[^/]+\/edit$/)) title = "Edit Order";
   else if (location.pathname.match(/^\/orders\/[^/]+$/)) title = "Order Details";
   else if (location.pathname.match(/^\/sellers\/[^/]+$/)) title = "Seller Details";
+  else if (location.pathname.match(/^\/personal\/[^/]+\/edit$/)) title = "Edit Personal Item";
+  else if (location.pathname.match(/^\/personal\/[^/]+$/)) title = "Personal Item Details";
 
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 sm:px-6 bg-surface/80 backdrop-blur-md border-b border-border-subtle">
@@ -39,7 +44,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
         <h1 className="font-display font-bold text-xl text-primary">{title}</h1>
       </div>
       <div className="flex items-center gap-3">
-        <Button onClick={() => navigate("/orders/new")} size="sm">
+        <Button onClick={() => navigate(isPersonalRoute ? "/personal/new" : "/orders/new")} size="sm">
           <Plus size={16} />
           New Item
         </Button>

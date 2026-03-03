@@ -11,7 +11,21 @@ export function computeDerivedFields(data: {
   sellingPrice?: number;
 }) {
   const isForwarderBuy = data.isForwarderBuy ?? false;
-  const effectiveRate = isForwarderBuy ? (data.forwarderBuyRateUsed ?? data.exchangeRateUsed) : data.exchangeRateUsed;
+  let forwarderBuyRate: number | undefined;
+  let effectiveRate = data.exchangeRateUsed;
+
+  if (isForwarderBuy) {
+    const candidateRate = data.forwarderBuyRateUsed;
+    if (
+      candidateRate == null ||
+      Number.isNaN(candidateRate) ||
+      candidateRate <= 0
+    ) {
+      throw new Error("Forwarder buy service rate is required");
+    }
+    forwarderBuyRate = candidateRate;
+    effectiveRate = candidateRate;
+  }
   const pricePHP = round(data.priceCNY * effectiveRate);
 
   const localShippingPHP =
@@ -25,7 +39,7 @@ export function computeDerivedFields(data: {
       : undefined;
 
   const forwarderBuyFeePHP = isForwarderBuy
-    ? round((data.priceCNY * 0.1 + 10) * (data.forwarderBuyRateUsed ?? 0))
+    ? round(data.priceCNY * 0.1 * (forwarderBuyRate as number))
     : undefined;
 
   const qcServiceFeePHP = isForwarderBuy ? 150 : undefined;
