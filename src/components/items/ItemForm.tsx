@@ -15,6 +15,7 @@ import { ImageUpload } from "../ui/ImageUpload";
 import { LiveProfitCalculator } from "./LiveProfitCalculator";
 import { MarkupIndicator } from "./MarkupIndicator";
 import { PriceCalculator } from "./PriceCalculator";
+import { QcPhotoGallery } from "./QcPhotoGallery";
 import {
   ALL_STATUSES,
   ALL_QC_STATUSES,
@@ -178,6 +179,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
   const showQcSection = QC_VISIBLE_STATUSES.has(status);
   const showShippingSection = SHIPPING_VISIBLE_STATUSES.has(status);
   const showLalamoveField = LALAMOVE_VISIBLE_STATUSES.has(status);
+  const existingPhotoIds = (existingItem?.qcPhotoIds ?? []).filter((id) => photoIds.includes(id));
 
   const costs = useComputedCosts({
     priceCNY,
@@ -558,6 +560,17 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
               <h2 className="font-display font-semibold text-base text-primary">
                 QC Photos
               </h2>
+
+              {existingPhotoIds.length > 0 && (
+                <div className="rounded-lg border border-border-subtle p-3 space-y-2">
+                  <p className="text-xs text-secondary">Existing QC photos</p>
+                  <QcPhotoGallery
+                    photoIds={existingPhotoIds}
+                    onRemovePhoto={handleRemovePhoto}
+                  />
+                </div>
+              )}
+
               <ImageUpload
                 images={photos}
                 onUpload={handleUpload}
