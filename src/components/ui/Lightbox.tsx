@@ -8,9 +8,17 @@ interface LightboxProps {
   open: boolean;
   onClose: () => void;
   onNavigate: (index: number) => void;
+  onDeleteCurrent?: () => void;
 }
 
-export function Lightbox({ images, currentIndex, open, onClose, onNavigate }: LightboxProps) {
+export function Lightbox({
+  images,
+  currentIndex,
+  open,
+  onClose,
+  onNavigate,
+  onDeleteCurrent,
+}: LightboxProps) {
   const goNext = useCallback(() => {
     if (currentIndex < images.length - 1) onNavigate(currentIndex + 1);
   }, [currentIndex, images.length, onNavigate]);
@@ -45,6 +53,15 @@ export function Lightbox({ images, currentIndex, open, onClose, onNavigate }: Li
           >
             <X size={24} />
           </button>
+          {onDeleteCurrent && (
+            <button
+              type="button"
+              onClick={onDeleteCurrent}
+              className="absolute top-4 right-16 px-3 py-2 rounded-lg text-sm font-medium text-white/85 bg-white/10 hover:bg-red-500/80 hover:text-white transition-colors cursor-pointer z-10"
+            >
+              Delete photo
+            </button>
+          )}
 
           {currentIndex > 0 && (
             <button

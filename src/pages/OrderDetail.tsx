@@ -42,6 +42,7 @@ export default function OrderDetail() {
   const [savingProgress, setSavingProgress] = useState(false);
 
   const [qcStatusDraft, setQcStatusDraft] = useState<Doc<"items">["qcStatus"]>("pending_review");
+  const [qcPhotoIdsDraft, setQcPhotoIdsDraft] = useState<Id<"_storage">[]>([]);
   const [newQcUploads, setNewQcUploads] = useState<{ id: Id<"_storage">; url: string }[]>([]);
   const [uploadingQc, setUploadingQc] = useState(false);
 
@@ -127,6 +128,9 @@ export default function OrderDetail() {
           ...current,
           { id: storageId, url: URL.createObjectURL(file) },
         ]);
+        setQcPhotoIdsDraft((current) =>
+          current.includes(storageId) ? current : [...current, storageId]
+        );
       }
     } catch {
       toast.error("Failed to upload QC photos");
@@ -134,7 +138,8 @@ export default function OrderDetail() {
     setUploadingQc(false);
   };
 
-  const handleRemoveNewQcPhoto = (idToRemove: string) => {
+  const handleRemoveQcPhoto = (idToRemove: Id<"_storage">) => {
+    setQcPhotoIdsDraft((current) => current.filter((photoId) => photoId !== idToRemove));
     setNewQcUploads((current) => {
       const photoToRemove = current.find((photo) => photo.id === idToRemove);
       if (photoToRemove) {
@@ -147,6 +152,7 @@ export default function OrderDetail() {
   const openProgressModal = (targetStatus: ProgressiveStatus) => {
     if (targetStatus === "qc_sent") {
       setQcStatusDraft(item.qcStatus === "not_received" ? "pending_review" : item.qcStatus);
+      setQcPhotoIdsDraft(item.qcPhotoIds ?? []);
       clearNewQcUploads();
     }
 
@@ -180,10 +186,24 @@ export default function OrderDetail() {
     void handleStatusChange(newStatus);
   };
 
+  const handleRemoveDetailQcPhoto = async (photoId: Id<"_storage">) => {
+    const currentPhotoIds = item.qcPhotoIds ?? [];
+    if (!currentPhotoIds.includes(photoId)) return;
+    const nextPhotoIds = currentPhotoIds.filter((id) => id !== photoId);
+
+    try {
+      await updateItem({
+        id: item._id,
+        qcPhotoIds: nextPhotoIds,
+      });
+      toast.success("QC photo deleted");
+    } catch {
+      toast.error("Failed to delete QC photo");
+    }
+  };
+
   const handleSaveQcSent = async () => {
-    const existingPhotoIds = item.qcPhotoIds ?? [];
-    const newPhotoIds = newQcUploads.map((photo) => photo.id);
-    const mergedPhotoIds = Array.from(new Set([...existingPhotoIds, ...newPhotoIds]));
+    const mergedPhotoIds = Array.from(new Set(qcPhotoIdsDraft));
 
     if (mergedPhotoIds.length === 0) {
       toast.error("Upload at least one QC photo before setting QC Sent");
@@ -358,7 +378,10 @@ export default function OrderDetail() {
                 </h2>
               </CardHeader>
               <CardContent>
-                <QcPhotoGallery photoIds={item.qcPhotoIds} />
+                <QcPhotoGallery
+                  photoIds={item.qcPhotoIds}
+                  onRemovePhoto={handleRemoveDetailQcPhoto}
+                />
               </CardContent>
             </Card>
 
@@ -537,17 +560,22 @@ export default function OrderDetail() {
         title="QC Sent: Upload Photos"
       >
         <div className="space-y-4">
-          {item.qcPhotoIds && item.qcPhotoIds.length > 0 && (
+          {qcPhotoIdsDraft.length > 0 && (
             <div className="rounded-lg border border-border-subtle p-3">
-              <p className="text-xs text-secondary mb-2">Existing QC Photos</p>
-              <QcPhotoGallery photoIds={item.qcPhotoIds} />
+              <p className="text-xs text-secondary mb-2">
+                QC photo gallery (click X to remove)
+              </p>
+              <QcPhotoGallery
+                photoIds={qcPhotoIdsDraft}
+                onRemovePhoto={handleRemoveQcPhoto}
+              />
             </div>
           )}
 
           <ImageUpload
             images={newQcUploads.map((photo) => ({ id: photo.id, url: photo.url }))}
             onUpload={handleUploadQc}
-            onRemove={handleRemoveNewQcPhoto}
+            onRemove={(id) => handleRemoveQcPhoto(id as Id<"_storage">)}
             uploading={uploadingQc}
           />
 

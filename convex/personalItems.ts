@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { computeDerivedFields } from "./helpers";
+import { deleteUnreferencedQcPhotos } from "./qcPhotoCleanup";
 
 const CLOTHES_SIZES = new Set(["S", "M", "L", "XL"]);
 
@@ -173,6 +174,15 @@ export const update = mutation({
     const { id, ...updates } = args;
     const existing = await ctx.db.get(id);
     if (!existing) throw new Error("Personal item not found");
+    const hasQcPhotoIdsUpdate = Object.prototype.hasOwnProperty.call(
+      updates,
+      "qcPhotoIds"
+    );
+    const updatedQcPhotoIds = hasQcPhotoIdsUpdate ? updates.qcPhotoIds ?? [] : [];
+    const updatedQcPhotoIdSet = new Set(updatedQcPhotoIds);
+    const removedQcPhotoIds = hasQcPhotoIdsUpdate
+      ? (existing.qcPhotoIds ?? []).filter((photoId) => !updatedQcPhotoIdSet.has(photoId))
+      : [];
 
     const hasTrackingNumberUpdate = Object.prototype.hasOwnProperty.call(
       updates,
@@ -239,6 +249,11 @@ export const update = mutation({
       qcServiceFeePHP: derived.qcServiceFeePHP,
       updatedAt: Date.now(),
     });
+
+    await deleteUnreferencedQcPhotos(ctx, removedQcPhotoIds, {
+      table: "personalItems",
+      id,
+    });
   },
 });
 
@@ -257,7 +272,14 @@ export const updateStatus = mutation({
 export const remove = mutation({
   args: { id: v.id("personalItems") },
   handler: async (ctx, args) => {
+    const existing = await ctx.db.get(args.id);
+    if (!existing) return;
+    const removedQcPhotoIds = existing.qcPhotoIds ?? [];
     await ctx.db.delete(args.id);
+    await deleteUnreferencedQcPhotos(ctx, removedQcPhotoIds, {
+      table: "personalItems",
+      id: args.id,
+    });
   },
 });
 

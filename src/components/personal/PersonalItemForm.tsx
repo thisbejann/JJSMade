@@ -11,6 +11,7 @@ import { Combobox } from "../ui/Combobox";
 import { Button } from "../ui/Button";
 import { Card, CardContent } from "../ui/Card";
 import { ImageUpload } from "../ui/ImageUpload";
+import { QcPhotoGallery } from "../items/QcPhotoGallery";
 import {
   ALL_PERSONAL_STATUSES,
   ALL_QC_STATUSES,
@@ -146,6 +147,7 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
 
   const showQcSection = QC_VISIBLE_STATUSES.has(status);
   const showShippingSection = SHIPPING_VISIBLE_STATUSES.has(status);
+  const existingPhotoIds = (existingItem?.qcPhotoIds ?? []).filter((id) => photoIds.includes(id));
 
   const costs = useComputedCosts({
     priceCNY,
@@ -495,6 +497,17 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
         <Card>
           <CardContent className="space-y-4">
             <h2 className="font-display font-semibold text-base text-primary">QC Photos</h2>
+
+            {existingPhotoIds.length > 0 && (
+              <div className="rounded-lg border border-border-subtle p-3 space-y-2">
+                <p className="text-xs text-secondary">Existing QC photos</p>
+                <QcPhotoGallery
+                  photoIds={existingPhotoIds}
+                  onRemovePhoto={handleRemovePhoto}
+                />
+              </div>
+            )}
+
             <ImageUpload
               images={photos}
               onUpload={handleUpload}
