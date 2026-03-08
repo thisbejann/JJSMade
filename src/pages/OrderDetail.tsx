@@ -427,11 +427,13 @@ export default function OrderDetail() {
                   Pricing
                 </h3>
                 <InfoRow label="Price (CNY)" value={formatCNY(item.priceCNY)} mono />
-                <InfoRow
-                  label="Exchange Rate"
-                  value={`PHP${item.exchangeRateUsed.toFixed(2)}/CNY1`}
-                  mono
-                />
+                {!item.isForwarderBuy && (
+                  <InfoRow
+                    label="Exchange Rate"
+                    value={`PHP${item.exchangeRateUsed.toFixed(2)}/CNY1`}
+                    mono
+                  />
+                )}
                 <InfoRow label="Price (PHP)" value={formatPHP(item.pricePHP)} mono />
                 {item.localShippingPHP != null && item.localShippingPHP > 0 && (
                   <InfoRow
