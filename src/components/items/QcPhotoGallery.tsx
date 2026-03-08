@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQueries, useQuery, type RequestForQueries } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Lightbox } from "../ui/Lightbox";
@@ -42,7 +42,8 @@ function usePhotoUrls(photoIds: Id<"_storage">[]) {
 
 export function QcPhotoGallery({ photoIds, onRemovePhoto }: QcPhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
-  const ids = photoIds ?? [];
+  const emptyIds = useRef<Id<"_storage">[]>([]).current;
+  const ids = photoIds ?? emptyIds;
   const urls = usePhotoUrls(ids);
   const handleRemoveAtIndex = (index: number) => {
     const id = ids[index];
