@@ -13,7 +13,22 @@ export const initialize = mutation({
   args: {},
   handler: async (ctx) => {
     const existing = await ctx.db.query("settings").first();
-    if (existing) return existing._id;
+    if (existing) {
+      // Backfill calculator markup fields if missing
+      if (
+        existing.calculatorMarkupShoes === undefined ||
+        existing.calculatorMarkupClothes === undefined ||
+        existing.calculatorMarkupWatchesAccessories === undefined
+      ) {
+        await ctx.db.patch(existing._id, {
+          calculatorMarkupShoes: existing.calculatorMarkupShoes ?? 850,
+          calculatorMarkupClothes: existing.calculatorMarkupClothes ?? 750,
+          calculatorMarkupWatchesAccessories: existing.calculatorMarkupWatchesAccessories ?? 850,
+          updatedAt: Date.now(),
+        });
+      }
+      return existing._id;
+    }
 
     const id = await ctx.db.insert("settings", {
       cnyToPhpRate: 7.8,
@@ -21,6 +36,9 @@ export const initialize = mutation({
       defaultForwarderRate: 480,
       defaultMarkupMin: 700,
       defaultMarkupMax: 850,
+      calculatorMarkupShoes: 850,
+      calculatorMarkupClothes: 750,
+      calculatorMarkupWatchesAccessories: 850,
       updatedAt: Date.now(),
     });
     return id;
@@ -34,6 +52,9 @@ export const update = mutation({
     defaultForwarderRate: v.optional(v.number()),
     defaultMarkupMin: v.optional(v.number()),
     defaultMarkupMax: v.optional(v.number()),
+    calculatorMarkupShoes: v.optional(v.number()),
+    calculatorMarkupClothes: v.optional(v.number()),
+    calculatorMarkupWatchesAccessories: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const settings = await ctx.db.query("settings").first();
@@ -47,6 +68,9 @@ export const update = mutation({
     if (args.defaultForwarderRate !== undefined) updates.defaultForwarderRate = args.defaultForwarderRate;
     if (args.defaultMarkupMin !== undefined) updates.defaultMarkupMin = args.defaultMarkupMin;
     if (args.defaultMarkupMax !== undefined) updates.defaultMarkupMax = args.defaultMarkupMax;
+    if (args.calculatorMarkupShoes !== undefined) updates.calculatorMarkupShoes = args.calculatorMarkupShoes;
+    if (args.calculatorMarkupClothes !== undefined) updates.calculatorMarkupClothes = args.calculatorMarkupClothes;
+    if (args.calculatorMarkupWatchesAccessories !== undefined) updates.calculatorMarkupWatchesAccessories = args.calculatorMarkupWatchesAccessories;
 
     await ctx.db.patch(settings._id, updates);
   },
