@@ -13,6 +13,7 @@ import LoginPage from "./pages/LoginPage";
 import PersonalList from "./pages/PersonalList";
 import PersonalForm from "./pages/PersonalForm";
 import PersonalDetail from "./pages/PersonalDetail";
+import QuoteCalculator from "./pages/QuoteCalculator";
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/orders/:id/edit" element={<OrderForm />} />
             <Route path="/sellers" element={<SellersList />} />
             <Route path="/sellers/:id" element={<SellerDetail />} />
+            <Route path="/calculator" element={<QuoteCalculator />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/personal" element={<PersonalList />} />
