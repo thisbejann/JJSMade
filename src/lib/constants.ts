@@ -50,7 +50,13 @@ export const DEFAULTS = {
   forwarderRate: 480,
   markupMin: 700,
   markupMax: 850,
+  calculatorMarkupShoes: 850,
+  calculatorMarkupClothes: 750,
+  calculatorMarkupWatchesAccessories: 850,
 } as const;
+
+export const FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT = 10;
+export const FORWARDER_BUY_QC_FEE_PHP = 150;
 
 export const ALL_STATUSES = Object.keys(STATUS_CONFIG) as ItemStatus[];
 export const ALL_QC_STATUSES = Object.keys(QC_STATUS_CONFIG) as QcStatus[];

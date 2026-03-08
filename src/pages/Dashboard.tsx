@@ -34,7 +34,7 @@ export default function Dashboard() {
           >
             <StatCard label="Total Items" value={stats.totalItems} icon={<Package size={20} />} />
             <StatCard label="In Pipeline" value={stats.inPipeline} icon={<TrendingUp size={20} />} />
-            <StatCard label="Sold This Month" value={stats.soldThisMonth} icon={<ShoppingBag size={20} />} />
+            <StatCard label="Delivered This Month" value={stats.soldThisMonth} icon={<ShoppingBag size={20} />} />
             <StatCard label="Revenue (Month)" value={stats.revenueThisMonth} format={formatPHP} icon={<DollarSign size={20} />} />
             <StatCard label="Profit (Month)" value={stats.profitThisMonth} format={formatPHP} icon={<BarChart3 size={20} />} />
             <StatCard label="Avg Profit" value={stats.avgProfitThisMonth} format={formatPHP} icon={<Target size={20} />} />

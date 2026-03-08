@@ -57,7 +57,7 @@ export function SellerCard({ seller, onEdit, onDelete }: SellerCardProps) {
           <p className="font-mono text-sm text-primary">{seller.totalItems}</p>
         </div>
         <div>
-          <p className="text-xs text-tertiary">Sold</p>
+          <p className="text-xs text-tertiary">Delivered</p>
           <p className="font-mono text-sm text-primary">{seller.soldItems}</p>
         </div>
         <div>

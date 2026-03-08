@@ -115,6 +115,9 @@ export default defineSchema({
     defaultForwarderRate: v.number(),
     defaultMarkupMin: v.number(),
     defaultMarkupMax: v.number(),
+    calculatorMarkupShoes: v.optional(v.number()),
+    calculatorMarkupClothes: v.optional(v.number()),
+    calculatorMarkupWatchesAccessories: v.optional(v.number()),
     updatedAt: v.number(),
   }),
 

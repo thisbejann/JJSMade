@@ -1,5 +1,18 @@
 import { query } from "./_generated/server";
 
+const REALIZED_SALE_STATUSES = new Set(["delivered_to_customer", "sold"]);
+const NON_PIPELINE_STATUSES = new Set([
+  "delivered_to_customer",
+  "sold",
+  "refunded",
+  "cancelled",
+  "returned",
+]);
+
+function isRealizedSale(status: string) {
+  return REALIZED_SALE_STATUSES.has(status);
+}
+
 export const getDashboardStats = query({
   args: {},
   handler: async (ctx) => {
@@ -7,13 +20,11 @@ export const getDashboardStats = query({
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
-    const soldItems = items.filter((i) => i.status === "sold");
+    const soldItems = items.filter((i) => isRealizedSale(i.status));
     const soldThisMonth = soldItems.filter(
       (i) => i.soldDate && i.soldDate >= startOfMonth
     );
-    const inPipeline = items.filter(
-      (i) => i.status !== "sold" && i.status !== "cancelled" && i.status !== "returned"
-    );
+    const inPipeline = items.filter((i) => !NON_PIPELINE_STATUSES.has(i.status));
 
     const revenueThisMonth = soldThisMonth.reduce(
       (sum, i) => sum + (i.sellingPrice ?? 0),
@@ -41,7 +52,7 @@ export const getMonthlyProfitData = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    const soldItems = items.filter((i) => i.status === "sold" && i.soldDate);
+    const soldItems = items.filter((i) => isRealizedSale(i.status) && i.soldDate);
 
     const monthly: Record<string, { revenue: number; cost: number; profit: number; count: number }> = {};
 
@@ -68,7 +79,7 @@ export const getProfitByCategory = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    const soldItems = items.filter((i) => i.status === "sold");
+    const soldItems = items.filter((i) => isRealizedSale(i.status));
 
     const byCategory: Record<string, { profit: number; count: number; revenue: number }> = {};
 
@@ -90,7 +101,7 @@ export const getProfitBySeller = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    const soldItems = items.filter((i) => i.status === "sold");
+    const soldItems = items.filter((i) => isRealizedSale(i.status));
 
     const bySeller: Record<string, { profit: number; count: number; revenue: number }> = {};
 
@@ -111,7 +122,7 @@ export const getCostBreakdown = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    const soldItems = items.filter((i) => i.status === "sold");
+    const soldItems = items.filter((i) => isRealizedSale(i.status));
 
     if (soldItems.length === 0) {
       return {
@@ -160,7 +171,7 @@ export const getTopBatches = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    const soldItems = items.filter((i) => i.status === "sold" && i.batch);
+    const soldItems = items.filter((i) => isRealizedSale(i.status) && i.batch);
 
     const byBatch: Record<string, { profit: number; count: number }> = {};
 
@@ -182,7 +193,7 @@ export const getTopCustomers = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    const soldItems = items.filter((i) => i.status === "sold" && i.customerName);
+    const soldItems = items.filter((i) => isRealizedSale(i.status) && i.customerName);
 
     const byCustomer: Record<string, { totalSpent: number; count: number }> = {};
 
@@ -204,7 +215,7 @@ export const getProfitDistribution = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    const soldItems = items.filter((i) => i.status === "sold" && i.profit != null);
+    const soldItems = items.filter((i) => isRealizedSale(i.status) && i.profit != null);
 
     const buckets: Record<string, number> = {};
     const bucketSize = 100;
@@ -231,7 +242,7 @@ export const getCumulativeProfitData = query({
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
     const soldItems = items
-      .filter((i) => i.status === "sold" && i.soldDate && i.profit != null)
+      .filter((i) => isRealizedSale(i.status) && i.soldDate && i.profit != null)
       .sort((a, b) => a.soldDate! - b.soldDate!);
 
     let cumulative = 0;
@@ -250,7 +261,7 @@ export const getItemsSoldByMonth = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    const soldItems = items.filter((i) => i.status === "sold" && i.soldDate);
+    const soldItems = items.filter((i) => isRealizedSale(i.status) && i.soldDate);
 
     const monthly: Record<string, number> = {};
 
@@ -270,7 +281,7 @@ export const getAllTimeStats = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    const soldItems = items.filter((i) => i.status === "sold");
+    const soldItems = items.filter((i) => isRealizedSale(i.status));
 
     const totalRevenue = soldItems.reduce((sum, i) => sum + (i.sellingPrice ?? 0), 0);
     const totalProfit = soldItems.reduce((sum, i) => sum + (i.profit ?? 0), 0);

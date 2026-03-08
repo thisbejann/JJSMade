@@ -38,7 +38,9 @@ export default function SellerDetail() {
     );
   }
 
-  const soldItems = (items ?? []).filter((i) => i.status === "sold");
+  const soldItems = (items ?? []).filter(
+    (i) => i.status === "delivered_to_customer" || i.status === "sold"
+  );
   const totalProfit = soldItems.reduce((sum, i) => sum + (i.profit ?? 0), 0);
   const avgProfit = soldItems.length > 0 ? totalProfit / soldItems.length : 0;
   const totalSpent = (items ?? []).reduce((sum, i) => sum + (i.pricePHP ?? 0), 0);

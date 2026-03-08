@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { FORWARDER_BUY_QC_FEE_PHP } from "../lib/constants";
 
 interface ComputedCostsInput {
   priceCNY: number;
@@ -13,8 +14,6 @@ interface ComputedCostsInput {
   lalamoveFee: number;
   sellingPrice: number;
 }
-
-const FORWARDER_BUY_QC_FEE_PHP = 150;
 
 export function useComputedCosts(input: ComputedCostsInput) {
   return useMemo(() => {
