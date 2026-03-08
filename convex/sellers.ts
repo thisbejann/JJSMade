@@ -1,6 +1,8 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+const REALIZED_SALE_STATUSES = new Set(["delivered_to_customer", "sold"]);
+
 export const create = mutation({
   args: {
     name: v.string(),
@@ -58,7 +60,9 @@ export const list = query({
 
     return filtered.map((seller) => {
       const sellerItems = items.filter((i) => i.seller === seller.name);
-      const soldItems = sellerItems.filter((i) => i.status === "sold");
+      const soldItems = sellerItems.filter((i) =>
+        REALIZED_SALE_STATUSES.has(i.status)
+      );
       const totalProfit = soldItems.reduce((sum, i) => sum + (i.profit ?? 0), 0);
       const avgProfit = soldItems.length > 0 ? totalProfit / soldItems.length : 0;
 

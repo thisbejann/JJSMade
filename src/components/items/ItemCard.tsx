@@ -36,7 +36,7 @@ export function ItemCard({ item }: ItemCardProps) {
         </span>
       </div>
 
-      {item.status === "sold" && (
+      {(item.status === "delivered_to_customer" || item.status === "sold") && (
         <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
           <span className="text-xs text-secondary">Profit</span>
           <ProfitDisplay profit={item.profit} />

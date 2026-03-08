@@ -12,7 +12,7 @@ interface SellerStatsProps {
 export function SellerStats({ totalItems, soldItems, totalProfit, avgProfit, totalSpent }: SellerStatsProps) {
   const stats = [
     { label: "Total Items", value: totalItems.toString() },
-    { label: "Items Sold", value: soldItems.toString() },
+    { label: "Items Delivered", value: soldItems.toString() },
     { label: "Total Spent", value: formatPHP(totalSpent) },
     { label: "Total Profit", value: formatPHP(totalProfit), color: "text-success" },
     { label: "Avg Profit", value: formatPHP(avgProfit) },
