@@ -1,11 +1,12 @@
 import { NavLink } from "react-router";
-import { LayoutDashboard, Package, Users, BarChart3, Settings, ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
+import { LayoutDashboard, Package, Users, BarChart3, Settings, ChevronLeft, ChevronRight, ShoppingBag, Calculator } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const NAV_ITEMS = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/orders", icon: Package, label: "Orders" },
   { to: "/sellers", icon: Users, label: "Sellers" },
+  { to: "/calculator", icon: Calculator, label: "Calculator" },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
