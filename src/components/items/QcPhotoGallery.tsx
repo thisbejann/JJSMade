@@ -8,12 +8,13 @@ import type { Id } from "../../../convex/_generated/dataModel";
 interface QcPhotoGalleryProps {
   photoIds?: Id<"_storage">[];
   onRemovePhoto?: (photoId: Id<"_storage">) => void;
+  itemName?: string;
 }
 
-function PhotoImage({ storageId }: { storageId: Id<"_storage"> }) {
+function PhotoImage({ storageId, alt }: { storageId: Id<"_storage">; alt: string }) {
   const url = useQuery(api.storage.getUrl, { storageId });
   if (!url) return <div className="w-full h-full bg-hover animate-pulse" />;
-  return <img src={url} alt="QC" className="w-full h-full object-cover" />;
+  return <img src={url} alt={alt} className="w-full h-full object-cover" />;
 }
 
 function usePhotoUrls(photoIds: Id<"_storage">[]) {
@@ -40,7 +41,7 @@ function usePhotoUrls(photoIds: Id<"_storage">[]) {
   );
 }
 
-export function QcPhotoGallery({ photoIds, onRemovePhoto }: QcPhotoGalleryProps) {
+export function QcPhotoGallery({ photoIds, onRemovePhoto, itemName }: QcPhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const emptyIds = useRef<Id<"_storage">[]>([]).current;
   const ids = photoIds ?? emptyIds;
@@ -81,7 +82,7 @@ export function QcPhotoGallery({ photoIds, onRemovePhoto }: QcPhotoGalleryProps)
           className="relative aspect-square rounded-xl overflow-hidden cursor-pointer bg-hover"
           onClick={() => setLightboxIndex(0)}
         >
-          <PhotoImage storageId={ids[0]} />
+          <PhotoImage storageId={ids[0]} alt={itemName ? `QC photo of ${itemName}` : "QC photo"} />
           {onRemovePhoto && (
             <button
               type="button"
@@ -89,7 +90,7 @@ export function QcPhotoGallery({ photoIds, onRemovePhoto }: QcPhotoGalleryProps)
                 event.stopPropagation();
                 handleRemoveAtIndex(0);
               }}
-              className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 text-white hover:bg-black/80 transition-colors cursor-pointer"
+              className="absolute top-2 right-2 p-2.5 rounded-full bg-black/70 text-white hover:bg-black/80 transition-colors cursor-pointer"
               aria-label="Remove QC photo"
             >
               <X size={14} />
@@ -110,7 +111,7 @@ export function QcPhotoGallery({ photoIds, onRemovePhoto }: QcPhotoGalleryProps)
                   onClick={() => setLightboxIndex(i)}
                   className="w-full h-full cursor-pointer"
                 >
-                  <PhotoImage storageId={id} />
+                  <PhotoImage storageId={id} alt={itemName ? `QC photo ${i + 1} of ${itemName}` : `QC photo ${i + 1}`} />
                 </button>
                 {onRemovePhoto && (
                   <button
@@ -119,7 +120,7 @@ export function QcPhotoGallery({ photoIds, onRemovePhoto }: QcPhotoGalleryProps)
                       event.stopPropagation();
                       handleRemoveAtIndex(i);
                     }}
-                    className="absolute top-1 right-1 p-1 rounded-full bg-black/70 text-white hover:bg-black/80 transition-colors cursor-pointer"
+                    className="absolute top-1 right-1 p-1.5 rounded-full bg-black/70 text-white hover:bg-black/80 transition-colors cursor-pointer"
                     aria-label="Remove QC photo"
                   >
                     <X size={12} />

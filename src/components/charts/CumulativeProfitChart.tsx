@@ -17,7 +17,7 @@ export function CumulativeProfitChart() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-sm text-primary">Cumulative Profit</h2>
+        <h2 className="font-display font-semibold text-base text-primary">Cumulative Profit</h2>
       </CardHeader>
       <CardContent>
         {data === undefined ? (

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card, CardContent } from "../components/ui/Card";
+import { Skeleton } from "../components/ui/Skeleton";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { useSettings } from "../hooks/useSettings";
@@ -59,14 +60,18 @@ export default function Settings() {
   if (isLoading) {
     return (
       <PageContainer>
-        <p className="text-secondary">Loading...</p>
+        <div className="max-w-2xl space-y-8">
+          <Skeleton className="h-48" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+        </div>
       </PageContainer>
     );
   }
 
   return (
     <PageContainer>
-      <div className="max-w-2xl space-y-6">
+      <div className="max-w-2xl space-y-8">
         <Card>
           <CardContent className="space-y-4">
             <h2 className="font-display font-semibold text-base text-primary">

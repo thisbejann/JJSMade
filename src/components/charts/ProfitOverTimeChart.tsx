@@ -6,21 +6,21 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { CHART_COLORS, chartTooltipStyle } from "../../lib/chartTheme";
 import { formatPHP } from "../../lib/formatters";
 
-export function ProfitOverTimeChart() {
+export function ProfitOverTimeChart({ height = 300 }: { height?: number }) {
   const data = useQuery(api.analytics.getMonthlyProfitData);
 
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-sm text-primary">Profit Over Time</h2>
+        <h2 className="font-display font-semibold text-base text-primary">Profit Over Time</h2>
       </CardHeader>
       <CardContent>
         {data === undefined ? (
-          <Skeleton className="h-[300px]" />
+          <Skeleton className={`h-[${height}px]`} />
         ) : data.length === 0 ? (
           <p className="text-center text-secondary py-12 text-sm">No sales data yet</p>
         ) : (
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={height}>
             <AreaChart data={data}>
               <defs>
                 <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">

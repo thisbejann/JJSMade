@@ -23,7 +23,7 @@ export function CostDistributionChart() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-sm text-primary">Avg Cost Breakdown</h2>
+        <h2 className="font-display font-semibold text-base text-primary">Avg Cost Breakdown</h2>
       </CardHeader>
       <CardContent>
         {data === undefined ? (

@@ -420,6 +420,30 @@ export const getRecent = query({
   },
 });
 
+export const getUniqueSellers = query({
+  args: {},
+  handler: async (ctx) => {
+    const items = await ctx.db.query("items").collect();
+    const sellers = new Set<string>();
+    for (const item of items) {
+      if (item.seller) sellers.add(item.seller);
+    }
+    return [...sellers].sort();
+  },
+});
+
+export const getUniqueBatches = query({
+  args: {},
+  handler: async (ctx) => {
+    const items = await ctx.db.query("items").collect();
+    const batches = new Set<string>();
+    for (const item of items) {
+      if (item.batch) batches.add(item.batch);
+    }
+    return [...batches].sort();
+  },
+});
+
 export const getByStatus = query({
   args: {},
   handler: async (ctx) => {

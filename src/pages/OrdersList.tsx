@@ -14,7 +14,7 @@ import { useDebounce } from "../hooks/useDebounce";
 import { ALL_STATUSES, ALL_QC_STATUSES, ALL_CATEGORIES, STATUS_CONFIG, QC_STATUS_CONFIG, CATEGORY_CONFIG } from "../lib/constants";
 import { Plus, Package, LayoutGrid, List, Search } from "lucide-react";
 import { cn } from "../lib/utils";
-import { motion } from "framer-motion";
+
 
 export default function OrdersList() {
   const navigate = useNavigate();
@@ -50,7 +50,7 @@ export default function OrdersList() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search items..."
-              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all"
+              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
             />
           </div>
           <Select
@@ -110,38 +110,21 @@ export default function OrdersList() {
           <EmptyState
             icon={<Package size={32} />}
             title="No items yet"
-            description="Start by adding your first item to track your orders."
+            description="Add your first order item and it will show up here. You'll be able to track it through the entire pipeline."
             actionLabel="Add Item"
             onAction={() => navigate("/orders/new")}
           />
         ) : viewMode === "table" ? (
           <ItemTable items={items} />
         ) : (
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {items.map((item) => (
-              <motion.div
-                key={item._id}
-                variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-              >
-                <ItemCard item={item} />
-              </motion.div>
+              <ItemCard key={item._id} item={item} />
             ))}
-          </motion.div>
+          </div>
         )}
       </div>
 
-      {/* FAB */}
-      <button
-        onClick={() => navigate("/orders/new")}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-base shadow-lg hover:bg-accent-hover transition-all hover:scale-105 flex items-center justify-center cursor-pointer z-40"
-      >
-        <Plus size={24} />
-      </button>
     </PageContainer>
   );
 }

@@ -11,7 +11,7 @@ export function ItemsSoldChart() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-sm text-primary">Items Sold Per Month</h2>
+        <h2 className="font-display font-semibold text-base text-primary">Items Sold Per Month</h2>
       </CardHeader>
       <CardContent>
         {data === undefined ? (

@@ -14,7 +14,7 @@ export function RecentOrders() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-sm text-primary">Recent Orders</h2>
+        <h2 className="font-display font-semibold text-base text-primary">Recent Orders</h2>
       </CardHeader>
       <CardContent className="p-0">
         {items === undefined ? (

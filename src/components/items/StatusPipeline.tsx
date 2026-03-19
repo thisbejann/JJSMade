@@ -29,11 +29,11 @@ export function StatusPipeline({ statusCounts }: StatusPipelineProps) {
             <button
               onClick={() => navigate(`/orders?status=${status}`)}
               className={cn(
-                "flex flex-col items-center gap-1 px-4 py-3 rounded-xl border transition-all hover:scale-105 cursor-pointer min-w-[90px]",
+                "flex flex-col items-center gap-1 px-4 py-3 rounded-xl border transition-colors hover:brightness-110 cursor-pointer min-w-[90px]",
                 colors
               )}
             >
-              <span className="font-mono text-lg font-bold">{count}</span>
+              <span className="text-lg font-bold">{count}</span>
               <span className="text-[10px] font-medium whitespace-nowrap">
                 {config.label}
               </span>

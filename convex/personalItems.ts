@@ -328,6 +328,30 @@ export const list = query({
   },
 });
 
+export const getUniqueSellers = query({
+  args: {},
+  handler: async (ctx) => {
+    const items = await ctx.db.query("personalItems").collect();
+    const sellers = new Set<string>();
+    for (const item of items) {
+      if (item.seller) sellers.add(item.seller);
+    }
+    return [...sellers].sort();
+  },
+});
+
+export const getUniqueBatches = query({
+  args: {},
+  handler: async (ctx) => {
+    const items = await ctx.db.query("personalItems").collect();
+    const batches = new Set<string>();
+    for (const item of items) {
+      if (item.batch) batches.add(item.batch);
+    }
+    return [...batches].sort();
+  },
+});
+
 export const getById = query({
   args: { id: v.id("personalItems") },
   handler: async (ctx, args) => {

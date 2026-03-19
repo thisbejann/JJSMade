@@ -15,7 +15,7 @@ export function ProfitDisplay({ profit, className }: ProfitDisplayProps) {
         : "text-danger";
 
   return (
-    <span className={cn("font-mono text-sm", colorClass, className)}>
+    <span className={cn("text-sm font-semibold", colorClass, className)}>
       {formatPHP(profit)}
     </span>
   );

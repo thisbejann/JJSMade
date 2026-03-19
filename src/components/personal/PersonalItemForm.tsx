@@ -71,11 +71,8 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
   const updateItem = useMutation(api.personalItems.update);
   const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
 
-  const allItems = useQuery(api.personalItems.list, {});
-  const sellers = [...new Set((allItems ?? []).map((item) => item.seller))];
-  const batches = [
-    ...new Set((allItems ?? []).filter((item) => item.batch).map((item) => item.batch!)),
-  ];
+  const sellers = useQuery(api.personalItems.getUniqueSellers) ?? [];
+  const batches = useQuery(api.personalItems.getUniqueBatches) ?? [];
 
   const [name, setName] = useState(existingItem?.name ?? "");
   const [category, setCategory] = useState<ItemCategory>(existingItem?.category ?? "shoes");
@@ -383,7 +380,7 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional notes..."
-              className="w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all resize-none h-20"
+              className="w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all resize-none h-20"
             />
           </div>
         </CardContent>

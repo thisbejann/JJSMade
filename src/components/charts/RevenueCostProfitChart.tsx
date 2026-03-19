@@ -6,21 +6,21 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { CHART_COLORS, chartTooltipStyle } from "../../lib/chartTheme";
 import { formatPHP } from "../../lib/formatters";
 
-export function RevenueCostProfitChart() {
+export function RevenueCostProfitChart({ height = 300 }: { height?: number }) {
   const data = useQuery(api.analytics.getMonthlyProfitData);
 
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-sm text-primary">Revenue vs Cost vs Profit</h2>
+        <h2 className="font-display font-semibold text-base text-primary">Revenue vs Cost vs Profit</h2>
       </CardHeader>
       <CardContent>
         {data === undefined ? (
-          <Skeleton className="h-[300px]" />
+          <Skeleton className={`h-[${height}px]`} />
         ) : data.length === 0 ? (
           <p className="text-center text-secondary py-12 text-sm">No data yet</p>
         ) : (
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={height}>
             <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
               <XAxis dataKey="month" stroke={CHART_COLORS.text} fontSize={12} tickLine={false} />

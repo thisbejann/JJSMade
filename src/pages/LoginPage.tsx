@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import { Button } from "../components/ui/Button";
 
 export default function LoginPage() {
   const { login, isLoading, error } = useAuth();
@@ -48,7 +49,7 @@ export default function LoginPage() {
                   text-primary placeholder:text-tertiary
                   text-sm font-body
                   outline-none
-                  focus:border-accent focus:ring-1 focus:ring-accent/30
+                  focus:border-accent focus:ring-1 focus:ring-accent
                   transition-colors
                 "
               />
@@ -58,20 +59,9 @@ export default function LoginPage() {
               <p className="text-danger text-sm">{error}</p>
             )}
 
-            <button
-              type="submit"
-              disabled={isLoading || !password}
-              className="
-                mt-1 w-full py-2 px-4 rounded-lg
-                bg-accent hover:bg-accent-hover
-                text-base font-semibold font-body
-                text-[#08080a]
-                transition-colors
-                disabled:opacity-50 disabled:cursor-not-allowed
-              "
-            >
+            <Button type="submit" size="lg" className="w-full mt-1" disabled={isLoading || !password}>
               {isLoading ? "Verifying…" : "Sign in"}
-            </button>
+            </Button>
           </form>
         </div>
       </div>

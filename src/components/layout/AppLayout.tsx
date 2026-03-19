@@ -18,6 +18,12 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen bg-base">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-accent focus:text-base focus:font-semibold"
+      >
+        Skip to content
+      </a>
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
@@ -41,7 +47,7 @@ export function AppLayout() {
         )}
       >
         <TopBar onMobileMenuToggle={toggleMobile} />
-        <main className="min-h-[calc(100vh-4rem)]">
+        <main id="main-content" className="min-h-[calc(100vh-4rem)]">
           <Outlet />
         </main>
       </div>
