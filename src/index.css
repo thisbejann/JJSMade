@@ -2,20 +2,20 @@
 
 @theme {
   /* Background layers */
-  --color-base: #08080a;
-  --color-surface: #111114;
-  --color-elevated: #1a1a1f;
-  --color-hover: #222228;
+  --color-base: #0b0c10;
+  --color-surface: #12131a;
+  --color-elevated: #1b1c25;
+  --color-hover: #23242e;
 
   /* Text */
   --color-primary: #f0f0f0;
   --color-secondary: #8a8a9a;
-  --color-tertiary: #55556a;
+  --color-tertiary: #7a7a8e;
 
-  /* Accent — Gold */
-  --color-accent: #e8a820;
-  --color-accent-hover: #f0b830;
-  --color-accent-muted: rgba(232, 168, 32, 0.12);
+  /* Accent — Warm Coral */
+  --color-accent: #e07850;
+  --color-accent-hover: #e88a68;
+  --color-accent-muted: rgba(224, 120, 80, 0.12);
 
   /* Semantic */
   --color-success: #22c55e;
@@ -33,8 +33,8 @@
   --color-border-strong: rgba(255, 255, 255, 0.16);
 
   /* Fonts */
-  --font-display: "Clash Display", "Plus Jakarta Sans", sans-serif;
-  --font-body: "General Sans", "Plus Jakarta Sans", sans-serif;
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 }
 
@@ -58,17 +58,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Noise texture overlay */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  opacity: 0.4;
-  pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: overlay;
-}
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {

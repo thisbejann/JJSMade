@@ -10,7 +10,7 @@ import { SellerCard } from "../components/sellers/SellerCard";
 import { SellerForm } from "../components/sellers/SellerForm";
 import { useDebounce } from "../hooks/useDebounce";
 import { Plus, Users, Search } from "lucide-react";
-import { motion } from "framer-motion";
+
 import toast from "react-hot-toast";
 import type { Id } from "../../convex/_generated/dataModel";
 
@@ -65,7 +65,7 @@ export default function SellersList() {
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search sellers..."
-              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/40 transition-all" />
+              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent transition-all" />
           </div>
           <Button onClick={() => setFormOpen(true)}>
             <Plus size={16} /> Add Seller
@@ -77,22 +77,22 @@ export default function SellersList() {
             {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-48" />)}
           </div>
         ) : sellers.length === 0 ? (
-          <EmptyState icon={<Users size={32} />} title="No sellers yet" description="Add your first seller to start tracking." actionLabel="Add Seller" onAction={() => setFormOpen(true)} />
+          <EmptyState icon={<Users size={32} />} title="No sellers yet" description="Sellers help you organize orders by source. Add one to get started." actionLabel="Add Seller" onAction={() => setFormOpen(true)} />
         ) : (
-          <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-            initial="hidden" animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.05 } } }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sellers.map((seller) => (
-              <motion.div key={seller._id} variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
-                <SellerCard seller={seller} onEdit={() => setEditingSeller(seller)} onDelete={() => setDeleteTarget(seller._id)} />
-              </motion.div>
+              <SellerCard key={seller._id} seller={seller} onEdit={() => setEditingSeller(seller)} onDelete={() => setDeleteTarget(seller._id)} />
             ))}
-          </motion.div>
+          </div>
         )}
       </div>
 
-      <SellerForm open={formOpen} onClose={() => setFormOpen(false)} onSubmit={handleCreate} />
-      <SellerForm open={!!editingSeller} onClose={() => setEditingSeller(null)} onSubmit={handleUpdate} initialData={editingSeller ?? undefined} />
+      <SellerForm
+        open={formOpen || !!editingSeller}
+        onClose={() => { setFormOpen(false); setEditingSeller(null); }}
+        onSubmit={editingSeller ? handleUpdate : handleCreate}
+        initialData={editingSeller ?? undefined}
+      />
 
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Seller">
         <p className="text-sm text-secondary mb-4">Are you sure? This action cannot be undone.</p>

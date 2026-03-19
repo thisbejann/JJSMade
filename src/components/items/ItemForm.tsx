@@ -26,6 +26,7 @@ import {
 } from "../../lib/constants";
 import { Footprints, Shirt, Watch } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { formatPHP } from "../../lib/formatters";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
@@ -83,11 +84,8 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
   const updateItem = useMutation(api.items.update);
   const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
 
-  const allItems = useQuery(api.items.list, {});
-  const sellers = [...new Set((allItems ?? []).map((item) => item.seller))];
-  const batches = [
-    ...new Set((allItems ?? []).filter((item) => item.batch).map((item) => item.batch!)),
-  ];
+  const sellers = useQuery(api.items.getUniqueSellers) ?? [];
+  const batches = useQuery(api.items.getUniqueBatches) ?? [];
 
   const [name, setName] = useState(existingItem?.name ?? "");
   const [category, setCategory] = useState<ItemCategory>(
@@ -433,7 +431,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Optional notes..."
-                className="w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all resize-none h-20"
+                className="w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all resize-none h-20"
               />
             </div>
           </CardContent>
@@ -710,6 +708,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
         </Button>
       </div>
 
+      {/* Desktop: sticky sidebar calculator */}
       <div className="hidden lg:block">
         <div className="sticky top-20">
           <LiveProfitCalculator
@@ -724,6 +723,29 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
             profit={costs.profit}
             markupPercent={costs.markupPercent}
           />
+        </div>
+      </div>
+
+      {/* Mobile: sticky bottom summary bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-surface border-t border-border-subtle px-4 py-3">
+        <div className="flex items-center justify-between max-w-[1400px] mx-auto">
+          <div className="flex items-center gap-4 text-sm">
+            <div>
+              <span className="text-secondary">Cost </span>
+              <span className="font-mono font-medium text-primary">{formatPHP(costs.totalCost)}</span>
+            </div>
+            {sellingPrice > 0 && (
+              <div>
+                <span className="text-secondary">Profit </span>
+                <span className={cn(
+                  "font-mono font-semibold",
+                  costs.profit > 0 ? "text-success" : costs.profit < 0 ? "text-danger" : "text-tertiary"
+                )}>
+                  {formatPHP(costs.profit)}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

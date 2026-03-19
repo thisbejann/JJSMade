@@ -12,7 +12,7 @@ export function TopBatchesChart() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-sm text-primary">Top Batches by Profit</h2>
+        <h2 className="font-display font-semibold text-base text-primary">Top Batches by Profit</h2>
       </CardHeader>
       <CardContent>
         {data === undefined ? (

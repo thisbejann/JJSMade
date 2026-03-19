@@ -17,7 +17,10 @@ export function ItemRow({ item }: ItemRowProps) {
   return (
     <tr
       onClick={() => navigate(`/orders/${item._id}`)}
-      className="border-b border-border-subtle hover:bg-hover cursor-pointer transition-colors"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/orders/${item._id}`); } }}
+      tabIndex={0}
+      role="link"
+      className="border-b border-border-subtle hover:bg-hover cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
     >
       <td className="py-3 px-4">
         <div className="flex items-center gap-3 min-w-0">
@@ -61,7 +64,8 @@ export function ItemRow({ item }: ItemRowProps) {
               e.stopPropagation();
               navigate(`/orders/${item._id}`);
             }}
-            className="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors cursor-pointer"
+            aria-label={`View ${item.name}`}
+            className="p-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors cursor-pointer"
           >
             <Eye size={14} />
           </button>
@@ -70,7 +74,8 @@ export function ItemRow({ item }: ItemRowProps) {
               e.stopPropagation();
               navigate(`/orders/${item._id}/edit`);
             }}
-            className="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors cursor-pointer"
+            aria-label={`Edit ${item.name}`}
+            className="p-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors cursor-pointer"
           >
             <Edit size={14} />
           </button>

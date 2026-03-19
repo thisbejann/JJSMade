@@ -64,7 +64,8 @@ export function ImageUpload({ images, onUpload, onRemove, uploading }: ImageUplo
               <button
                 type="button"
                 onClick={() => onRemove(img.id)}
-                className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                aria-label="Remove photo"
+                className="absolute top-1 right-1 p-2 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
               >
                 <X size={12} />
               </button>

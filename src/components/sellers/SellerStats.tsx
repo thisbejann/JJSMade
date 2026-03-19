@@ -24,7 +24,7 @@ export function SellerStats({ totalItems, soldItems, totalProfit, avgProfit, tot
         <Card key={stat.label}>
           <CardContent className="py-3 text-center">
             <p className="text-xs text-secondary mb-1">{stat.label}</p>
-            <p className={`font-mono text-sm font-semibold ${stat.color ?? "text-primary"}`}>
+            <p className={`text-sm font-semibold ${stat.color ?? "text-primary"}`}>
               {stat.value}
             </p>
           </CardContent>

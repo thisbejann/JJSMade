@@ -1,7 +1,6 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardHeader, CardContent } from "../ui/Card";
-import { Button } from "../ui/Button";
 import { Skeleton } from "../ui/Skeleton";
 import { Check, X } from "lucide-react";
 import toast from "react-hot-toast";
@@ -23,10 +22,10 @@ export function PendingQcSection() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-sm text-primary">
+        <h2 className="font-display font-semibold text-base text-primary">
           Pending QC Review
           {items && items.length > 0 && (
-            <span className="ml-2 text-xs text-accent font-mono">({items.length})</span>
+            <span className="ml-2 text-xs text-accent">({items.length})</span>
           )}
         </h2>
       </CardHeader>
@@ -36,7 +35,7 @@ export function PendingQcSection() {
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
           </div>
         ) : items.length === 0 ? (
-          <p className="text-center text-secondary py-8 text-sm">No items pending review</p>
+          <p className="text-center text-secondary py-8 text-sm">All clear — no items waiting for QC review right now.</p>
         ) : (
           <div className="divide-y divide-border-subtle">
             {items.slice(0, 5).map((item) => (
@@ -46,14 +45,18 @@ export function PendingQcSection() {
                   <p className="text-xs text-tertiary">{item.seller}</p>
                 </div>
                 <div className="flex gap-1.5">
-                  <Button size="sm" variant="ghost" onClick={() => handleQc(item._id, "gl")}
-                    className="!text-success hover:!bg-success-muted">
+                  <button
+                    onClick={() => handleQc(item._id, "gl")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-success hover:bg-success-muted transition-colors cursor-pointer"
+                  >
                     <Check size={14} /> GL
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleQc(item._id, "rl")}
-                    className="!text-danger hover:!bg-danger-muted">
+                  </button>
+                  <button
+                    onClick={() => handleQc(item._id, "rl")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-danger hover:bg-danger-muted transition-colors cursor-pointer"
+                  >
                     <X size={14} /> RL
-                  </Button>
+                  </button>
                 </div>
               </div>
             ))}

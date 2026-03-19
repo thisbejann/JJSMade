@@ -304,7 +304,7 @@ export default function PersonalDetail() {
 
   return (
     <PageContainer>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <button
@@ -313,7 +313,7 @@ export default function PersonalDetail() {
             >
               <ArrowLeft size={14} /> Back to Personal Items
             </button>
-            <h1 className="font-display font-bold text-2xl text-primary">{item.name}</h1>
+            <h2 className="font-display font-bold text-2xl text-primary">{item.name}</h2>
             <div className="flex items-center gap-2 flex-wrap">
               <CategoryBadge category={item.category} />
               <ItemStatusBadge status={item.status} />
@@ -373,18 +373,19 @@ export default function PersonalDetail() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <h2 className="font-display font-semibold text-sm text-primary">QC Photos</h2>
+                <h2 className="font-display font-semibold text-base text-primary">QC Photos</h2>
               </CardHeader>
               <CardContent>
                 <QcPhotoGallery
                   photoIds={item.qcPhotoIds}
                   onRemovePhoto={handleRemoveDetailQcPhoto}
+                  itemName={item.name}
                 />
               </CardContent>
             </Card>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Card>
               <CardContent className="space-y-3">
                 <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">Source</h3>
@@ -486,6 +487,7 @@ export default function PersonalDetail() {
               <QcPhotoGallery
                 photoIds={qcPhotoIdsDraft}
                 onRemovePhoto={handleRemoveQcPhoto}
+                itemName={item.name}
               />
             </div>
           )}

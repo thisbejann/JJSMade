@@ -11,7 +11,7 @@ export function ProfitDistributionChart() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-sm text-primary">Profit Distribution</h2>
+        <h2 className="font-display font-semibold text-base text-primary">Profit Distribution</h2>
       </CardHeader>
       <CardContent>
         {data === undefined ? (

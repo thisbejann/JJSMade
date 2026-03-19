@@ -37,9 +37,9 @@ export default function PersonalForm() {
           >
             ← Back to Personal Items
           </button>
-          <h1 className="font-display font-bold text-2xl text-primary">
+          <h2 className="font-display font-bold text-2xl text-primary">
             {isEdit ? "Edit Personal Item" : "New Personal Item"}
-          </h1>
+          </h2>
         </div>
         <PersonalItemForm
           key={id ?? "new"}

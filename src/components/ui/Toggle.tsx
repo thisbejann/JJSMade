@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { cn } from "../../lib/utils";
 
 interface ToggleProps {
@@ -8,9 +9,17 @@ interface ToggleProps {
 }
 
 export function Toggle({ label, description, checked, onChange }: ToggleProps) {
+  const id = useId();
+  const labelId = label ? `${id}-label` : undefined;
+  const descId = description ? `${id}-desc` : undefined;
+
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-labelledby={labelId}
+      aria-describedby={descId}
       onClick={() => onChange(!checked)}
       className="flex items-center gap-3 cursor-pointer"
     >
@@ -29,9 +38,9 @@ export function Toggle({ label, description, checked, onChange }: ToggleProps) {
       </div>
       {(label || description) && (
         <div className="text-left">
-          {label && <p className="text-sm font-medium text-primary">{label}</p>}
+          {label && <p id={labelId} className="text-sm font-medium text-primary">{label}</p>}
           {description && (
-            <p className="text-xs text-secondary">{description}</p>
+            <p id={descId} className="text-xs text-secondary">{description}</p>
           )}
         </div>
       )}

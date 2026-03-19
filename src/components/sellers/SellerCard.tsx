@@ -37,11 +37,13 @@ export function SellerCard({ seller, onEdit, onDelete }: SellerCardProps) {
         </div>
         <div className="flex gap-1">
           <button onClick={(e) => { e.stopPropagation(); onEdit(); }}
-            className="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors cursor-pointer">
+            aria-label={`Edit ${seller.name}`}
+            className="p-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors cursor-pointer">
             <Edit size={14} />
           </button>
           <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="p-1.5 rounded-lg text-secondary hover:text-danger hover:bg-danger-muted transition-colors cursor-pointer">
+            aria-label={`Delete ${seller.name}`}
+            className="p-2.5 rounded-lg text-secondary hover:text-danger hover:bg-danger-muted transition-colors cursor-pointer">
             <Trash2 size={14} />
           </button>
         </div>
@@ -54,19 +56,19 @@ export function SellerCard({ seller, onEdit, onDelete }: SellerCardProps) {
       <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border-subtle">
         <div>
           <p className="text-xs text-tertiary">Items</p>
-          <p className="font-mono text-sm text-primary">{seller.totalItems}</p>
+          <p className="text-sm font-semibold text-primary">{seller.totalItems}</p>
         </div>
         <div>
           <p className="text-xs text-tertiary">Delivered</p>
-          <p className="font-mono text-sm text-primary">{seller.soldItems}</p>
+          <p className="text-sm font-semibold text-primary">{seller.soldItems}</p>
         </div>
         <div>
           <p className="text-xs text-tertiary">Total Profit</p>
-          <p className="font-mono text-sm text-success">{formatPHP(seller.totalProfit)}</p>
+          <p className="text-sm font-semibold text-success">{formatPHP(seller.totalProfit)}</p>
         </div>
         <div>
           <p className="text-xs text-tertiary">Avg Profit</p>
-          <p className="font-mono text-sm text-primary">{formatPHP(seller.avgProfit)}</p>
+          <p className="text-sm font-semibold text-primary">{formatPHP(seller.avgProfit)}</p>
         </div>
       </div>
     </Card>

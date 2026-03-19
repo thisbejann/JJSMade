@@ -45,7 +45,7 @@ export default function PersonalList() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display font-bold text-2xl text-primary">Personal Items</h1>
+            <h2 className="font-display font-bold text-2xl text-primary">Personal Items</h2>
             <p className="text-sm text-tertiary mt-0.5">Items bought for personal use</p>
           </div>
         </div>
@@ -58,7 +58,7 @@ export default function PersonalList() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search items..."
-              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-all"
+              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
             />
           </div>
           <Select
@@ -119,7 +119,7 @@ export default function PersonalList() {
       {/* FAB */}
       <button
         onClick={() => navigate("/personal/new")}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-base shadow-lg hover:bg-accent-hover transition-all hover:scale-105 flex items-center justify-center cursor-pointer z-40"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-base shadow-lg hover:bg-accent-hover transition-colors flex items-center justify-center cursor-pointer z-40"
       >
         <Plus size={24} />
       </button>
@@ -157,7 +157,7 @@ function PersonalItemRow({
 
       <div className="flex items-center gap-3 shrink-0">
         <div className="text-right hidden sm:block">
-          <p className="font-mono text-sm text-primary">{formatPHP(item.pricePHP)}</p>
+          <p className="text-sm font-semibold text-primary">{formatPHP(item.pricePHP)}</p>
           <p className="text-xs text-tertiary">{formatCNY(item.priceCNY)}</p>
         </div>
         <ItemStatusBadge status={item.status} />

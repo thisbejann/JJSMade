@@ -10,11 +10,11 @@ interface PriceDisplayProps {
 export function PriceDisplay({ amountPHP, amountCNY, className }: PriceDisplayProps) {
   return (
     <div className={cn("flex flex-col", className)}>
-      <span className="font-mono text-sm text-primary">
+      <span className="text-sm font-semibold text-primary">
         {formatPHP(amountPHP)}
       </span>
       {amountCNY != null && (
-        <span className="font-mono text-xs text-secondary">
+        <span className="text-xs text-secondary">
           {formatCNY(amountCNY)}
         </span>
       )}

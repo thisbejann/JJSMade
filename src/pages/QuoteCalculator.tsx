@@ -69,7 +69,7 @@ export default function QuoteCalculator() {
 
   return (
     <PageContainer>
-      <div className="max-w-lg mx-auto space-y-6">
+      <div className="max-w-lg mx-auto space-y-8">
         <Card>
           <CardContent className="space-y-5">
             <Input

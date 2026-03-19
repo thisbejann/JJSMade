@@ -31,7 +31,7 @@ export function ItemCard({ item }: ItemCardProps) {
 
       <div className="flex items-center justify-between">
         <ItemStatusBadge status={item.status} />
-        <span className="font-mono text-sm text-primary">
+        <span className="text-sm font-semibold text-primary">
           {formatPHP(item.pricePHP)}
         </span>
       </div>

@@ -34,10 +34,11 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
   else if (location.pathname.match(/^\/personal\/[^/]+$/)) title = "Personal Item Details";
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 sm:px-6 bg-surface/80 backdrop-blur-md border-b border-border-subtle">
+    <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 sm:px-6 bg-surface border-b border-border-subtle">
       <div className="flex items-center gap-3">
         <button
           onClick={onMobileMenuToggle}
+          aria-label="Toggle menu"
           className="lg:hidden p-2 -ml-2 text-secondary hover:text-primary hover:bg-hover rounded-lg transition-colors"
         >
           <Menu size={20} />
@@ -52,7 +53,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
         <button
           onClick={() => { logout(); navigate("/login", { replace: true }); }}
           className="p-2 text-secondary hover:text-primary hover:bg-hover rounded-lg transition-colors"
-          title="Sign out"
+          aria-label="Sign out"
         >
           <LogOut size={16} />
         </button>

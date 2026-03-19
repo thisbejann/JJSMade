@@ -47,7 +47,7 @@ export default function SellerDetail() {
 
   return (
     <PageContainer>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <button onClick={() => navigate("/sellers")} className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors cursor-pointer">
           <ArrowLeft size={14} /> Back to Sellers
         </button>
@@ -55,7 +55,7 @@ export default function SellerDetail() {
         <Card>
           <CardContent className="flex items-start justify-between">
             <div>
-              <h1 className="font-display font-bold text-2xl text-primary">{seller.name}</h1>
+              <h2 className="font-display font-bold text-2xl text-primary">{seller.name}</h2>
               <div className="flex items-center gap-2 mt-2">
                 {seller.platform && (
                   <Badge>{PLATFORM_CONFIG[seller.platform as keyof typeof PLATFORM_CONFIG]?.label ?? seller.platform}</Badge>
