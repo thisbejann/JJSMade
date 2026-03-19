@@ -41,7 +41,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.15 }}
             className={cn(
-              "relative w-full max-w-lg rounded-xl border border-border-default bg-elevated shadow-2xl",
+              "relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-xl border border-border-default bg-elevated shadow-2xl",
               className
             )}
           >
@@ -58,7 +58,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
                 </button>
               </div>
             )}
-            <div className="p-5">{children}</div>
+            <div className="p-5 overflow-y-auto">{children}</div>
           </motion.div>
         </div>
       )}

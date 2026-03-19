@@ -40,13 +40,13 @@ export function StatCard({ label, value, format, icon, trend }: StatCardProps) {
     >
       <Card className="p-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="flex items-start justify-between relative">
-          <div>
-            <p className="text-xs text-secondary font-medium mb-1">{label}</p>
-            <p className="font-mono text-2xl font-bold text-primary">{formatted}</p>
-            {trend && <p className="text-xs text-success mt-1">{trend}</p>}
+        <div className="flex items-start justify-between gap-2 relative">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-secondary font-medium mb-1 truncate">{label}</p>
+            <p className="font-mono text-xl sm:text-2xl font-bold text-primary truncate">{formatted}</p>
+            {trend && <p className="text-xs text-success mt-1 truncate">{trend}</p>}
           </div>
-          <div className="w-10 h-10 rounded-xl bg-accent-muted flex items-center justify-center text-accent">
+          <div className="w-10 h-10 rounded-xl bg-accent-muted flex items-center justify-center text-accent shrink-0">
             {icon}
           </div>
         </div>
