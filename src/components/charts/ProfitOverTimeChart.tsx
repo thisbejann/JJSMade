@@ -16,7 +16,7 @@ export function ProfitOverTimeChart({ height = 300 }: { height?: number }) {
       </CardHeader>
       <CardContent>
         {data === undefined ? (
-          <Skeleton style={{ height }} />
+          <Skeleton className={`h-[${height}px]`} />
         ) : data.length === 0 ? (
           <p className="text-center text-secondary py-12 text-sm">No sales data yet</p>
         ) : (
