@@ -12,7 +12,8 @@ import { ItemTable } from "../components/items/ItemTable";
 import { ItemCard } from "../components/items/ItemCard";
 import { useDebounce } from "../hooks/useDebounce";
 import { ALL_STATUSES, ALL_QC_STATUSES, ALL_CATEGORIES, STATUS_CONFIG, QC_STATUS_CONFIG, CATEGORY_CONFIG } from "../lib/constants";
-import { Plus, Package, LayoutGrid, List, Search } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PlusSignIcon, PackageIcon, LayoutGridIcon, ListViewIcon, Search01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../lib/utils";
 
 
@@ -45,12 +46,12 @@ export default function OrdersList() {
         {/* Filter bar */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary" />
+            <HugeiconsIcon icon={Search01Icon} size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search items..."
-              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
+              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
             />
           </div>
           <Select
@@ -90,11 +91,11 @@ export default function OrdersList() {
           <div className="flex border border-border-default rounded-lg overflow-hidden">
             <button onClick={() => setViewMode("table")}
               className={cn("p-2 transition-colors cursor-pointer", viewMode === "table" ? "bg-accent-muted text-accent" : "text-secondary hover:bg-hover")}>
-              <List size={16} />
+              <HugeiconsIcon icon={ListViewIcon} size={16} strokeWidth={1.5} />
             </button>
             <button onClick={() => setViewMode("grid")}
               className={cn("p-2 transition-colors cursor-pointer", viewMode === "grid" ? "bg-accent-muted text-accent" : "text-secondary hover:bg-hover")}>
-              <LayoutGrid size={16} />
+              <HugeiconsIcon icon={LayoutGridIcon} size={16} strokeWidth={1.5} />
             </button>
           </div>
         </div>
@@ -108,7 +109,7 @@ export default function OrdersList() {
           </div>
         ) : items.length === 0 ? (
           <EmptyState
-            icon={<Package size={32} />}
+            icon={<HugeiconsIcon icon={PackageIcon} size={32} strokeWidth={1.5} />}
             title="No items yet"
             description="Add your first order item and it will show up here. You'll be able to track it through the entire pipeline."
             actionLabel="Add Item"

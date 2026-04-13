@@ -74,7 +74,7 @@ export function SellerForm({ open, onClose, onSubmit, initialData }: SellerFormP
         <div className="space-y-1.5">
           <label className="block text-xs font-medium text-secondary">Notes</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes..."
-            className="w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent transition-all resize-none h-20" />
+            className="w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent transition-all resize-none h-20" />
         </div>
         <div className="flex gap-3 justify-end pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>

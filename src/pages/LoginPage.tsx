@@ -46,7 +46,7 @@ export default function LoginPage() {
                 className="
                   w-full px-3 py-2 rounded-lg
                   bg-elevated border border-border-default
-                  text-primary placeholder:text-tertiary
+                  text-primary placeholder:text-muted-foreground
                   text-sm font-body
                   outline-none
                   focus:border-accent focus:ring-1 focus:ring-accent

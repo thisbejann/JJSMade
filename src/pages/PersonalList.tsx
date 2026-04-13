@@ -17,7 +17,8 @@ import {
   CATEGORY_CONFIG,
 } from "../lib/constants";
 import { formatPHP, formatCNY, formatDate } from "../lib/formatters";
-import { Plus, ShoppingBag, Search } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PlusSignIcon, ShoppingBag01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../lib/utils";
 import type { Doc } from "../../convex/_generated/dataModel";
 
@@ -53,12 +54,12 @@ export default function PersonalList() {
         {/* Filter bar */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary" />
+            <HugeiconsIcon icon={Search01Icon} size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search items..."
-              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
+              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
             />
           </div>
           <Select
@@ -101,7 +102,7 @@ export default function PersonalList() {
           </div>
         ) : items.length === 0 ? (
           <EmptyState
-            icon={<ShoppingBag size={32} />}
+            icon={<HugeiconsIcon icon={ShoppingBag01Icon} size={32} strokeWidth={1.5} />}
             title="No personal items yet"
             description="Track items you've bought for yourself — no sale or profit fields."
             actionLabel="Add Personal Item"
@@ -121,7 +122,7 @@ export default function PersonalList() {
         onClick={() => navigate("/personal/new")}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-base shadow-lg hover:bg-accent-hover transition-colors flex items-center justify-center cursor-pointer z-40"
       >
-        <Plus size={24} />
+        <HugeiconsIcon icon={PlusSignIcon} size={24} strokeWidth={2} />
       </button>
     </PageContainer>
   );

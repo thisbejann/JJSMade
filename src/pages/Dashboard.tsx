@@ -1,16 +1,11 @@
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { PageContainer } from "../components/layout/PageContainer";
-import { StatCard } from "../components/dashboard/StatCard";
 import { StatusPipeline } from "../components/items/StatusPipeline";
 import { RecentOrders } from "../components/dashboard/RecentOrders";
 import { PendingQcSection } from "../components/dashboard/PendingQcSection";
-import { ProfitOverTimeChart } from "../components/charts/ProfitOverTimeChart";
-import { CategoryBreakdownChart } from "../components/charts/CategoryBreakdownChart";
-import { Card, CardContent } from "../components/ui/Card";
 import { Skeleton } from "../components/ui/Skeleton";
 import { formatPHP } from "../lib/formatters";
-import { Package, TrendingUp, DollarSign, ShoppingBag, BarChart3, Target } from "lucide-react";
 
 
 export default function Dashboard() {
@@ -19,43 +14,51 @@ export default function Dashboard() {
 
   return (
     <PageContainer>
-      <div className="space-y-8">
-        {/* Stat Cards */}
+      <div className="space-y-10">
+        {/* Header */}
+        <h1 className="text-lg font-semibold text-primary">Dashboard</h1>
+
+        {/* Key Metrics — no cards, no icons, typography does the work */}
         {stats === undefined ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28" />)}
+          <div className="flex gap-12">
+            <Skeleton className="h-14 w-48" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-24" />
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-            <StatCard label="Total Items" value={stats.totalItems} icon={<Package size={20} />} />
-            <StatCard label="In Pipeline" value={stats.inPipeline} icon={<TrendingUp size={20} />} />
-            <StatCard label="Delivered This Month" value={stats.soldThisMonth} icon={<ShoppingBag size={20} />} />
-            <StatCard label="Revenue (Month)" value={stats.revenueThisMonth} format={formatPHP} icon={<DollarSign size={20} />} />
-            <StatCard label="Profit (Month)" value={stats.profitThisMonth} format={formatPHP} icon={<BarChart3 size={20} />} />
-            <StatCard label="Avg Profit" value={stats.avgProfitThisMonth} format={formatPHP} icon={<Target size={20} />} />
+          <div className="flex items-baseline gap-12">
+            <div>
+              <p className="text-3xl font-bold text-accent tracking-tight">
+                {formatPHP(stats.profitThisMonth)}
+              </p>
+              <p className="text-sm text-secondary mt-1.5">Profit this month</p>
+            </div>
+            <div>
+              <p className="text-xl font-semibold text-primary">
+                {formatPHP(stats.avgProfitThisMonth)}
+              </p>
+              <p className="text-xs text-tertiary mt-1">Avg profit</p>
+            </div>
+            <div>
+              <p className="text-xl font-semibold text-primary tabular-nums">
+                {stats.inPipeline}
+              </p>
+              <p className="text-xs text-tertiary mt-1">In pipeline</p>
+            </div>
           </div>
         )}
 
         {/* Pipeline */}
-        <div>
-          <h2 className="font-display font-semibold text-base text-primary mb-4">Pipeline Overview</h2>
-          {statusCounts === undefined ? (
-            <Skeleton className="h-20" />
-          ) : (
-            <StatusPipeline statusCounts={statusCounts} />
-          )}
-        </div>
+        {statusCounts === undefined ? (
+          <Skeleton className="h-16" />
+        ) : (
+          <StatusPipeline statusCounts={statusCounts} />
+        )}
 
-        {/* Charts + Sidebar */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-          <div className="space-y-6">
-            <ProfitOverTimeChart />
-            <CategoryBreakdownChart />
-          </div>
-          <div className="space-y-6">
-            <RecentOrders />
-            <PendingQcSection />
-          </div>
+        {/* Recent Orders + Pending QC */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+          <RecentOrders />
+          <PendingQcSection />
         </div>
       </div>
     </PageContainer>

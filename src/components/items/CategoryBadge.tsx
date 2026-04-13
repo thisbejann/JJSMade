@@ -1,11 +1,12 @@
-import { Footprints, Shirt, Watch } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { RunningShoesIcon, Shirt01Icon, Watch01Icon } from "@hugeicons/core-free-icons";
 import { CATEGORY_CONFIG, type ItemCategory } from "../../lib/constants";
 import { Badge } from "../ui/Badge";
 
 const iconMap = {
-  shoes: Footprints,
-  clothes: Shirt,
-  watches_accessories: Watch,
+  shoes: RunningShoesIcon,
+  clothes: Shirt01Icon,
+  watches_accessories: Watch01Icon,
 } as const;
 
 interface CategoryBadgeProps {
@@ -15,11 +16,11 @@ interface CategoryBadgeProps {
 
 export function CategoryBadge({ category, className }: CategoryBadgeProps) {
   const config = CATEGORY_CONFIG[category];
-  const Icon = iconMap[category];
+  const icon = iconMap[category];
 
   return (
     <Badge variant="default" className={className}>
-      <Icon className="size-3" />
+      <HugeiconsIcon icon={icon} size={12} strokeWidth={1.5} />
       {config.label}
     </Badge>
   );

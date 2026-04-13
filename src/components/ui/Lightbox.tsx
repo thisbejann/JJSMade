@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Cancel01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 
 interface LightboxProps {
   images: string[];
@@ -93,7 +94,7 @@ export function Lightbox({
             aria-label="Close lightbox"
             className="absolute top-4 right-4 p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer z-10"
           >
-            <X size={24} />
+            <HugeiconsIcon icon={Cancel01Icon} size={24} strokeWidth={1.5} />
           </button>
           {onDeleteCurrent && (
             <button
@@ -112,7 +113,7 @@ export function Lightbox({
               aria-label="Previous photo"
               className="absolute left-4 p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             >
-              <ChevronLeft size={32} />
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={32} strokeWidth={1.5} />
             </button>
           )}
 
@@ -132,7 +133,7 @@ export function Lightbox({
               aria-label="Next photo"
               className="absolute right-4 p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             >
-              <ChevronRight size={32} />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={32} strokeWidth={1.5} />
             </button>
           )}
 

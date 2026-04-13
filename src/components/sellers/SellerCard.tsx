@@ -1,9 +1,10 @@
 import { useNavigate } from "react-router";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PencilEdit01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { Card } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import { formatPHP } from "../../lib/formatters";
 import { PLATFORM_CONFIG } from "../../lib/constants";
-import { Edit, Trash2 } from "lucide-react";
 
 interface SellerCardProps {
   seller: {
@@ -25,7 +26,7 @@ export function SellerCard({ seller, onEdit, onDelete }: SellerCardProps) {
   const navigate = useNavigate();
 
   return (
-    <Card hover className="p-4 space-y-3" onClick={() => navigate(`/sellers/${seller._id}`)}>
+    <Card className="cursor-pointer p-4 space-y-3 transition-colors hover:border-primary/30" onClick={() => navigate(`/sellers/${seller._id}`)}>
       <div className="flex items-start justify-between">
         <div>
           <h3 className="font-display font-semibold text-primary">{seller.name}</h3>
@@ -39,12 +40,12 @@ export function SellerCard({ seller, onEdit, onDelete }: SellerCardProps) {
           <button onClick={(e) => { e.stopPropagation(); onEdit(); }}
             aria-label={`Edit ${seller.name}`}
             className="p-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors cursor-pointer">
-            <Edit size={14} />
+            <HugeiconsIcon icon={PencilEdit01Icon} size={14} strokeWidth={1.5} />
           </button>
           <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
             aria-label={`Delete ${seller.name}`}
             className="p-2.5 rounded-lg text-secondary hover:text-danger hover:bg-danger-muted transition-colors cursor-pointer">
-            <Trash2 size={14} />
+            <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.5} />
           </button>
         </div>
       </div>

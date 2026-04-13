@@ -24,17 +24,18 @@ import {
   CATEGORY_CONFIG,
   type ItemCategory,
 } from "../../lib/constants";
-import { Footprints, Shirt, Watch } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { RunningShoesIcon, Shirt01Icon, Watch01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../../lib/utils";
 import { formatPHP } from "../../lib/formatters";
 import { format } from "date-fns";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
 const CATEGORY_ICONS = {
-  shoes: Footprints,
-  clothes: Shirt,
-  watches_accessories: Watch,
+  shoes: RunningShoesIcon,
+  clothes: Shirt01Icon,
+  watches_accessories: Watch01Icon,
 };
 
 const CLOTHES_SIZES = ["S", "M", "L", "XL"] as const;
@@ -339,7 +340,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {(Object.keys(CATEGORY_CONFIG) as ItemCategory[]).map((cat) => {
-                  const Icon = CATEGORY_ICONS[cat];
+                  const icon = CATEGORY_ICONS[cat];
                   return (
                     <button
                       key={cat}
@@ -355,7 +356,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
                           : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
                       )}
                     >
-                      <Icon size={20} />
+                      <HugeiconsIcon icon={icon} size={20} strokeWidth={1.5} />
                       <span className="text-xs font-medium">
                         {CATEGORY_CONFIG[cat].label}
                       </span>
@@ -431,7 +432,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Optional notes..."
-                className="w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all resize-none h-20"
+                className="w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all resize-none h-20"
               />
             </div>
           </CardContent>
@@ -768,7 +769,7 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
             Replace (back to Ordered)
           </Button>
           <Button
-            variant="danger"
+            variant="destructive"
             onClick={() => {
               setStatus("refunded");
               setRlModalOpen(false);

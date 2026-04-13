@@ -5,7 +5,8 @@ import { PageContainer } from "../components/layout/PageContainer";
 import { StatCard } from "../components/dashboard/StatCard";
 import { Skeleton } from "../components/ui/Skeleton";
 import { formatPHP } from "../lib/formatters";
-import { DollarSign, TrendingUp, ShoppingBag, Target, Award, Star } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { DollarCircleIcon, ArrowUpRight01Icon, ShoppingBag01Icon, Target01Icon, Award01Icon, StarIcon } from "@hugeicons/core-free-icons";
 
 const ProfitOverTimeChart = lazy(() => import("../components/charts/ProfitOverTimeChart").then(m => ({ default: m.ProfitOverTimeChart })));
 const RevenueCostProfitChart = lazy(() => import("../components/charts/RevenueCostProfitChart").then(m => ({ default: m.RevenueCostProfitChart })));
@@ -35,22 +36,22 @@ export default function Analytics() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-            <StatCard label="Total Revenue" value={stats.totalRevenue} format={formatPHP} icon={<DollarSign size={20} />} />
-            <StatCard label="Total Profit" value={stats.totalProfit} format={formatPHP} icon={<TrendingUp size={20} />} />
-            <StatCard label="Items Sold" value={stats.totalSold} icon={<ShoppingBag size={20} />} />
-            <StatCard label="Avg Profit/Item" value={stats.avgProfit} format={formatPHP} icon={<Target size={20} />} />
+            <StatCard label="Total Revenue" value={stats.totalRevenue} format={formatPHP} icon={<HugeiconsIcon icon={DollarCircleIcon} size={20} strokeWidth={1.5} />} />
+            <StatCard label="Total Profit" value={stats.totalProfit} format={formatPHP} icon={<HugeiconsIcon icon={ArrowUpRight01Icon} size={20} strokeWidth={1.5} />} />
+            <StatCard label="Items Sold" value={stats.totalSold} icon={<HugeiconsIcon icon={ShoppingBag01Icon} size={20} strokeWidth={1.5} />} />
+            <StatCard label="Avg Profit/Item" value={stats.avgProfit} format={formatPHP} icon={<HugeiconsIcon icon={Target01Icon} size={20} strokeWidth={1.5} />} />
             <StatCard
               label="Best Month"
               value={stats.bestMonth?.profit ?? 0}
               format={formatPHP}
-              icon={<Award size={20} />}
+              icon={<HugeiconsIcon icon={Award01Icon} size={20} strokeWidth={1.5} />}
               trend={stats.bestMonth?.month}
             />
             <StatCard
               label="Best Seller"
               value={stats.bestSeller?.profit ?? 0}
               format={formatPHP}
-              icon={<Star size={20} />}
+              icon={<HugeiconsIcon icon={StarIcon} size={20} strokeWidth={1.5} />}
               trend={stats.bestSeller?.seller}
             />
           </div>

@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from "react";
 import { useQueries, useQuery, type RequestForQueries } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Lightbox } from "../ui/Lightbox";
-import { ImageOff, X } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ImageNotFound01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 interface QcPhotoGalleryProps {
@@ -68,7 +69,7 @@ export function QcPhotoGallery({ photoIds, onRemovePhoto, itemName }: QcPhotoGal
   if (ids.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-tertiary">
-        <ImageOff size={32} className="mb-2" />
+        <HugeiconsIcon icon={ImageNotFound01Icon} size={32} strokeWidth={1.5} className="mb-2" />
         <p className="text-sm">No QC photos uploaded</p>
       </div>
     );
@@ -93,7 +94,7 @@ export function QcPhotoGallery({ photoIds, onRemovePhoto, itemName }: QcPhotoGal
               className="absolute top-2 right-2 p-2.5 rounded-full bg-black/70 text-white hover:bg-black/80 transition-colors cursor-pointer"
               aria-label="Remove QC photo"
             >
-              <X size={14} />
+              <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
             </button>
           )}
         </div>
@@ -123,7 +124,7 @@ export function QcPhotoGallery({ photoIds, onRemovePhoto, itemName }: QcPhotoGal
                     className="absolute top-1 right-1 p-1.5 rounded-full bg-black/70 text-white hover:bg-black/80 transition-colors cursor-pointer"
                     aria-label="Remove QC photo"
                   >
-                    <X size={12} />
+                    <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
                   </button>
                 )}
               </div>

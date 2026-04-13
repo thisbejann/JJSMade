@@ -15,8 +15,9 @@ import {
   type ItemStatus,
 } from "../../lib/constants";
 import { cn } from "../../lib/utils";
-import { ChevronDown, Check } from "lucide-react";
-import toast from "react-hot-toast";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowDown01Icon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons";
+import { toast } from "sonner";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
 interface StatusStepperProps {
@@ -259,7 +260,7 @@ export function StatusStepper({ item }: StatusStepperProps) {
                       : "bg-hover border border-border-default"
                 )}
               >
-                {isCompleted && <Check size={10} className="text-base" />}
+                {isCompleted && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={10} strokeWidth={2} className="text-base" />}
               </div>
               {index < STATUS_FLOW.length - 1 && (
                 <div
@@ -302,8 +303,10 @@ export function StatusStepper({ item }: StatusStepperProps) {
                         : "text-secondary hover:bg-hover"
                     )}
                   >
-                    <ChevronDown
+                    <HugeiconsIcon
+                      icon={ArrowDown01Icon}
                       size={16}
+                      strokeWidth={1.5}
                       className={cn("transition-transform", isExpanded && "rotate-180")}
                     />
                   </button>

@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router";
-import { Plus, Menu, LogOut } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PlusSignIcon, Menu01Icon, Logout01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 
@@ -41,13 +42,13 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
           aria-label="Toggle menu"
           className="lg:hidden p-2 -ml-2 text-secondary hover:text-primary hover:bg-hover rounded-lg transition-colors"
         >
-          <Menu size={20} />
+          <HugeiconsIcon icon={Menu01Icon} size={20} strokeWidth={1.5} />
         </button>
         <h1 className="font-display font-bold text-xl text-primary">{title}</h1>
       </div>
       <div className="flex items-center gap-3">
         <Button onClick={() => navigate(isPersonalRoute ? "/personal/new" : "/orders/new")} size="sm">
-          <Plus size={16} />
+          <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} data-icon="inline-start" />
           New Item
         </Button>
         <button
@@ -55,7 +56,7 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
           className="p-2 text-secondary hover:text-primary hover:bg-hover rounded-lg transition-colors"
           aria-label="Sign out"
         >
-          <LogOut size={16} />
+          <HugeiconsIcon icon={Logout01Icon} size={16} strokeWidth={1.5} />
         </button>
       </div>
     </header>

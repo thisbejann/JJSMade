@@ -5,7 +5,7 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { useSettings } from "../hooks/useSettings";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function Settings() {
   const { settings, isLoading, updateSettings } = useSettings();
@@ -60,7 +60,7 @@ export default function Settings() {
   if (isLoading) {
     return (
       <PageContainer>
-        <div className="max-w-2xl space-y-8">
+        <div className="max-w-2xl mx-auto space-y-8">
           <Skeleton className="h-48" />
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
@@ -71,7 +71,7 @@ export default function Settings() {
 
   return (
     <PageContainer>
-      <div className="max-w-2xl space-y-8">
+      <div className="max-w-2xl mx-auto space-y-8">
         <Card>
           <CardContent className="space-y-4">
             <h2 className="font-display font-semibold text-base text-primary">

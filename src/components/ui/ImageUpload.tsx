@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, X } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Upload01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../../lib/utils";
 
 interface ImageUploadProps {
@@ -36,7 +37,7 @@ export function ImageUpload({ images, onUpload, onRemove, uploading }: ImageUplo
         )}
       >
         <input {...getInputProps()} />
-        <Upload size={24} className="mx-auto text-tertiary mb-2" />
+        <HugeiconsIcon icon={Upload01Icon} size={24} strokeWidth={1.5} className="mx-auto text-tertiary mb-2" />
         <p className="text-sm text-secondary">
           {isDragActive
             ? "Drop photos here..."
@@ -67,7 +68,7 @@ export function ImageUpload({ images, onUpload, onRemove, uploading }: ImageUplo
                 aria-label="Remove photo"
                 className="absolute top-1 right-1 p-2 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
               >
-                <X size={12} />
+                <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
               </button>
             </div>
           ))}
