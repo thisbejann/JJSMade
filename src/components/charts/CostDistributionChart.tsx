@@ -1,6 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Card, CardHeader, CardContent } from "../ui/Card";
+import { Card, CardHeader, CardContent, CardTitle } from "../ui/Card";
 import { Skeleton } from "../ui/Skeleton";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { CHART_CATEGORY_COLORS, chartTooltipStyle } from "../../lib/chartTheme";
@@ -23,7 +23,7 @@ export function CostDistributionChart() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-base text-primary">Avg Cost Breakdown</h2>
+        <CardTitle>Avg Cost Breakdown</CardTitle>
       </CardHeader>
       <CardContent>
         {data === undefined ? (

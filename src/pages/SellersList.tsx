@@ -9,9 +9,10 @@ import { Modal } from "../components/ui/Modal";
 import { SellerCard } from "../components/sellers/SellerCard";
 import { SellerForm } from "../components/sellers/SellerForm";
 import { useDebounce } from "../hooks/useDebounce";
-import { Plus, Users, Search } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PlusSignIcon, UserGroupIcon, Search01Icon } from "@hugeicons/core-free-icons";
 
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import type { Id } from "../../convex/_generated/dataModel";
 
 export default function SellersList() {
@@ -63,12 +64,12 @@ export default function SellersList() {
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary" />
+            <HugeiconsIcon icon={Search01Icon} size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search sellers..."
-              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent transition-all" />
+              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent transition-all" />
           </div>
           <Button onClick={() => setFormOpen(true)}>
-            <Plus size={16} /> Add Seller
+            <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} data-icon="inline-start" /> Add Seller
           </Button>
         </div>
 
@@ -77,7 +78,7 @@ export default function SellersList() {
             {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-48" />)}
           </div>
         ) : sellers.length === 0 ? (
-          <EmptyState icon={<Users size={32} />} title="No sellers yet" description="Sellers help you organize orders by source. Add one to get started." actionLabel="Add Seller" onAction={() => setFormOpen(true)} />
+          <EmptyState icon={<HugeiconsIcon icon={UserGroupIcon} size={32} strokeWidth={1.5} />} title="No sellers yet" description="Sellers help you organize orders by source. Add one to get started." actionLabel="Add Seller" onAction={() => setFormOpen(true)} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sellers.map((seller) => (
@@ -98,7 +99,7 @@ export default function SellersList() {
         <p className="text-sm text-secondary mb-4">Are you sure? This action cannot be undone.</p>
         <div className="flex gap-3 justify-end">
           <Button variant="ghost" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-          <Button variant="danger" onClick={handleDelete}>Delete</Button>
+          <Button variant="destructive" onClick={handleDelete}>Delete</Button>
         </div>
       </Modal>
     </PageContainer>

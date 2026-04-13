@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { PageContainer } from "../components/layout/PageContainer";
-import { Card, CardContent, CardHeader } from "../components/ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { Select } from "../components/ui/Select";
@@ -24,9 +24,10 @@ import {
   QC_STATUS_CONFIG,
   type PersonalItemStatus,
 } from "../lib/constants";
-import { Edit, Trash2, ArrowLeft, CircleCheckBig } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PencilEdit01Icon, Delete02Icon, ArrowLeft01Icon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../lib/utils";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 
 type ProgressiveStatus = "qc_sent" | "item_shipout" | "arrived_ph_warehouse" | "delivered_to_me";
@@ -311,7 +312,7 @@ export default function PersonalDetail() {
               onClick={() => navigate("/personal")}
               className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors cursor-pointer"
             >
-              <ArrowLeft size={14} /> Back to Personal Items
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={1.5} /> Back to Personal Items
             </button>
             <h2 className="font-display font-bold text-2xl text-primary">{item.name}</h2>
             <div className="flex items-center gap-2 flex-wrap">
@@ -325,14 +326,14 @@ export default function PersonalDetail() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => navigate(`/personal/${item._id}/edit`)}
             >
-              <Edit size={14} /> Edit
+              <HugeiconsIcon icon={PencilEdit01Icon} size={14} strokeWidth={1.5} /> Edit
             </Button>
-            <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
-              <Trash2 size={14} /> Delete
+            <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+              <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.5} /> Delete
             </Button>
           </div>
         </div>
@@ -373,7 +374,7 @@ export default function PersonalDetail() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <h2 className="font-display font-semibold text-base text-primary">QC Photos</h2>
+                <CardTitle>QC Photos</CardTitle>
               </CardHeader>
               <CardContent>
                 <QcPhotoGallery
@@ -467,7 +468,7 @@ export default function PersonalDetail() {
           <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDelete} disabled={deleting}>
+          <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
             {deleting ? "Deleting..." : "Delete"}
           </Button>
         </div>
@@ -590,7 +591,7 @@ export default function PersonalDetail() {
       >
         <div className="space-y-5">
           <div className="rounded-xl border border-border-subtle bg-surface p-4 text-center">
-            <CircleCheckBig size={28} className="mx-auto mb-2 text-success" />
+            <HugeiconsIcon icon={CheckmarkCircle01Icon} size={28} strokeWidth={1.5} className="mx-auto mb-2 text-success" />
             <p className="text-sm font-medium text-primary">Done. Your item has arrived.</p>
             <p className="text-xs text-secondary mt-1">
               Confirm to mark this personal item as delivered.

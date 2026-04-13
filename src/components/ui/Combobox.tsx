@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useId, useCallback } from "react";
-import { cn } from "../../lib/utils";
+import { cn } from "@/lib/utils";
+import { Label } from "./label";
 
 interface ComboboxProps {
   label?: string;
@@ -42,7 +43,6 @@ export function Combobox({ label, value, onChange, options, placeholder, error }
     opt.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Reset active index when filtered list changes
   useEffect(() => {
     setActiveIndex(-1);
   }, [search]);
@@ -84,7 +84,6 @@ export function Combobox({ label, value, onChange, options, placeholder, error }
     }
   };
 
-  // Scroll active option into view
   useEffect(() => {
     if (activeIndex < 0 || !listRef.current) return;
     const activeEl = listRef.current.children[activeIndex] as HTMLElement | undefined;
@@ -94,11 +93,11 @@ export function Combobox({ label, value, onChange, options, placeholder, error }
   const activeDescendant = activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined;
 
   return (
-    <div className="space-y-1.5" ref={ref}>
+    <div className="flex flex-col gap-1.5" ref={ref}>
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-medium text-secondary">
+        <Label htmlFor={inputId} className="text-sm text-muted-foreground">
           {label}
-        </label>
+        </Label>
       )}
       <div className="relative">
         <input
@@ -122,9 +121,9 @@ export function Combobox({ label, value, onChange, options, placeholder, error }
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className={cn(
-            "w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-tertiary",
-            "focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-150",
-            error && "border-danger focus:ring-danger/40"
+            "h-9 w-full rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm text-foreground placeholder:text-muted-foreground",
+            "outline-none transition-[color,box-shadow,background-color] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30",
+            error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
           )}
         />
         {open && filtered.length > 0 && (
@@ -132,7 +131,7 @@ export function Combobox({ label, value, onChange, options, placeholder, error }
             ref={listRef}
             id={listboxId}
             role="listbox"
-            className="absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border-default bg-elevated shadow-xl z-50"
+            className="absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-3xl bg-popover/70 shadow-lg ring-1 ring-foreground/10 z-50 backdrop-blur-2xl p-1.5"
           >
             {filtered.map((opt, index) => (
               <div
@@ -142,12 +141,12 @@ export function Combobox({ label, value, onChange, options, placeholder, error }
                 aria-selected={opt === value}
                 onClick={() => selectOption(opt)}
                 className={cn(
-                  "w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer",
+                  "w-full text-left px-3 py-2 text-sm rounded-2xl transition-colors cursor-pointer",
                   index === activeIndex
-                    ? "bg-accent-muted text-accent"
+                    ? "bg-foreground/10 text-foreground"
                     : opt === value
-                      ? "bg-accent-muted text-accent"
-                      : "text-primary hover:bg-hover"
+                      ? "bg-foreground/10 text-foreground"
+                      : "text-foreground hover:bg-foreground/5"
                 )}
               >
                 {opt}
@@ -156,7 +155,7 @@ export function Combobox({ label, value, onChange, options, placeholder, error }
           </div>
         )}
       </div>
-      {error && <p id={errorId} className="text-xs text-danger">{error}</p>}
+      {error && <p id={errorId} className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

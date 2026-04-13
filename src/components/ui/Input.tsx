@@ -1,57 +1,79 @@
-import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from "react";
-import { cn } from "../../lib/utils";
+import * as React from "react"
+import { cn } from "@/lib/utils"
+import { Label } from "./label"
 
-interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "prefix"> {
+const InputPrimitive = React.forwardRef<
+  HTMLInputElement,
+  React.ComponentProps<"input">
+>(({ className, type, ...props }, ref) => {
+  return (
+    <input
+      type={type}
+      ref={ref}
+      data-slot="input"
+      className={cn(
+        "h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-base text-foreground transition-[color,box-shadow,background-color] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
+      )}
+      {...props}
+    />
+  )
+})
+InputPrimitive.displayName = "InputPrimitive"
+
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "prefix"> {
   label?: string;
   error?: string;
-  prefix?: ReactNode;
-  suffix?: ReactNode;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, prefix, suffix, className, id: externalId, ...props }, ref) => {
-    const generatedId = useId();
-    const id = externalId ?? generatedId;
-    const errorId = error ? `${id}-error` : undefined;
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ label, error, prefix, suffix, className, id, ...props }, ref) => {
+    const generatedId = React.useId();
+    const inputId = id || generatedId;
 
     return (
-      <div className="space-y-1.5">
+      <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={id} className="block text-xs font-medium text-secondary">
+          <Label htmlFor={inputId} className="text-sm text-muted-foreground">
             {label}
-          </label>
+          </Label>
         )}
         <div className="relative">
           {prefix && (
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary text-sm font-mono">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
               {prefix}
             </span>
           )}
-          <input
+          <InputPrimitive
             ref={ref}
-            id={id}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={errorId}
+            id={inputId}
             className={cn(
-              "w-full rounded-lg border border-border-default bg-base px-3 py-2 text-sm text-primary placeholder:text-tertiary",
-              "focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-150",
-              prefix && "pl-12",
-              suffix && "pr-8",
-              error && "border-danger focus:ring-danger/40",
+              prefix && "pl-10",
+              suffix && "pr-10",
+              error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20",
               className
             )}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${inputId}-error` : undefined}
             {...props}
           />
           {suffix && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-tertiary text-sm">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
               {suffix}
             </span>
           )}
         </div>
-        {error && <p id={errorId} className="text-xs text-danger">{error}</p>}
+        {error && (
+          <p id={`${inputId}-error`} className="text-xs text-destructive">
+            {error}
+          </p>
+        )}
       </div>
     );
   }
 );
-
 Input.displayName = "Input";
+
+export { Input, InputPrimitive }

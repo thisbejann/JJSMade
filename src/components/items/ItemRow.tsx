@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
-import { Edit, Eye } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PencilEdit01Icon, EyeIcon } from "@hugeicons/core-free-icons";
 import { ItemStatusBadge } from "./ItemStatusBadge";
 import { QcStatusBadge } from "./QcStatusBadge";
 import { CategoryBadge } from "./CategoryBadge";
@@ -67,7 +68,7 @@ export function ItemRow({ item }: ItemRowProps) {
             aria-label={`View ${item.name}`}
             className="p-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors cursor-pointer"
           >
-            <Eye size={14} />
+            <HugeiconsIcon icon={EyeIcon} size={14} strokeWidth={1.5} />
           </button>
           <button
             onClick={(e) => {
@@ -77,7 +78,7 @@ export function ItemRow({ item }: ItemRowProps) {
             aria-label={`Edit ${item.name}`}
             className="p-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors cursor-pointer"
           >
-            <Edit size={14} />
+            <HugeiconsIcon icon={PencilEdit01Icon} size={14} strokeWidth={1.5} />
           </button>
         </div>
       </td>

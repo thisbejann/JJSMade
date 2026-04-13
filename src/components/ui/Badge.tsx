@@ -1,34 +1,55 @@
-import { cn } from "../../lib/utils";
-import type { ReactNode } from "react";
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { Slot } from "radix-ui"
 
-type BadgeVariant = "info" | "success" | "warning" | "danger" | "accent" | "tertiary" | "default";
+import { cn } from "@/lib/utils"
 
-interface BadgeProps {
-  variant?: BadgeVariant;
-  children: ReactNode;
-  className?: string;
-}
+const badgeVariants = cva(
+  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-3xl border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  {
+    variants: {
+      variant: {
+        default: "bg-accent text-accent-foreground [a]:hover:bg-accent/80",
+        secondary:
+          "bg-muted text-foreground [a]:hover:bg-muted/70",
+        destructive:
+          "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
+        outline:
+          "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
+        ghost:
+          "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
+        link: "text-accent underline-offset-4 hover:underline",
+        info: "bg-info/10 text-info border-info/20",
+        success: "bg-success/10 text-success border-success/20",
+        warning: "bg-warning/10 text-warning border-warning/20",
+        danger: "bg-destructive/10 text-destructive border-destructive/20",
+        accent: "bg-accent/10 text-accent border-accent/20",
+        tertiary: "bg-muted text-muted-foreground border-muted",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
 
-const variantStyles: Record<BadgeVariant, string> = {
-  info: "bg-info-muted text-info",
-  success: "bg-success-muted text-success",
-  warning: "bg-warning-muted text-warning",
-  danger: "bg-danger-muted text-danger",
-  accent: "bg-accent-muted text-accent",
-  tertiary: "bg-hover text-tertiary",
-  default: "bg-hover text-secondary",
-};
+function Badge({
+  className,
+  variant = "default",
+  asChild = false,
+  ...props
+}: React.ComponentProps<"span"> &
+  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : "span"
 
-export function Badge({ variant = "default", children, className }: BadgeProps) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
-        variantStyles[variant],
-        className
-      )}
-    >
-      {children}
-    </span>
-  );
+    <Comp
+      data-slot="badge"
+      data-variant={variant}
+      className={cn(badgeVariants({ variant }), className)}
+      {...props}
+    />
+  )
 }
+
+export { Badge, badgeVariants }

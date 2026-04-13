@@ -1,14 +1,25 @@
 import { NavLink } from "react-router";
-import { LayoutDashboard, Package, Users, BarChart3, Settings, ChevronLeft, ChevronRight, ShoppingBag, Calculator } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  DashboardSquare01Icon,
+  PackageIcon,
+  UserGroupIcon,
+  BarChartIcon,
+  Settings01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  ShoppingBag01Icon,
+  Calculator01Icon,
+} from "@hugeicons/core-free-icons";
 import { cn } from "../../lib/utils";
 
 const NAV_ITEMS = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/orders", icon: Package, label: "Orders" },
-  { to: "/sellers", icon: Users, label: "Sellers" },
-  { to: "/calculator", icon: Calculator, label: "Calculator" },
-  { to: "/analytics", icon: BarChart3, label: "Analytics" },
-  { to: "/settings", icon: Settings, label: "Settings" },
+  { to: "/", icon: DashboardSquare01Icon, label: "Dashboard" },
+  { to: "/orders", icon: PackageIcon, label: "Orders" },
+  { to: "/sellers", icon: UserGroupIcon, label: "Sellers" },
+  { to: "/calculator", icon: Calculator01Icon, label: "Calculator" },
+  { to: "/analytics", icon: BarChartIcon, label: "Analytics" },
+  { to: "/settings", icon: Settings01Icon, label: "Settings" },
 ];
 
 interface SidebarProps {
@@ -55,7 +66,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false }: SidebarProp
               )
             }
           >
-            <Icon size={20} className="shrink-0" />
+            <HugeiconsIcon icon={Icon} size={20} strokeWidth={1.5} className="shrink-0" />
             {/* Always show on mobile; on desktop, hide when collapsed */}
             <span className={cn(collapsed && "lg:hidden")}>{label}</span>
           </NavLink>
@@ -74,7 +85,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false }: SidebarProp
               )
             }
           >
-            <ShoppingBag size={20} className="shrink-0" />
+            <HugeiconsIcon icon={ShoppingBag01Icon} size={20} strokeWidth={1.5} className="shrink-0" />
             <span className={cn(collapsed && "lg:hidden")}>Personal</span>
           </NavLink>
         </div>
@@ -86,7 +97,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false }: SidebarProp
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         className="hidden lg:flex items-center justify-center h-12 border-t border-border-subtle text-secondary hover:text-primary hover:bg-hover transition-colors"
       >
-        {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        {collapsed ? <HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.5} /> : <HugeiconsIcon icon={ArrowLeft01Icon} size={18} strokeWidth={1.5} />}
       </button>
     </aside>
   );

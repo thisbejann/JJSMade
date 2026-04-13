@@ -15,8 +15,7 @@ export function ItemCard({ item }: ItemCardProps) {
 
   return (
     <Card
-      hover
-      className="p-4 space-y-3"
+      className="cursor-pointer p-4 space-y-3 transition-colors hover:border-primary/30"
       onClick={() => navigate(`/orders/${item._id}`)}
     >
       <div className="flex items-start justify-between">

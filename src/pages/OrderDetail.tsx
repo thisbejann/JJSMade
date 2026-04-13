@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { PageContainer } from "../components/layout/PageContainer";
-import { Card, CardContent, CardHeader } from "../components/ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -14,9 +14,10 @@ import { StatusStepper } from "../components/items/StatusStepper";
 import { CostBreakdown } from "../components/items/CostBreakdown";
 import { QcPhotoGallery } from "../components/items/QcPhotoGallery";
 import { formatPHP, formatCNY, formatDate, formatWeight } from "../lib/formatters";
-import { Edit, Trash2, ArrowLeft } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PencilEdit01Icon, Delete02Icon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../lib/utils";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import type { Id } from "../../convex/_generated/dataModel";
 
 export default function OrderDetail() {
@@ -94,7 +95,7 @@ export default function OrderDetail() {
               onClick={() => navigate("/orders")}
               className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors cursor-pointer"
             >
-              <ArrowLeft size={14} /> Back to Orders
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={1.5} /> Back to Orders
             </button>
             <h2 className="font-display font-bold text-2xl text-primary">{item.name}</h2>
             <div className="flex items-center gap-2 flex-wrap">
@@ -108,14 +109,14 @@ export default function OrderDetail() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => navigate(`/orders/${item._id}/edit`)}
             >
-              <Edit size={14} /> Edit
+              <HugeiconsIcon icon={PencilEdit01Icon} size={14} strokeWidth={1.5} /> Edit
             </Button>
-            <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
-              <Trash2 size={14} /> Delete
+            <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+              <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.5} /> Delete
             </Button>
           </div>
         </div>
@@ -130,9 +131,7 @@ export default function OrderDetail() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <h2 className="font-display font-semibold text-base text-primary">
-                  QC Photos
-                </h2>
+                <CardTitle>QC Photos</CardTitle>
               </CardHeader>
               <CardContent>
                 <QcPhotoGallery
@@ -145,9 +144,7 @@ export default function OrderDetail() {
 
             <Card>
               <CardHeader>
-                <h2 className="font-display font-semibold text-base text-primary">
-                  Cost Breakdown
-                </h2>
+                <CardTitle>Cost Breakdown</CardTitle>
               </CardHeader>
               <CardContent>
                 <CostBreakdown
@@ -308,7 +305,7 @@ export default function OrderDetail() {
           <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDelete} disabled={deleting}>
+          <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
             {deleting ? "Deleting..." : "Delete"}
           </Button>
         </div>

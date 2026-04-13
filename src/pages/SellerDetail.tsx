@@ -9,7 +9,8 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { ItemTable } from "../components/items/ItemTable";
 import { SellerStats } from "../components/sellers/SellerStats";
 import { PLATFORM_CONFIG } from "../lib/constants";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowLeft01Icon, Link01Icon } from "@hugeicons/core-free-icons";
 import type { Id } from "../../convex/_generated/dataModel";
 
 export default function SellerDetail() {
@@ -49,7 +50,7 @@ export default function SellerDetail() {
     <PageContainer>
       <div className="space-y-8">
         <button onClick={() => navigate("/sellers")} className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors cursor-pointer">
-          <ArrowLeft size={14} /> Back to Sellers
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={1.5} /> Back to Sellers
         </button>
 
         <Card>
@@ -66,7 +67,7 @@ export default function SellerDetail() {
             {seller.storeLink && (
               <a href={seller.storeLink} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors">
-                <ExternalLink size={14} /> Store
+                <HugeiconsIcon icon={Link01Icon} size={14} strokeWidth={1.5} /> Store
               </a>
             )}
           </CardContent>

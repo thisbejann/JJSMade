@@ -1,6 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Card, CardHeader, CardContent } from "../ui/Card";
+import { Card, CardHeader, CardContent, CardTitle } from "../ui/Card";
 import { Skeleton } from "../ui/Skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { CHART_COLORS, chartTooltipStyle } from "../../lib/chartTheme";
@@ -13,7 +13,7 @@ export function TopSellersChart() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="font-display font-semibold text-base text-primary">Top Sellers by Profit</h2>
+        <CardTitle>Top Sellers by Profit</CardTitle>
       </CardHeader>
       <CardContent>
         {data === undefined ? (
@@ -24,8 +24,8 @@ export function TopSellersChart() {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={top10} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
-              <XAxis type="number" stroke={CHART_COLORS.text} fontSize={12} tickLine={false} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
-              <YAxis type="category" dataKey="seller" stroke={CHART_COLORS.text} fontSize={11} tickLine={false} width={100} />
+              <XAxis type="number" stroke={CHART_COLORS.text} tick={{ fill: CHART_COLORS.text }} fontSize={12} tickLine={false} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
+              <YAxis type="category" dataKey="seller" stroke={CHART_COLORS.text} tick={{ fill: CHART_COLORS.text }} fontSize={11} tickLine={false} width={100} />
               <Tooltip {...chartTooltipStyle} formatter={(value: number | string | undefined) => [formatPHP(Number(value ?? 0)), "Profit"]} />
               <Bar dataKey="profit" fill={CHART_COLORS.accent} radius={[0, 4, 4, 0]} />
             </BarChart>
