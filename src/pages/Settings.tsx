@@ -60,7 +60,7 @@ export default function Settings() {
   if (isLoading) {
     return (
       <PageContainer>
-        <div className="max-w-2xl space-y-8">
+        <div className="max-w-2xl mx-auto space-y-8">
           <Skeleton className="h-48" />
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
@@ -71,7 +71,7 @@ export default function Settings() {
 
   return (
     <PageContainer>
-      <div className="max-w-2xl space-y-8">
+      <div className="max-w-2xl mx-auto space-y-8">
         <Card>
           <CardContent className="space-y-4">
             <h2 className="font-display font-semibold text-base text-primary">
