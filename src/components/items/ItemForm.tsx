@@ -662,7 +662,7 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
           </Card>
         )}
 
-        <Card>
+        <Card className="overflow-visible">
           <CardContent className="space-y-4">
             <h2 className="font-display font-semibold text-base text-primary">
               Sale Info
