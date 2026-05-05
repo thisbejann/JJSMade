@@ -119,7 +119,6 @@ export const create = mutation({
       isForwarderBuy,
       forwarderBuyRateUsed,
       forwarderBuyCommissionPercent,
-      lalamoveFee: undefined,
       sellingPrice: undefined,
     });
 
@@ -231,7 +230,6 @@ export const update = mutation({
       isForwarderBuy,
       forwarderBuyRateUsed,
       forwarderBuyCommissionPercent: normalizedForwarderBuyCommissionPercent,
-      lalamoveFee: undefined,
       sellingPrice: undefined,
     });
 

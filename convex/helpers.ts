@@ -8,7 +8,6 @@ export function computeDerivedFields(data: {
   isForwarderBuy?: boolean;
   forwarderBuyRateUsed?: number;
   forwarderBuyCommissionPercent?: number;
-  lalamoveFee?: number;
   sellingPrice?: number;
 }) {
   const isForwarderBuy = data.isForwarderBuy ?? false;
@@ -62,7 +61,6 @@ export function computeDerivedFields(data: {
     pricePHP +
       (localShippingPHP ?? 0) +
       (forwarderFee ?? 0) +
-      (data.lalamoveFee ?? 0) +
       (forwarderBuyFeePHP ?? 0) +
       (qcServiceFeePHP ?? 0)
   );

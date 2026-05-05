@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useSearchParams } from "react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { PageContainer } from "../components/layout/PageContainer";
@@ -9,7 +9,11 @@ import type { Id } from "../../convex/_generated/dataModel";
 export default function OrderForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isEdit = Boolean(id);
+
+  const groupId = searchParams.get("groupId") as Id<"orderGroups"> | null ?? undefined;
+  const lockedCustomerId = searchParams.get("customerId") as Id<"customers"> | null ?? undefined;
 
   const existingItem = useQuery(
     api.items.getById,
@@ -32,7 +36,11 @@ export default function OrderForm() {
       <ItemForm
         key={id ?? "new"}
         existingItem={isEdit && existingItem ? existingItem : undefined}
-        onSuccess={(itemId) => navigate(`/orders/${itemId}`)}
+        lockedCustomerId={lockedCustomerId}
+        groupId={groupId}
+        onSuccess={(itemId) =>
+          groupId ? navigate(`/groups/${groupId}`) : navigate(`/orders/${itemId}`)
+        }
       />
     </PageContainer>
   );

@@ -153,7 +153,6 @@ export default function OrderDetail() {
                   forwarderFee={item.forwarderFee}
                   forwarderBuyFeePHP={item.forwarderBuyFeePHP}
                   qcServiceFeePHP={item.qcServiceFeePHP}
-                  lalamoveFee={item.lalamoveFee}
                   totalCost={item.totalCost}
                   sellingPrice={item.sellingPrice}
                   profit={item.profit}
@@ -256,7 +255,6 @@ export default function OrderDetail() {
                   value={formatPHP(item.sellingPrice)}
                   mono
                 />
-                <InfoRow label="Lalamove Fee" value={formatPHP(item.lalamoveFee)} mono />
                 <InfoRow label="Customer" value={item.customerName} />
                 <InfoRow label="Sold Date" value={formatDate(item.soldDate)} />
                 <div className="pt-2 border-t border-border-subtle">

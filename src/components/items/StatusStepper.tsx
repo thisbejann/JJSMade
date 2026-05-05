@@ -53,7 +53,6 @@ export function StatusStepper({ item }: StatusStepperProps) {
   const [weightDraft, setWeightDraft] = useState(0);
   const [forwarderRateDraft, setForwarderRateDraft] = useState(0);
   const [isBrandedDraft, setIsBrandedDraft] = useState(true);
-  const [lalamoveDraft, setLalamoveDraft] = useState(0);
 
   const currentIndex = STATUS_FLOW.indexOf(item.status as ItemStatus);
   const isTerminal = item.status === "refunded";
@@ -85,7 +84,6 @@ export function StatusStepper({ item }: StatusStepperProps) {
       setWeightDraft(item.weightKg ?? 0);
       setForwarderRateDraft(item.forwarderRatePerKg ?? 0);
       setIsBrandedDraft(item.isBranded);
-      setLalamoveDraft(item.lalamoveFee ?? 0);
     }
 
     setExpandedStep(status);
@@ -180,7 +178,6 @@ export function StatusStepper({ item }: StatusStepperProps) {
         weightKg: weightDraft,
         forwarderRatePerKg: forwarderRateDraft,
         isBranded: isBrandedDraft,
-        lalamoveFee: lalamoveDraft > 0 ? lalamoveDraft : undefined,
       });
       toast.success("Status updated to Arrived in PH");
       setExpandedStep(null);
@@ -391,13 +388,6 @@ export function StatusStepper({ item }: StatusStepperProps) {
                     label="Branded / Sensitive Item?"
                     checked={isBrandedDraft}
                     onChange={setIsBrandedDraft}
-                  />
-                  <Input
-                    label="Lalamove Fee (PHP)"
-                    type="number"
-                    value={lalamoveDraft || ""}
-                    onChange={(e) => setLalamoveDraft(Number(e.target.value))}
-                    prefix="PHP"
                   />
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="sm" onClick={() => setExpandedStep(null)} disabled={saving}>

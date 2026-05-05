@@ -157,7 +157,6 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
     isForwarderBuy,
     forwarderBuyRateUsed,
     forwarderBuyCommissionPercent,
-    lalamoveFee: 0,
     sellingPrice: 0,
   });
 

@@ -131,7 +131,6 @@ export const getCostBreakdown = query({
         forwarderFee: 0,
         forwarderBuyFee: 0,
         qcServiceFee: 0,
-        lalamoveFee: 0,
       };
     }
 
@@ -142,7 +141,6 @@ export const getCostBreakdown = query({
         forwarderFee: acc.forwarderFee + (item.forwarderFee ?? 0),
         forwarderBuyFee: acc.forwarderBuyFee + (item.forwarderBuyFeePHP ?? 0),
         qcServiceFee: acc.qcServiceFee + (item.qcServiceFeePHP ?? 0),
-        lalamoveFee: acc.lalamoveFee + (item.lalamoveFee ?? 0),
       }),
       {
         itemPrice: 0,
@@ -150,7 +148,6 @@ export const getCostBreakdown = query({
         forwarderFee: 0,
         forwarderBuyFee: 0,
         qcServiceFee: 0,
-        lalamoveFee: 0,
       }
     );
 
@@ -162,7 +159,6 @@ export const getCostBreakdown = query({
       forwarderBuyFee:
         Math.round((totals.forwarderBuyFee / count) * 100) / 100,
       qcServiceFee: Math.round((totals.qcServiceFee / count) * 100) / 100,
-      lalamoveFee: Math.round((totals.lalamoveFee / count) * 100) / 100,
     };
   },
 });
@@ -193,12 +189,23 @@ export const getTopCustomers = query({
   args: {},
   handler: async (ctx) => {
     const items = await ctx.db.query("items").collect();
-    const soldItems = items.filter((i) => isRealizedSale(i.status) && i.customerName);
+    const soldItems = items.filter((i) => isRealizedSale(i.status) && i.customerId);
+
+    // Resolve unique customer IDs to names in one batch
+    const customerIds = [...new Set(soldItems.map((i) => i.customerId!))];
+    const customerMap = new Map<string, string>();
+    await Promise.all(
+      customerIds.map(async (id) => {
+        const customer = await ctx.db.get(id);
+        if (customer) customerMap.set(id, customer.name);
+      })
+    );
 
     const byCustomer: Record<string, { totalSpent: number; count: number }> = {};
 
     for (const item of soldItems) {
-      const name = item.customerName!;
+      const name = customerMap.get(item.customerId!) ?? item.customerName;
+      if (!name) continue;
       if (!byCustomer[name]) byCustomer[name] = { totalSpent: 0, count: 0 };
       byCustomer[name].totalSpent += item.sellingPrice ?? 0;
       byCustomer[name].count += 1;

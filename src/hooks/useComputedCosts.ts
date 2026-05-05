@@ -11,7 +11,6 @@ interface ComputedCostsInput {
   isForwarderBuy: boolean;
   forwarderBuyRateUsed: number;
   forwarderBuyCommissionPercent: number;
-  lalamoveFee: number;
   sellingPrice: number;
 }
 
@@ -37,7 +36,6 @@ export function useComputedCosts(input: ComputedCostsInput) {
       pricePHP +
       localShippingPHP +
       forwarderFee +
-      input.lalamoveFee +
       forwarderBuyFeePHP +
       qcServiceFeePHP;
     const profit = input.sellingPrice > 0 ? input.sellingPrice - totalCost : 0;
@@ -67,7 +65,6 @@ export function useComputedCosts(input: ComputedCostsInput) {
     input.isForwarderBuy,
     input.forwarderBuyRateUsed,
     input.forwarderBuyCommissionPercent,
-    input.lalamoveFee,
     input.sellingPrice,
   ]);
 }

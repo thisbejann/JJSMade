@@ -2,6 +2,17 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  customers: defineTable({
+    name: v.string(),
+    createdAt: v.number(),
+  }).index("by_name", ["name"]),
+
+  orderGroups: defineTable({
+    customerId: v.id("customers"),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_customerId", ["customerId"]),
+
   items: defineTable({
     // Item Identity
     name: v.string(),
@@ -53,6 +64,8 @@ export default defineSchema({
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
     customerName: v.optional(v.string()),
+    customerId: v.optional(v.id("customers")),
+    orderGroupId: v.optional(v.id("orderGroups")),
 
     // Computed Fields
     totalCost: v.optional(v.number()),
@@ -90,7 +103,9 @@ export default defineSchema({
     .index("by_seller", ["seller"])
     .index("by_orderDate", ["orderDate"])
     .index("by_soldDate", ["soldDate"])
-    .index("by_qcStatus", ["qcStatus"]),
+    .index("by_qcStatus", ["qcStatus"])
+    .index("by_orderGroupId", ["orderGroupId"])
+    .index("by_customerId", ["customerId"]),
 
   sellers: defineTable({
     name: v.string(),

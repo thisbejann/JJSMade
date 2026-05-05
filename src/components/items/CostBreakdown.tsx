@@ -7,7 +7,6 @@ interface CostBreakdownProps {
   forwarderFee?: number;
   forwarderBuyFeePHP?: number;
   qcServiceFeePHP?: number;
-  lalamoveFee?: number;
   totalCost?: number;
   sellingPrice?: number;
   profit?: number;
@@ -38,7 +37,6 @@ export function CostBreakdown(props: CostBreakdownProps) {
       value: props.qcServiceFeePHP ?? 0,
       color: "bg-tertiary",
     },
-    { label: "Lalamove", value: props.lalamoveFee ?? 0, color: "bg-secondary" },
   ].filter((segment) => segment.value > 0);
 
   if (props.profit != null && props.sellingPrice && props.sellingPrice > 0) {

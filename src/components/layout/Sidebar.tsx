@@ -4,6 +4,7 @@ import {
   DashboardSquare01Icon,
   PackageIcon,
   UserGroupIcon,
+  Contact01Icon,
   BarChartIcon,
   Settings01Icon,
   ArrowLeft01Icon,
@@ -16,6 +17,7 @@ import { cn } from "../../lib/utils";
 const NAV_ITEMS = [
   { to: "/", icon: DashboardSquare01Icon, label: "Dashboard" },
   { to: "/orders", icon: PackageIcon, label: "Orders" },
+  { to: "/customers", icon: Contact01Icon, label: "Customers" },
   { to: "/sellers", icon: UserGroupIcon, label: "Sellers" },
   { to: "/calculator", icon: Calculator01Icon, label: "Calculator" },
   { to: "/analytics", icon: BarChartIcon, label: "Analytics" },

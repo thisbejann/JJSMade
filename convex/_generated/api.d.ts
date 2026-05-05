@@ -10,8 +10,10 @@
 
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
+import type * as customers from "../customers.js";
 import type * as helpers from "../helpers.js";
 import type * as items from "../items.js";
+import type * as orderGroups from "../orderGroups.js";
 import type * as personalItems from "../personalItems.js";
 import type * as qcPhotoCleanup from "../qcPhotoCleanup.js";
 import type * as sellers from "../sellers.js";
@@ -27,8 +29,10 @@ import type {
 declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   auth: typeof auth;
+  customers: typeof customers;
   helpers: typeof helpers;
   items: typeof items;
+  orderGroups: typeof orderGroups;
   personalItems: typeof personalItems;
   qcPhotoCleanup: typeof qcPhotoCleanup;
   sellers: typeof sellers;

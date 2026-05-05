@@ -16,6 +16,7 @@ import { LiveProfitCalculator } from "./LiveProfitCalculator";
 import { MarkupIndicator } from "./MarkupIndicator";
 import { PriceCalculator } from "./PriceCalculator";
 import { QcPhotoGallery } from "./QcPhotoGallery";
+import { CustomerPicker } from "./CustomerPicker";
 import {
   ALL_STATUSES,
   ALL_QC_STATUSES,
@@ -54,14 +55,11 @@ const SHIPPING_VISIBLE_STATUSES = new Set<Doc<"items">["status"]>([
   "delivered_to_customer",
 ]);
 
-const LALAMOVE_VISIBLE_STATUSES = new Set<Doc<"items">["status"]>([
-  "arrived_ph_warehouse",
-  "delivered_to_customer",
-]);
-
 
 interface ItemFormProps {
   existingItem?: Doc<"items">;
+  lockedCustomerId?: Id<"customers">;
+  groupId?: Id<"orderGroups">;
   onSuccess: (id: string) => void;
 }
 
@@ -79,7 +77,7 @@ function sanitizeSizeForCategory(category: ItemCategory, currentSize: string) {
   return Number.isNaN(parsed) || parsed <= 0 ? "" : trimmed;
 }
 
-export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
+export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }: ItemFormProps) {
   const { settings } = useSettings();
   const createItem = useMutation(api.items.create);
   const updateItem = useMutation(api.items.update);
@@ -163,10 +161,10 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
   const [trackingNumber, setTrackingNumber] = useState(
     existingItem?.trackingNumber ?? ""
   );
-  const [lalamoveFee, setLalamoveFee] = useState(existingItem?.lalamoveFee ?? 0);
-
   const [sellingPrice, setSellingPrice] = useState(existingItem?.sellingPrice ?? 0);
-  const [customerName, setCustomerName] = useState(existingItem?.customerName ?? "");
+  const [customerId, setCustomerId] = useState<Id<"customers"> | null>(
+    lockedCustomerId ?? existingItem?.customerId ?? null
+  );
 
   const [photos, setPhotos] = useState<{ id: string; url: string }[]>([]);
   const [photoIds, setPhotoIds] = useState<Id<"_storage">[]>(
@@ -177,7 +175,6 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
 
   const showQcSection = QC_VISIBLE_STATUSES.has(status);
   const showShippingSection = SHIPPING_VISIBLE_STATUSES.has(status);
-  const showLalamoveField = LALAMOVE_VISIBLE_STATUSES.has(status);
   const existingPhotoIds = (existingItem?.qcPhotoIds ?? []).filter((id) => photoIds.includes(id));
 
   const costs = useComputedCosts({
@@ -190,7 +187,6 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
     isForwarderBuy,
     forwarderBuyRateUsed,
     forwarderBuyCommissionPercent,
-    lalamoveFee,
     sellingPrice,
   });
 
@@ -257,6 +253,11 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
       return;
     }
 
+    if (!customerId) {
+      toast.error("Please select a customer");
+      return;
+    }
+
     const normalizedSize = validateSize();
     if (normalizedSize === null) return;
 
@@ -294,8 +295,8 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
         isBranded,
         forwarderRatePerKg: forwarderRate,
         sellingPrice: sellingPrice > 0 ? sellingPrice : undefined,
-        lalamoveFee: lalamoveFee > 0 ? lalamoveFee : undefined,
-        customerName: customerName || undefined,
+        customerId: customerId ?? undefined,
+        orderGroupId: groupId,
         status: status as Doc<"items">["status"],
         notes: notes || undefined,
         orderDate: new Date(orderDate).getTime(),
@@ -657,15 +658,6 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
                 </div>
               )}
 
-              {showLalamoveField && (
-                <Input
-                  label="Lalamove Fee (PHP)"
-                  type="number"
-                  value={lalamoveFee || ""}
-                  onChange={(e) => setLalamoveFee(Number(e.target.value))}
-                  prefix="PHP"
-                />
-              )}
             </CardContent>
           </Card>
         )}
@@ -689,11 +681,12 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
                 max={settings.defaultMarkupMax}
               />
             )}
-            <Input
-              label="Customer Name"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Optional"
+            <CustomerPicker
+              label={lockedCustomerId ? "Customer (locked to group)" : "Customer *"}
+              value={customerId}
+              onChange={setCustomerId}
+              placeholder="Search or create customer..."
+              disabled={!!lockedCustomerId}
             />
           </CardContent>
         </Card>
@@ -718,7 +711,6 @@ export function ItemForm({ existingItem, onSuccess }: ItemFormProps) {
             forwarderFee={costs.forwarderFee}
             forwarderBuyFeePHP={costs.forwarderBuyFeePHP}
             qcServiceFeePHP={costs.qcServiceFeePHP}
-            lalamoveFee={lalamoveFee}
             totalCost={costs.totalCost}
             sellingPrice={sellingPrice}
             profit={costs.profit}

@@ -7,7 +7,6 @@ interface LiveProfitCalculatorProps {
   forwarderFee: number;
   forwarderBuyFeePHP: number;
   qcServiceFeePHP: number;
-  lalamoveFee: number;
   totalCost: number;
   sellingPrice: number;
   profit: number;
@@ -21,7 +20,6 @@ export function LiveProfitCalculator(props: LiveProfitCalculatorProps) {
     { label: "Forwarder Fee", value: props.forwarderFee },
     { label: "Forwarder Buy Fee", value: props.forwarderBuyFeePHP },
     { label: "QC Service Fee", value: props.qcServiceFeePHP },
-    { label: "Lalamove Fee", value: props.lalamoveFee },
   ].filter((row) => row.label === "Item Price" || row.value > 0);
 
   return (

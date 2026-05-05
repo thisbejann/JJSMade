@@ -101,6 +101,8 @@ export const create = mutation({
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
     customerName: v.optional(v.string()),
+    customerId: v.optional(v.id("customers")),
+    orderGroupId: v.optional(v.id("orderGroups")),
     status: statusValidator,
     notes: v.optional(v.string()),
     orderDate: v.number(),
@@ -134,7 +136,6 @@ export const create = mutation({
       isForwarderBuy,
       forwarderBuyRateUsed,
       forwarderBuyCommissionPercent,
-      lalamoveFee: args.lalamoveFee,
       sellingPrice: args.sellingPrice,
     });
 
@@ -187,6 +188,8 @@ export const update = mutation({
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
     customerName: v.optional(v.string()),
+    customerId: v.optional(v.id("customers")),
+    orderGroupId: v.optional(v.id("orderGroups")),
     status: v.optional(statusValidator),
     notes: v.optional(v.string()),
     orderDate: v.optional(v.number()),
@@ -254,7 +257,6 @@ export const update = mutation({
       isForwarderBuy,
       forwarderBuyRateUsed,
       forwarderBuyCommissionPercent: normalizedForwarderBuyCommissionPercent,
-      lalamoveFee: merged.lalamoveFee,
       sellingPrice: merged.sellingPrice,
     });
 
@@ -362,9 +364,14 @@ export const list = query({
     search: v.optional(v.string()),
     sortBy: v.optional(v.string()),
     sortOrder: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
+    soloOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     let items = await ctx.db.query("items").order("desc").collect();
+
+    if (args.soloOnly) {
+      items = items.filter((i) => !i.orderGroupId);
+    }
 
     if (args.status) {
       items = items.filter((i) => i.status === args.status);

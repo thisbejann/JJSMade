@@ -6,13 +6,17 @@ import { QcStatusBadge } from "./QcStatusBadge";
 import { CategoryBadge } from "./CategoryBadge";
 import { ProfitDisplay } from "./ProfitDisplay";
 import { formatPHP, formatCNY, formatWeight } from "../../lib/formatters";
+import { cn } from "../../lib/utils";
 import type { Doc } from "../../../convex/_generated/dataModel";
 
 interface ItemRowProps {
   item: Doc<"items">;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelect?: (selected: boolean) => void;
 }
 
-export function ItemRow({ item }: ItemRowProps) {
+export function ItemRow({ item, selectable, selected, onSelect }: ItemRowProps) {
   const navigate = useNavigate();
 
   return (
@@ -21,8 +25,24 @@ export function ItemRow({ item }: ItemRowProps) {
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/orders/${item._id}`); } }}
       tabIndex={0}
       role="link"
-      className="border-b border-border-subtle hover:bg-hover cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
+      className={cn(
+        "border-b border-border-subtle hover:bg-hover cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset",
+        selected && "bg-accent-muted/30"
+      )}
     >
+      {/* Checkbox column — shown when selectable */}
+      <td className="py-3 px-4 w-px">
+        {selectable && (
+          <input
+            type="checkbox"
+            checked={selected ?? false}
+            onChange={(e) => { e.stopPropagation(); onSelect?.(e.target.checked); }}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Select ${item.name}`}
+            className="h-4 w-4 rounded border-border-default accent-accent cursor-pointer"
+          />
+        )}
+      </td>
       <td className="py-3 px-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="min-w-0">

@@ -14,6 +14,9 @@ import PersonalList from "./pages/PersonalList";
 import PersonalForm from "./pages/PersonalForm";
 import PersonalDetail from "./pages/PersonalDetail";
 import QuoteCalculator from "./pages/QuoteCalculator";
+import GroupOrderDetail from "./pages/GroupOrderDetail";
+import CustomersList from "./pages/CustomersList";
+import CustomerDetail from "./pages/CustomerDetail";
 
 export default function App() {
   return (
@@ -27,6 +30,9 @@ export default function App() {
             <Route path="/orders/new" element={<OrderForm />} />
             <Route path="/orders/:id" element={<OrderDetail />} />
             <Route path="/orders/:id/edit" element={<OrderForm />} />
+            <Route path="/groups/:id" element={<GroupOrderDetail />} />
+            <Route path="/customers" element={<CustomersList />} />
+            <Route path="/customers/:id" element={<CustomerDetail />} />
             <Route path="/sellers" element={<SellersList />} />
             <Route path="/sellers/:id" element={<SellerDetail />} />
             <Route path="/calculator" element={<QuoteCalculator />} />
