@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-28T00:00:00.000Z",
+  "title": "Design System: JJSMade",
+  "extensions": {
+    "colorMeta": {
+      "void-night": {
+        "role": "neutral",
+        "displayName": "Void Night",
+        "canonical": "oklch(8% 0.008 270)",
+        "tonalRamp": [
+          "oklch(8% 0.008 270)",
+          "oklch(14% 0.010 270)",
+          "oklch(22% 0.012 270)",
+          "oklch(33% 0.011 270)",
+          "oklch(46% 0.010 270)",
+          "oklch(60% 0.008 270)",
+          "oklch(74% 0.006 270)",
+          "oklch(88% 0.004 270)"
+        ]
+      },
+      "night-surface": {
+        "role": "neutral",
+        "displayName": "Night Surface",
+        "canonical": "oklch(12% 0.010 270)",
+        "tonalRamp": [
+          "oklch(12% 0.010 270)",
+          "oklch(18% 0.012 270)",
+          "oklch(26% 0.013 270)",
+          "oklch(36% 0.012 270)",
+          "oklch(48% 0.011 270)",
+          "oklch(62% 0.009 270)",
+          "oklch(76% 0.007 270)",
+          "oklch(90% 0.004 270)"
+        ]
+      },
+      "elevated-void": {
+        "role": "neutral",
+        "displayName": "Elevated Void",
+        "canonical": "oklch(17% 0.012 270)",
+        "tonalRamp": [
+          "oklch(17% 0.012 270)",
+          "oklch(24% 0.013 270)",
+          "oklch(32% 0.012 270)",
+          "oklch(42% 0.011 270)",
+          "oklch(54% 0.010 270)",
+          "oklch(66% 0.008 270)",
+          "oklch(78% 0.006 270)",
+          "oklch(91% 0.003 270)"
+        ]
+      },
+      "live-coal": {
+        "role": "primary",
+        "displayName": "Live Coal",
+        "canonical": "oklch(67% 0.16 42)",
+        "tonalRamp": [
+          "oklch(22% 0.08 42)",
+          "oklch(32% 0.10 42)",
+          "oklch(42% 0.13 42)",
+          "oklch(52% 0.15 42)",
+          "oklch(62% 0.17 42)",
+          "oklch(68% 0.16 42)",
+          "oklch(78% 0.12 42)",
+          "oklch(90% 0.07 42)"
+        ]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Success",
+        "canonical": "oklch(72% 0.20 142)",
+        "tonalRamp": [
+          "oklch(20% 0.08 142)",
+          "oklch(30% 0.11 142)",
+          "oklch(42% 0.14 142)",
+          "oklch(52% 0.17 142)",
+          "oklch(62% 0.19 142)",
+          "oklch(72% 0.20 142)",
+          "oklch(82% 0.15 142)",
+          "oklch(92% 0.08 142)"
+        ]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Danger",
+        "canonical": "oklch(63% 0.22 27)",
+        "tonalRamp": [
+          "oklch(20% 0.09 27)",
+          "oklch(30% 0.12 27)",
+          "oklch(42% 0.16 27)",
+          "oklch(52% 0.19 27)",
+          "oklch(62% 0.22 27)",
+          "oklch(70% 0.20 27)",
+          "oklch(80% 0.15 27)",
+          "oklch(92% 0.07 27)"
+        ]
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Warning",
+        "canonical": "oklch(78% 0.17 75)",
+        "tonalRamp": [
+          "oklch(20% 0.07 75)",
+          "oklch(30% 0.10 75)",
+          "oklch(42% 0.13 75)",
+          "oklch(55% 0.15 75)",
+          "oklch(65% 0.17 75)",
+          "oklch(75% 0.17 75)",
+          "oklch(85% 0.13 75)",
+          "oklch(94% 0.07 75)"
+        ]
+      },
+      "info": {
+        "role": "semantic",
+        "displayName": "Info",
+        "canonical": "oklch(62% 0.20 262)",
+        "tonalRamp": [
+          "oklch(20% 0.09 262)",
+          "oklch(30% 0.12 262)",
+          "oklch(40% 0.16 262)",
+          "oklch(50% 0.18 262)",
+          "oklch(60% 0.20 262)",
+          "oklch(70% 0.18 262)",
+          "oklch(80% 0.13 262)",
+          "oklch(92% 0.07 262)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Large numeric stat values the operator reads at a glance: total profit, order counts." },
+      "headline": { "displayName": "Headline", "purpose": "Section titles, card headings, page-level labels." },
+      "title": { "displayName": "Title", "purpose": "Sub-section labels, table column headers, form group names." },
+      "body": { "displayName": "Body", "purpose": "All general content, table rows, descriptions. Max 65-75ch line length." },
+      "label": { "displayName": "Label", "purpose": "Metadata, badge text, timestamps, status labels, secondary callouts." },
+      "mono": { "displayName": "Mono", "purpose": "Prices, weights, numerical data requiring tabular alignment. JetBrains Mono only." }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -2px rgba(0,0,0,0.3), 0 0 0 1px rgba(240,240,240,0.05)",
+        "purpose": "Applied to Cards only. The hairline ring distinguishes card from a flat Night Surface. Never used on flat interactive elements."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-quart",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Default easing for all state transitions and entrance animations."
+      },
+      {
+        "name": "duration-fast",
+        "value": "150ms",
+        "purpose": "Hover and focus state transitions: button bg, nav item bg, input border."
+      },
+      {
+        "name": "duration-standard",
+        "value": "200ms",
+        "purpose": "Meaningful state changes: badge transitions, status updates, data loads."
+      },
+      {
+        "name": "duration-slow",
+        "value": "300ms",
+        "purpose": "Panel and sidebar layout transitions."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The primary action on any given screen. Live Coal fill. Use once per view.",
+      "html": "<button class=\"ds-btn-primary\">Create Order</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 12px; background: #e07850; color: #fef3ec; font-family: 'Geist Variable', sans-serif; font-size: 0.875rem; font-weight: 500; border: 1px solid transparent; border-radius: 26px; cursor: pointer; transition: background 150ms cubic-bezier(0.25,1,0.5,1), transform 150ms cubic-bezier(0.25,1,0.5,1); white-space: nowrap; user-select: none; outline: none; } .ds-btn-primary:hover { background: #e88a68; } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { border-color: #e07850; box-shadow: 0 0 0 3px rgba(224,120,80,0.30); } .ds-btn-primary:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Toolbar actions and low-priority controls. No background or border at rest.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 12px; background: transparent; color: #a0a0b0; font-family: 'Geist Variable', sans-serif; font-size: 0.875rem; font-weight: 500; border: 1px solid transparent; border-radius: 26px; cursor: pointer; transition: background 150ms cubic-bezier(0.25,1,0.5,1), color 150ms cubic-bezier(0.25,1,0.5,1); white-space: nowrap; user-select: none; outline: none; } .ds-btn-ghost:hover { background: #23242e; color: #f0f0f0; } .ds-btn-ghost:active { transform: translateY(1px); } .ds-btn-ghost:focus-visible { border-color: #e07850; box-shadow: 0 0 0 3px rgba(224,120,80,0.30); } .ds-btn-ghost:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary confirmation alongside a primary action. Transparent with visible border.",
+      "html": "<button class=\"ds-btn-outline\">View Details</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 12px; background: transparent; color: #f0f0f0; font-family: 'Geist Variable', sans-serif; font-size: 0.875rem; font-weight: 500; border: 1px solid rgba(255,255,255,0.10); border-radius: 26px; cursor: pointer; transition: background 150ms cubic-bezier(0.25,1,0.5,1), border-color 150ms; white-space: nowrap; user-select: none; outline: none; } .ds-btn-outline:hover { background: #1b1c25; } .ds-btn-outline:active { transform: translateY(1px); } .ds-btn-outline:focus-visible { border-color: #e07850; box-shadow: 0 0 0 3px rgba(224,120,80,0.30); } .ds-btn-outline:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Standard text input with label. Pill-shaped, transparent-muted at rest, coral on focus.",
+      "html": "<div class=\"ds-input-wrapper\"><label class=\"ds-input-label\" for=\"ds-ex\">Item Name</label><input class=\"ds-input\" id=\"ds-ex\" type=\"text\" placeholder=\"e.g. Nike Air Max 90\" /></div>",
+      "css": ".ds-input-wrapper { display: flex; flex-direction: column; gap: 6px; } .ds-input-label { font-family: 'Geist Variable', sans-serif; font-size: 0.875rem; font-weight: 500; color: #a0a0b0; } .ds-input { height: 36px; padding: 4px 12px; background: rgba(255,255,255,0.075); color: #f0f0f0; font-family: 'Geist Variable', sans-serif; font-size: 0.875rem; border: 1px solid transparent; border-radius: 22px; outline: none; transition: border-color 150ms, box-shadow 150ms; width: 100%; } .ds-input::placeholder { color: #86869a; } .ds-input:focus-visible { border-color: #e07850; box-shadow: 0 0 0 3px rgba(224,120,80,0.30); } .ds-input:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge-success",
+      "description": "Semantic status labels. 10% opacity background, 20% border, full-saturation text. Ten variants.",
+      "html": "<div class=\"ds-badge-row\"><span class=\"ds-badge ds-badge-success\">Delivered</span><span class=\"ds-badge ds-badge-warning\">QC Check</span><span class=\"ds-badge ds-badge-danger\">Rejected</span><span class=\"ds-badge ds-badge-info\">Purchased</span><span class=\"ds-badge ds-badge-accent\">Pending</span></div>",
+      "css": ".ds-badge-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; } .ds-badge { display: inline-flex; align-items: center; justify-content: center; height: 20px; padding: 2px 8px; border-radius: 22px; font-family: 'Geist Variable', sans-serif; font-size: 0.75rem; font-weight: 500; white-space: nowrap; border: 1px solid transparent; } .ds-badge-success { background: rgba(34,197,94,0.10); color: #22c55e; border-color: rgba(34,197,94,0.20); } .ds-badge-warning { background: rgba(245,158,11,0.10); color: #f59e0b; border-color: rgba(245,158,11,0.20); } .ds-badge-danger { background: rgba(239,68,68,0.10); color: #ef4444; border-color: rgba(239,68,68,0.20); } .ds-badge-info { background: rgba(59,130,246,0.10); color: #3b82f6; border-color: rgba(59,130,246,0.20); } .ds-badge-accent { background: rgba(224,120,80,0.10); color: #e07850; border-color: rgba(224,120,80,0.20); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Primary grouping container. Used only when a boundary genuinely organizes information.",
+      "html": "<div class=\"ds-card\"><p class=\"ds-card-label\">Total Profit</p><p class=\"ds-card-value\">₱42,800</p><p class=\"ds-card-meta\">+12% this month</p></div>",
+      "css": ".ds-card { background: #12131a; border-radius: 26px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -2px rgba(0,0,0,0.3), 0 0 0 1px rgba(240,240,240,0.05); color: #f0f0f0; font-family: 'Geist Variable', sans-serif; display: flex; flex-direction: column; gap: 4px; } .ds-card-label { margin: 0; font-size: 0.75rem; font-weight: 500; color: #a0a0b0; } .ds-card-value { margin: 0; font-size: 1.5rem; font-weight: 700; color: #f0f0f0; line-height: 1.2; letter-spacing: -0.01em; } .ds-card-meta { margin: 0; font-size: 0.75rem; color: #22c55e; }"
+    },
+    {
+      "name": "Sidebar Navigation",
+      "kind": "nav",
+      "refersTo": "button-ghost",
+      "description": "Fixed left sidebar with collapsible icon rail. Active state uses coral tint — no side stripe.",
+      "html": "<nav class=\"ds-sidebar\"><div class=\"ds-sidebar-logo\">JJSMade</div><div class=\"ds-sidebar-nav\"><a class=\"ds-nav-item ds-nav-item--active\" href=\"#\"><svg class=\"ds-nav-icon\" xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/></svg><span>Dashboard</span></a><a class=\"ds-nav-item\" href=\"#\"><svg class=\"ds-nav-icon\" xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 8h14M5 8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8\"/></svg><span>Orders</span></a><a class=\"ds-nav-item\" href=\"#\"><svg class=\"ds-nav-icon\" xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M23 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg><span>Sellers</span></a></div></nav>",
+      "css": ".ds-sidebar { background: #12131a; width: 240px; height: 100%; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.06); font-family: 'Geist Variable', sans-serif; } .ds-sidebar-logo { height: 64px; display: flex; align-items: center; padding: 0 16px; font-size: 1.25rem; font-weight: 700; color: #e07850; letter-spacing: -0.02em; border-bottom: 1px solid rgba(255,255,255,0.06); } .ds-sidebar-nav { display: flex; flex-direction: column; gap: 4px; padding: 16px 8px; flex: 1; } .ds-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; font-size: 0.875rem; font-weight: 500; color: #a0a0b0; text-decoration: none; transition: background 150ms, color 150ms; } .ds-nav-item:hover { background: #23242e; color: #f0f0f0; } .ds-nav-item--active { background: rgba(224,120,80,0.12); color: #e07850; } .ds-nav-icon { flex-shrink: 0; }"
+    },
+    {
+      "name": "Status Pipeline",
+      "kind": "custom",
+      "refersTo": "button-ghost",
+      "description": "Horizontal order lifecycle tracker. Each stage shows a count; zero-count stages dim. Clicking filters the order list.",
+      "html": "<div class=\"ds-pipeline\"><button class=\"ds-stage ds-stage-info\"><span class=\"ds-stage-count\">5</span><span class=\"ds-stage-label\">Purchased</span></button><svg class=\"ds-stage-arrow\" xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.16)\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m9 18 6-6-6-6\"/></svg><button class=\"ds-stage ds-stage-warning\"><span class=\"ds-stage-count\">2</span><span class=\"ds-stage-label\">QC Check</span></button><svg class=\"ds-stage-arrow\" xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.16)\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m9 18 6-6-6-6\"/></svg><button class=\"ds-stage ds-stage-success\"><span class=\"ds-stage-count\">18</span><span class=\"ds-stage-label\">Delivered</span></button><svg class=\"ds-stage-arrow\" xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.16)\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m9 18 6-6-6-6\"/></svg><button class=\"ds-stage ds-stage-empty\"><span class=\"ds-stage-count\">0</span><span class=\"ds-stage-label\">Cancelled</span></button></div>",
+      "css": ".ds-pipeline { display: flex; align-items: center; gap: 4px; overflow-x: auto; font-family: 'Geist Variable', sans-serif; } .ds-stage { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border: none; border-radius: 10px; cursor: pointer; transition: background 150ms; background: transparent; } .ds-stage-count { font-size: 1.125rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; } .ds-stage-label { font-size: 0.75rem; font-weight: 500; white-space: nowrap; color: #a0a0b0; } .ds-stage-info { background: rgba(59,130,246,0.08); } .ds-stage-info:hover { background: rgba(59,130,246,0.15); } .ds-stage-info .ds-stage-count { color: #3b82f6; } .ds-stage-warning { background: rgba(245,158,11,0.08); } .ds-stage-warning:hover { background: rgba(245,158,11,0.15); } .ds-stage-warning .ds-stage-count { color: #f59e0b; } .ds-stage-success { background: rgba(34,197,94,0.08); } .ds-stage-success:hover { background: rgba(34,197,94,0.15); } .ds-stage-success .ds-stage-count { color: #22c55e; } .ds-stage-empty { background: transparent; opacity: 0.35; } .ds-stage-empty:hover { background: #23242e; opacity: 0.6; } .ds-stage-empty .ds-stage-count { color: #86869a; } .ds-stage-empty .ds-stage-label { color: #86869a; } .ds-stage-arrow { flex-shrink: 0; margin: 0 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Control Room",
+    "overview": "JJSMade is a personal command instrument built by an operator, for themselves. No onboarding placeholders, no concessions to the unfamiliar. The interface assumes competence and rewards daily use. Every screen is laid out so the operator can assess the situation without scanning: hierarchy is explicit, data is immediately legible, and nothing on screen is decorative.\n\nThe palette is deliberately cool and dim. Void Night backgrounds recede. Night Surface cards organize. A single warm accent (Live Coal) surfaces only what needs attention. The contrast between the cold substrate and the warm coral is the system's core tension: data feels alive against a calm room. This is an environment built for clear thinking, not for impressing visitors.\n\nThe system explicitly rejects every generic SaaS pattern. No glassmorphism. No hero-metric grids where six identical cards carry identical visual weight. No purple-to-blue gradients borrowed from crypto dashboards or SaaS marketing.",
+    "keyCharacteristics": [
+      "Dark substrate, warm signal: Live Coal is rare and therefore loud",
+      "Pill-shaped interactive elements that feel smooth under repeated daily operation",
+      "Tonal depth through surface color, not shadow drama",
+      "Semantic color as data: green means delivered, red means rejected, coral means actionable",
+      "Typography hierarchy carries the reading order without decoration"
+    ],
+    "rules": [
+      {
+        "name": "The One Warm Signal Rule",
+        "body": "Live Coal appears on at most 10% of any given screen. The moment coral becomes common, it loses its ability to direct attention. If you need more coral, the hierarchy is broken — fix the structure.",
+        "section": "colors"
+      },
+      {
+        "name": "The Opacity Border Rule",
+        "body": "Borders are never solid on dark surfaces. All dividers use white at 6% (subtle), 10% (default), or 16% (strong) opacity. A hard white line on a dark background reads as a mistake.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic-Only Color Rule",
+        "body": "Success green, danger red, warning amber, and info blue appear exclusively as status signals. Never for decoration, branding, or visual interest.",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight-First Rule",
+        "body": "Reach for font weight before reaching for color or icons to establish hierarchy. A 700-weight stat value beside a 400-weight label communicates importance without any color.",
+        "section": "typography"
+      },
+      {
+        "name": "The Single Family Rule",
+        "body": "Geist Variable only. Do not introduce a second sans or a serif for emphasis. Emphasis comes from weight, not from family contrast.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "All interactive elements sit flat at rest. The only non-flat elements are Cards. Never use box-shadow to lift a card that isn't floating.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Four-Layer Rule",
+        "body": "There are exactly four background values. If a design requires a fifth, the layout is wrong. Resolve it by restructuring — not by adding a new surface color.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do treat Live Coal as a signal, not a style choice. It belongs on primary buttons, active nav items, the wordmark, and focus rings — nowhere else.",
+      "Do communicate depth through the four-layer surface system. Void Night → Night Surface → Elevated Void is the complete elevation vocabulary.",
+      "Do use 10% opacity backgrounds with 20% borders and full-saturation text for all semantic badge and status variants.",
+      "Do build hierarchy with weight contrast before reaching for color. 700 next to 400 reads like a headline next to body copy.",
+      "Do use pill shapes (22-26px radius) for all interactive elements. Nav items and icon containers get 10px radius.",
+      "Do cap body text at 65-75ch, even in dense data views.",
+      "Do animate meaningful moments only: status changes, QC approvals, data loads. Every animation conveys state."
+    ],
+    "donts": [
+      "Don't use generic SaaS dashboard patterns: no six-identical-stat-card grids, no hero-metric templates with a big number, small label, and gradient accent.",
+      "Don't use glassmorphism. No blurred translucent backgrounds as a visual style.",
+      "Don't use neon glow effects or purple-to-blue gradients.",
+      "Don't use border-left or border-right greater than 1px as a colored accent stripe on cards, nav items, or callouts. Active states use tinted backgrounds; stripes are prohibited.",
+      "Don't use gradient text (background-clip: text). Emphasis comes from weight and size, never from decorative gradients.",
+      "Don't add shadows beyond the single card shadow. Floating layers earn their elevation from the Elevated Void surface color.",
+      "Don't default to modals. Most actions can be inline, a slide-in panel, or a contextual row expansion.",
+      "Don't add a fifth background layer. If the layout needs one, the structure is wrong.",
+      "Don't use semantic colors for decoration. They are data signals exclusively."
+    ]
+  }
+}
