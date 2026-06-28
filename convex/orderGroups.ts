@@ -35,12 +35,57 @@ export function deriveGroupStatus(
   return STATUS_FLOW[laggingIndex] ?? "ordered";
 }
 
-function computeGroupFields(items: { status: string; orderDate: number; sellingPrice?: number; profit?: number }[]) {
+function computeGroupFields(
+  items: {
+    status: string;
+    orderDate: number;
+    sellingPrice?: number;
+    profit?: number;
+    totalCost?: number;
+  }[],
+  group: { negotiatedTotal?: number; quotesSumAtEntry?: number }
+) {
   const status = deriveGroupStatus(items.map((i) => i.status));
   const orderDate = items.length > 0 ? Math.max(...items.map((i) => i.orderDate)) : 0;
-  const totalSellingPrice = items.reduce((sum, i) => sum + (i.sellingPrice ?? 0), 0);
+
+  // sumOfQuotes is the full-price total (what every item quotes add up to).
+  const sumOfQuotes = items.reduce((sum, i) => sum + (i.sellingPrice ?? 0), 0);
+  const sumOfCosts = items.reduce((sum, i) => sum + (i.totalCost ?? 0), 0);
   const totalProfit = items.reduce((sum, i) => sum + (i.profit ?? 0), 0);
-  return { status, orderDate, totalSellingPrice, totalProfit };
+
+  // Group-level override: the customer pays the negotiated total if one is set,
+  // otherwise the full sum of quotes. Profit is always measured against the
+  // effective total the customer actually pays, not the sum of quotes.
+  const negotiatedTotal = group.negotiatedTotal ?? null;
+  const effectiveTotal = negotiatedTotal ?? sumOfQuotes;
+  const discount = sumOfQuotes - effectiveTotal;
+  const discountPct = sumOfQuotes > 0 ? (discount / sumOfQuotes) * 100 : 0;
+  const groupProfit = effectiveTotal - sumOfCosts;
+
+  // Stale when the quotes have shifted since the price was agreed — we never
+  // auto-update the agreed number, only flag it for the user to re-confirm.
+  const quotesSumAtEntry = group.quotesSumAtEntry ?? null;
+  const stale =
+    negotiatedTotal != null &&
+    quotesSumAtEntry != null &&
+    quotesSumAtEntry !== sumOfQuotes;
+
+  return {
+    status,
+    orderDate,
+    // Back-compat aliases (sum of quotes / sum of per-item profit at full price).
+    totalSellingPrice: sumOfQuotes,
+    totalProfit,
+    // Negotiated-bundle fields.
+    sumOfQuotes,
+    negotiatedTotal,
+    quotesSumAtEntry,
+    effectiveTotal,
+    discount,
+    discountPct,
+    groupProfit,
+    stale,
+  };
 }
 
 export const listWithItems = query({
@@ -52,7 +97,7 @@ export const listWithItems = query({
           .query("items")
           .withIndex("by_orderGroupId", (q) => q.eq("orderGroupId", group._id))
           .collect();
-        const computed = computeGroupFields(items);
+        const computed = computeGroupFields(items, group);
         const customer = await ctx.db.get(group.customerId);
         return { ...group, ...computed, customerName: customer?.name ?? "", items };
       })
@@ -69,7 +114,7 @@ export const list = query({
           .query("items")
           .withIndex("by_orderGroupId", (q) => q.eq("orderGroupId", group._id))
           .collect();
-        const computed = computeGroupFields(items);
+        const computed = computeGroupFields(items, group);
         const customer = await ctx.db.get(group.customerId);
         return { ...group, ...computed, customerName: customer?.name ?? "", itemCount: items.length };
       })
@@ -86,7 +131,7 @@ export const getById = query({
       .query("items")
       .withIndex("by_orderGroupId", (q) => q.eq("orderGroupId", id))
       .collect();
-    const computed = computeGroupFields(items);
+    const computed = computeGroupFields(items, group);
     const customer = await ctx.db.get(group.customerId);
     return { ...group, ...computed, customerName: customer?.name ?? "", items };
   },
@@ -149,6 +194,40 @@ export const removeItem = mutation({
   args: { itemId: v.id("items") },
   handler: async (ctx, { itemId }) => {
     await ctx.db.patch(itemId, { orderGroupId: undefined });
+  },
+});
+
+export const setNegotiatedTotal = mutation({
+  args: { groupId: v.id("orderGroups"), total: v.number() },
+  handler: async (ctx, { groupId, total }) => {
+    const group = await ctx.db.get(groupId);
+    if (!group) throw new Error("Group not found");
+
+    // Snapshot the current sum of quotes so we can later detect when the items
+    // (and therefore the full price) have drifted from what was agreed.
+    const items = await ctx.db
+      .query("items")
+      .withIndex("by_orderGroupId", (q) => q.eq("orderGroupId", groupId))
+      .collect();
+    const sumOfQuotes = items.reduce((sum, i) => sum + (i.sellingPrice ?? 0), 0);
+
+    await ctx.db.patch(groupId, {
+      negotiatedTotal: total,
+      quotesSumAtEntry: sumOfQuotes,
+    });
+  },
+});
+
+export const clearNegotiatedTotal = mutation({
+  args: { groupId: v.id("orderGroups") },
+  handler: async (ctx, { groupId }) => {
+    const group = await ctx.db.get(groupId);
+    if (!group) throw new Error("Group not found");
+    // Revert to full price: customer pays the sum of quotes again.
+    await ctx.db.patch(groupId, {
+      negotiatedTotal: undefined,
+      quotesSumAtEntry: undefined,
+    });
   },
 });
 

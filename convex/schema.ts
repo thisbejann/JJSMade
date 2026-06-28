@@ -11,6 +11,12 @@ export default defineSchema({
     customerId: v.id("customers"),
     notes: v.optional(v.string()),
     createdAt: v.number(),
+    // Negotiated bundle total: the discounted price the customer agreed to for
+    // the whole group. null/absent = customer pays full price (sum of quotes).
+    negotiatedTotal: v.optional(v.number()),
+    // Snapshot of sum(item.sellingPrice) taken when negotiatedTotal was set, so
+    // we can flag the agreed price as stale when items later change.
+    quotesSumAtEntry: v.optional(v.number()),
   }).index("by_customerId", ["customerId"]),
 
   items: defineTable({
