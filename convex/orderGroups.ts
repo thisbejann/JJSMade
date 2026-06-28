@@ -1,6 +1,13 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import { computeDerivedFields } from "./helpers";
+import { normalizeSize, validateItemRules } from "./items";
+
+const categoryValidator = v.union(
+  v.literal("shoes"),
+  v.literal("clothes"),
+  v.literal("watches_accessories")
+);
 
 const STATUS_FLOW = [
   "ordered",
@@ -150,6 +157,131 @@ export const create = mutation({
       notes,
       createdAt: Date.now(),
     });
+  },
+});
+
+// Promote a negotiated Bundle into a real Group Order: seeds the group, one
+// item per bundle line, and the carried negotiated total — all in one
+// transaction so there are no partial-failure states (a half-created group with
+// some items missing). Mirrors items.create's validation + derivation per line.
+export const createWithItems = mutation({
+  args: {
+    customerId: v.id("customers"),
+    notes: v.optional(v.string()),
+    // The calculator's Offer Total. Persisted as negotiatedTotal only when it is
+    // an actual discount (offer < sum of quotes); at full price it is left null
+    // and the group shows full price — identical to never setting it by hand.
+    negotiatedTotal: v.optional(v.number()),
+    items: v.array(
+      v.object({
+        name: v.string(),
+        category: categoryValidator,
+        size: v.optional(v.string()),
+        seller: v.string(),
+        priceCNY: v.number(),
+        localShippingCNY: v.optional(v.number()),
+        sellingPrice: v.number(),
+        isForwarderBuy: v.boolean(),
+        exchangeRateUsed: v.number(),
+        forwarderRatePerKg: v.number(),
+        forwarderBuyRateUsed: v.optional(v.number()),
+        forwarderBuyCommissionPercent: v.optional(v.number()),
+      })
+    ),
+  },
+  handler: async (ctx, { customerId, notes, negotiatedTotal, items }) => {
+    const customer = await ctx.db.get(customerId);
+    if (!customer) throw new Error("Customer not found");
+    if (items.length === 0) throw new Error("A group order needs at least one item");
+
+    const now = Date.now();
+    const groupId = await ctx.db.insert("orderGroups", {
+      customerId,
+      notes,
+      createdAt: now,
+    });
+
+    let sumOfQuotes = 0;
+
+    for (const item of items) {
+      const size = normalizeSize(item.category, item.size);
+      const isForwarderBuy = item.isForwarderBuy;
+      const forwarderBuyRateUsed = isForwarderBuy ? item.forwarderBuyRateUsed : undefined;
+      const forwarderBuyCommissionPercent = isForwarderBuy
+        ? item.forwarderBuyCommissionPercent ?? 10
+        : undefined;
+
+      // Throws on missing shoe/clothes size or missing forwarder rate — the
+      // single biggest correctness trap. The sheet gates Create on these, but
+      // validate server-side too so a bad payload can never seed a broken item.
+      validateItemRules({
+        category: item.category,
+        size,
+        isForwarderBuy,
+        forwarderBuyRateUsed,
+        forwarderBuyCommissionPercent,
+      });
+
+      const hasLocalShipping = item.localShippingCNY != null && item.localShippingCNY > 0;
+
+      const derived = computeDerivedFields({
+        priceCNY: item.priceCNY,
+        exchangeRateUsed: item.exchangeRateUsed,
+        hasLocalShipping,
+        localShippingCNY: item.localShippingCNY,
+        weightKg: undefined, // unknown at quote time → forwarder fee unknown → optimistic profit
+        forwarderRatePerKg: item.forwarderRatePerKg,
+        isForwarderBuy,
+        forwarderBuyRateUsed,
+        forwarderBuyCommissionPercent,
+        sellingPrice: item.sellingPrice,
+      });
+
+      sumOfQuotes += item.sellingPrice;
+
+      await ctx.db.insert("items", {
+        name: item.name,
+        category: item.category,
+        size,
+        seller: item.seller,
+        priceCNY: item.priceCNY,
+        exchangeRateUsed: item.exchangeRateUsed,
+        pricePHP: derived.pricePHP,
+        hasLocalShipping,
+        localShippingCNY: item.localShippingCNY,
+        localShippingPHP: derived.localShippingPHP,
+        qcStatus: "not_received",
+        isBranded: true,
+        forwarderRatePerKg: item.forwarderRatePerKg,
+        forwarderFee: derived.forwarderFee,
+        isForwarderBuy,
+        forwarderBuyRateUsed,
+        forwarderBuyCommissionPercent,
+        forwarderBuyFeePHP: derived.forwarderBuyFeePHP,
+        qcServiceFeePHP: derived.qcServiceFeePHP,
+        sellingPrice: item.sellingPrice,
+        customerId,
+        customerName: customer.name,
+        orderGroupId: groupId,
+        totalCost: derived.totalCost,
+        profit: derived.profit,
+        status: "ordered",
+        orderDate: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // Snapshot quotesSumAtEntry alongside so the group's "stale" warning works
+    // from creation (mirrors setNegotiatedTotal).
+    if (negotiatedTotal != null && negotiatedTotal < sumOfQuotes) {
+      await ctx.db.patch(groupId, {
+        negotiatedTotal,
+        quotesSumAtEntry: sumOfQuotes,
+      });
+    }
+
+    return groupId;
   },
 });
 

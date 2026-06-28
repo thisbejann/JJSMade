@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -7,11 +8,13 @@ import {
   CancelCircleIcon,
   PlusSignIcon,
   Cancel01Icon,
+  ArrowRight01Icon,
 } from "@hugeicons/core-free-icons";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
+import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
 import { useSettings } from "../hooks/useSettings";
 import { CATEGORY_CONFIG, type ItemCategory, FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT, FORWARDER_BUY_QC_FEE_PHP } from "../lib/constants";
 import { cn } from "../lib/utils";
@@ -25,6 +28,10 @@ interface BundleItem {
   category: ItemCategory;
   mode: CalcMode;
   priceCNY: number;
+  // Per-line local CN shipping. Baked into `cost` at add-time, but also stored
+  // raw so the Group Review Sheet can seed a real item (which recomputes cost
+  // server-side from priceCNY + localShippingCNY).
+  localShippingCNY: number;
   quote: number;
   cost: number;
 }
@@ -47,6 +54,7 @@ function peso(n: number): string {
 
 export default function QuoteCalculator() {
   const { settings } = useSettings();
+  const navigate = useNavigate();
 
   // --- Single-item calculator (unchanged behaviour) ---
   const [priceCNY, setPriceCNY] = useState(0);
@@ -59,6 +67,10 @@ export default function QuoteCalculator() {
   const [bundle, setBundle] = useState<BundleItem[]>([]);
   const [offerStr, setOfferStr] = useState("");
   const [offerTouched, setOfferTouched] = useState(false);
+
+  // Group Review Sheet — the "Save as Group Order" CTA opens this overlay, which
+  // turns the negotiated Bundle into a real group + items in one mutation.
+  const [showSheet, setShowSheet] = useState(false);
 
   const rate =
     mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
@@ -136,6 +148,7 @@ export default function QuoteCalculator() {
         category,
         mode,
         priceCNY,
+        localShippingCNY,
         quote: customerQuote,
         cost: Math.round(totalCost * 100) / 100,
       },
@@ -448,9 +461,40 @@ export default function QuoteCalculator() {
                 </AnimatePresence>
               </CardContent>
             </Card>
+
+            {/* Terminal action: promote the negotiated bundle into a Group Order.
+                Coral is safe here despite the one-warm-signal rule because
+                "Add to bundle" lives in the separate Add-item view; the two
+                primaries never share a screen. */}
+            <Button
+              type="button"
+              size="lg"
+              className="w-full"
+              onClick={() => setShowSheet(true)}
+            >
+              Save as Group Order
+              <HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={2} />
+            </Button>
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {showSheet && (
+          <GroupReviewSheet
+            key="group-review-sheet"
+            onClose={() => setShowSheet(false)}
+            lines={bundle}
+            bundleQuote={bundleQuote}
+            defaultOffer={offer}
+            onCreated={(groupId) => {
+              setShowSheet(false);
+              clearBundle();
+              navigate(`/groups/${groupId}`);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </PageContainer>
   );
 }

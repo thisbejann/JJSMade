@@ -8,7 +8,7 @@
 
 ## Teaching Mode
 
-When implementing something non-obvious — a pattern, architectural decision, or tricky concept — briefly explain the *why* inline. If you're unsure whether it warrants explanation, end your reply with a short question: *"Want me to explain why I did X?"*
+When implementing something non-obvious — a pattern, architectural decision, or tricky concept — briefly explain the _why_ inline. If you're unsure whether it warrants explanation, end your reply with a short question: _"Want me to explain why I did X?"_
 
 ## Agent skills
 
@@ -27,3 +27,7 @@ Single-context layout — one `CONTEXT.md` at root + `docs/adr/`. See `docs/agen
 ## Design Direction
 
 Dark, dense, refined. Reference: Linear/Raycast. Accent: warm coral (`#e07850`). Animate meaningful moments only. Important data must be immediately scannable. Full context in `.impeccable.md`.
+
+## Skills
+
+Scan for globally installed skills as well. Not only project wide ones.

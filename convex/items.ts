@@ -24,7 +24,7 @@ const statusValidator = v.union(
   v.literal("returned")
 );
 
-function normalizeSize(
+export function normalizeSize(
   category: "shoes" | "clothes" | "watches_accessories",
   size?: string
 ) {
@@ -35,7 +35,7 @@ function normalizeSize(
   return trimmed;
 }
 
-function validateItemRules(data: {
+export function validateItemRules(data: {
   category: "shoes" | "clothes" | "watches_accessories";
   size?: string;
   isForwarderBuy: boolean;
