@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
 import { PageContainer } from "../components/layout/PageContainer";
@@ -8,59 +8,17 @@ import { Select } from "../components/ui/Select";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Skeleton } from "../components/ui/Skeleton";
-import { Input } from "../components/ui/Input";
 import { ItemRow } from "../components/items/ItemRow";
 import { ItemCard } from "../components/items/ItemCard";
 import { GroupOrderRow, GroupOrderCard } from "../components/items/GroupOrderRow";
 import { GroupPickerModal } from "../components/items/GroupPickerModal";
-import { CustomerPicker } from "../components/items/CustomerPicker";
+import { NewControl } from "../components/items/NewControl";
 import { useDebounce } from "../hooks/useDebounce";
 import { ALL_STATUSES, ALL_QC_STATUSES, ALL_CATEGORIES, STATUS_CONFIG, QC_STATUS_CONFIG, CATEGORY_CONFIG } from "../lib/constants";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlusSignIcon, PackageIcon, LayoutGridIcon, ListViewIcon, Search01Icon, UserGroupIcon } from "@hugeicons/core-free-icons";
+import { PackageIcon, LayoutGridIcon, ListViewIcon, Search01Icon, UserGroupIcon } from "@hugeicons/core-free-icons";
 import { cn } from "../lib/utils";
 import { toast } from "sonner";
-
-function NewGroupOrderModal({ onClose }: { onClose: () => void }) {
-  const navigate = useNavigate();
-  const [customerId, setCustomerId] = useState<Id<"customers"> | null>(null);
-  const [notes, setNotes] = useState("");
-  const createGroup = useMutation(api.orderGroups.create);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!customerId) { toast.error("Please select a customer"); return; }
-    try {
-      const groupId = await createGroup({ customerId, notes: notes.trim() || undefined });
-      onClose();
-      navigate(`/groups/${groupId}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create group order");
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-base border border-border-default rounded-xl shadow-xl w-full max-w-md p-6">
-        <h2 className="text-base font-semibold text-primary mb-4">New Group Order</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-secondary">Customer</label>
-            <CustomerPicker value={customerId} onChange={setCustomerId} placeholder="Search or create customer..." />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-secondary">Notes (optional)</label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. Batch Jan 2026" />
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button type="submit">Create Group</Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 const COLUMNS = ["", "Item", "Seller", "Price", "Status", "QC", "Weight", "Selling Price", "Profit", "Actions"];
 const COLUMNS_SELECTABLE = ["sel", "Item", "Seller", "Price", "Status", "QC", "Weight", "Selling Price", "Profit", "Actions"];
@@ -76,7 +34,6 @@ export default function OrdersList() {
   const [sortBy, setSortBy] = useState("orderDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [showGroupModal, setShowGroupModal] = useState(false);
 
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -129,7 +86,8 @@ export default function OrdersList() {
   const toggleSelect = (id: string, checked: boolean) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      checked ? next.add(id) : next.delete(id);
+      if (checked) next.add(id);
+      else next.delete(id);
       return next;
     });
   };
@@ -148,7 +106,6 @@ export default function OrdersList() {
 
   return (
     <PageContainer>
-      {showGroupModal && <NewGroupOrderModal onClose={() => setShowGroupModal(false)} />}
       {showGroupPicker && (
         <GroupPickerModal
           itemIds={selectedItems.map((i) => i._id)}
@@ -214,14 +171,7 @@ export default function OrdersList() {
               <HugeiconsIcon icon={LayoutGridIcon} size={16} strokeWidth={1.5} />
             </button>
           </div>
-          <Button variant="secondary" size="sm" onClick={() => setShowGroupModal(true)}>
-            <HugeiconsIcon icon={UserGroupIcon} size={14} strokeWidth={1.5} />
-            New Group
-          </Button>
-          <Button size="sm" onClick={() => navigate("/orders/new")}>
-            <HugeiconsIcon icon={PlusSignIcon} size={14} strokeWidth={1.5} />
-            Add Item
-          </Button>
+          <NewControl />
         </div>
 
         {/* Selection action bar */}
