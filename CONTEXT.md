@@ -31,7 +31,9 @@ The derived status of a Group Order, computed from its items at query time — n
 A combobox on the ItemForm (and group creation modal) for selecting a Customer. Searches the `customers` table by name. If the typed name doesn't match any existing customer, shows a "Create '[name]'" option that creates and selects the customer in one step.
 
 ## Group Order Creation Flow
-"New Group Order" button in the Orders list → modal to pick or create a Customer → redirects to the Group Order detail page (empty). Items are added from the detail page using the standard ItemForm, with the customer pre-filled and locked.
+The primary path starts at a **+ New** split control in the Orders header, offering **Add Item** (solo) and **New Group Order**. "New Group Order" routes to the Quote Calculator, where you build and negotiate a [Bundle], then [Save as Group Order] → [Group Review Sheet] → the new Group Order detail page. This replaces the old empty-group flow (a low-visibility "New Group" button that created an empty group, then added items one at a time via ItemForm — **removed**).
+
+Two secondary paths remain for adding to groups *after* a sale: **multi-select grouping** (select Solo Items in the Orders list → "Group Selected" → add to or create a group) and the group detail's **Add Item** button (one more item into an existing group via ItemForm, customer locked).
 
 ## Orders List Layout
 The Orders list shows Group Orders and Solo Items in a single mixed list. A Group Order appears as a collapsible summary row (customer name, item count, lagging status, combined selling price, combined profit). The row expands minimally to reveal its items as sub-rows — each sub-row links directly to that item's detail page. Clicking the group row itself (not the expand toggle) navigates to the Group Order detail page. Collapsed by default.
@@ -46,13 +48,19 @@ An Item that is not part of any Group Order. Appears as an individual row in the
 The `/calculator` screen — a pre-sale tool for quoting a customer. Computes a single item's **suggested selling price** from its CNY price (`cost + per-category markup`). Stateless and ephemeral — nothing it produces is persisted. Distinct from creating an actual Item or Group Order.
 
 ## Bundle
-An **ephemeral, calculator-only** collection of computed item quotes used to price a multi-item order *before* the sale. A Bundle exists only in the Quote Calculator screen during one session — it is **not** persisted and is **not** a Group Order. (A Group Order is the persisted entity in the `orderGroups` table; a Bundle is a throwaway negotiation scratchpad.) Items are added one at a time via "Add to bundle".
+An **ephemeral, calculator-only** collection of computed item quotes used to price a multi-item order *before* the sale. A Bundle exists only in the Quote Calculator screen during one session — it is **not itself** persisted and is **not** a Group Order. (A Group Order is the persisted entity in the `orderGroups` table; a Bundle is a negotiation scratchpad.) Items are added one at a time via "Add to bundle". A Bundle is **throwaway by default**, but can be **promoted** into a Group Order in one step — see [Save as Group Order]. Promotion is one-way: it seeds a brand-new Group Order from the Bundle, then the Bundle is discarded.
+
+## Save as Group Order
+The one-way action that **promotes** a Bundle into a persisted Group Order. Available on the Quote Calculator whenever the Bundle is non-empty. It opens the **Group Review Sheet**; on confirmation it creates one `orderGroups` row plus one real `items` row per Bundle line, carries the negotiated [Offer Total] across as the group's `negotiatedTotal`, then navigates to the new Group Order detail page and clears the Bundle.
+
+## Group Review Sheet
+A full-height overlay on the Quote Calculator (not a separate route, so Bundle state survives — "Cancel" returns to the untouched Bundle). It is the **finalize** step of [Save as Group Order]. Collects the one Customer for the whole group and, per Bundle line, the fields a real Item requires that the calculator never captured: **name**, **seller**, and **size** (EU number for shoes, S/M/L/XL for clothes, none for watches/accessories — enforced by `validateItemRules`). Each line's computed quote is shown read-only and becomes that Item's `sellingPrice`. The negotiated total is pre-filled from the [Offer Total] and stays editable for a last-second round number. Seeded Items are created as `status: "ordered"` with weight blank and all other fields defaulted exactly as a freshly-ordered Item; their forwarder shipping fee is therefore still unknown, so group profit is optimistic until weights are entered — the same caveat the calculator already carries.
 
 ## Bundle Quote
 The sum of the suggested selling prices of all items in a Bundle, before any discount. The starting point the customer haggles down from.
 
 ## Offer Total
-The negotiated bundle price the customer proposes/agrees to — typed into the calculator. The discount is derived as `Bundle Quote − Offer Total`, shown as both an amount and a percentage. The discount is **never redistributed** back onto individual item quotes — it lives only at the bundle level. (This mirrors the Group Order pricing model: a group-level override, not a per-item rewrite.)
+The negotiated bundle price the customer proposes/agrees to — typed into the calculator. The discount is derived as `Bundle Quote − Offer Total`, shown as both an amount and a percentage. The discount is **never redistributed** back onto individual item quotes — it lives only at the bundle level. (This mirrors the Group Order pricing model: a group-level override, not a per-item rewrite.) On [Save as Group Order] the Offer Total carries across verbatim as the new group's `negotiatedTotal` — but only when a discount was actually given (offer < [Bundle Quote]); at full price it is left null and the group shows full price, identical to setting it by hand. `quotesSumAtEntry` snapshots the Bundle Quote so the group's "stale" warning works from creation.
 
 ## Break-even Floor
 The sum of item **costs** in a Bundle — the lowest Offer Total before the order loses money. The calculator surfaces this as the "how low can I go" anchor during negotiation.
