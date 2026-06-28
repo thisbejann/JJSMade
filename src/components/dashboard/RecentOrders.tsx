@@ -4,7 +4,7 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardHeader, CardContent, CardTitle, CardAction } from "../ui/Card";
 import { Skeleton } from "../ui/Skeleton";
 import { ItemStatusBadge } from "../items/ItemStatusBadge";
-import { CategoryBadge } from "../items/CategoryBadge";
+import { CategoryIcon } from "../items/CategoryIcon";
 import { formatRelativeDate } from "../../lib/formatters";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
@@ -41,19 +41,19 @@ export function RecentOrders() {
               <button
                 key={item._id}
                 onClick={() => navigate(`/orders/${item._id}`)}
-                className="group w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/5 transition-colors text-left cursor-pointer"
+                className="group w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/5 transition-colors text-left cursor-pointer"
               >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-primary truncate">{item.name}</p>
-                  <p className="text-xs text-tertiary mt-0.5">{formatRelativeDate(item.createdAt)}</p>
-                </div>
-                <CategoryBadge category={item.category} />
-                <ItemStatusBadge status={item.status} />
+                <CategoryIcon category={item.category} />
+                <p className="flex-1 min-w-0 truncate text-sm font-medium text-primary">{item.name}</p>
+                <span className="hidden sm:block shrink-0 text-xs text-tertiary tabular-nums">
+                  {formatRelativeDate(item.createdAt)}
+                </span>
+                <ItemStatusBadge status={item.status} className="shrink-0" />
                 <HugeiconsIcon
                   icon={ArrowRight01Icon}
                   size={14}
                   strokeWidth={2}
-                  className="text-tertiary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150"
+                  className="shrink-0 text-tertiary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150"
                 />
               </button>
             ))}

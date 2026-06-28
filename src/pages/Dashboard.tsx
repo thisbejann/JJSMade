@@ -14,19 +14,19 @@ export default function Dashboard() {
 
   return (
     <PageContainer>
-      <div className="space-y-10">
+      <div className="space-y-8">
         {/* Header */}
         <h1 className="text-lg font-semibold text-primary">Dashboard</h1>
 
         {/* Key Metrics — no cards, no icons, typography does the work */}
         {stats === undefined ? (
-          <div className="flex gap-12">
+          <div className="flex gap-8 sm:gap-10">
             <Skeleton className="h-14 w-48" />
             <Skeleton className="h-10 w-32" />
             <Skeleton className="h-10 w-24" />
           </div>
         ) : (
-          <div className="flex items-baseline gap-12">
+          <div className="flex items-baseline gap-8 sm:gap-10">
             <div>
               <p className="text-3xl font-bold text-accent tracking-tight">
                 {formatPHP(stats.profitThisMonth)}

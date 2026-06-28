@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardHeader, CardContent, CardTitle, CardAction } from "../ui/Card";
 import { Skeleton } from "../ui/Skeleton";
+import { CategoryIcon } from "../items/CategoryIcon";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
@@ -67,16 +68,17 @@ export function PendingQcSection() {
                   initial={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0, overflow: "hidden" }}
                   transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                  className="flex items-center gap-3 px-4 py-3"
+                  className="flex items-center gap-3 px-3 py-2.5"
                 >
+                  <CategoryIcon category={item.category} />
                   <button
                     onClick={() => navigate(`/orders/${item._id}`)}
                     className="flex-1 min-w-0 text-left cursor-pointer hover:opacity-80 transition-opacity"
                   >
                     <p className="text-sm font-medium text-primary truncate">{item.name}</p>
-                    <p className="text-xs text-tertiary mt-0.5">{item.seller}</p>
+                    <p className="text-xs text-tertiary truncate">{item.seller}</p>
                   </button>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 shrink-0">
                     <button
                       onClick={() => handleQc(item._id, "gl")}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-success bg-success/8 hover:bg-success/15 transition-colors cursor-pointer"

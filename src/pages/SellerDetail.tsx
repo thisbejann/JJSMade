@@ -48,7 +48,7 @@ export default function SellerDetail() {
 
   return (
     <PageContainer>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <button onClick={() => navigate("/sellers")} className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors cursor-pointer">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={1.5} /> Back to Sellers
         </button>

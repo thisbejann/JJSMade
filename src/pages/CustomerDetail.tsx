@@ -49,7 +49,7 @@ export default function CustomerDetail() {
 
   return (
     <PageContainer>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <button
           onClick={() => navigate("/customers")}
           className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors cursor-pointer"

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { Card } from "../ui/Card";
 import { ItemStatusBadge } from "./ItemStatusBadge";
-import { CategoryBadge } from "./CategoryBadge";
+import { CategoryIcon } from "./CategoryIcon";
 import { ProfitDisplay } from "./ProfitDisplay";
 import { formatPHP } from "../../lib/formatters";
 import type { Doc } from "../../../convex/_generated/dataModel";
@@ -18,14 +18,14 @@ export function ItemCard({ item }: ItemCardProps) {
       className="cursor-pointer p-4 space-y-3 transition-colors hover:border-primary/30"
       onClick={() => navigate(`/orders/${item._id}`)}
     >
-      <div className="flex items-start justify-between">
-        <div className="space-y-1 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <CategoryIcon category={item.category} />
+        <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-primary truncate">
             {item.name}
           </h3>
-          <p className="text-xs text-secondary">{item.seller}</p>
+          <p className="text-xs text-secondary truncate">{item.seller}</p>
         </div>
-        <CategoryBadge category={item.category} />
       </div>
 
       <div className="flex items-center justify-between">

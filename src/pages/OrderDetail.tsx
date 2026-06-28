@@ -88,7 +88,7 @@ export default function OrderDetail() {
 
   return (
     <PageContainer>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="space-y-2">
             <button
@@ -127,171 +127,171 @@ export default function OrderDetail() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>QC Photos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <QcPhotoGallery
-                  photoIds={item.qcPhotoIds}
-                  onRemovePhoto={handleRemoveDetailQcPhoto}
-                  itemName={item.name}
-                />
-              </CardContent>
-            </Card>
+        {/* Primary content: photos + cost, side by side on wide screens */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>QC Photos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <QcPhotoGallery
+                photoIds={item.qcPhotoIds}
+                onRemovePhoto={handleRemoveDetailQcPhoto}
+                itemName={item.name}
+              />
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Cost Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CostBreakdown
-                  pricePHP={item.pricePHP}
-                  localShippingPHP={item.localShippingPHP}
-                  forwarderFee={item.forwarderFee}
-                  forwarderBuyFeePHP={item.forwarderBuyFeePHP}
-                  qcServiceFeePHP={item.qcServiceFeePHP}
-                  totalCost={item.totalCost}
-                  sellingPrice={item.sellingPrice}
-                  profit={item.profit}
-                />
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-3">
-            <Card>
-              <CardContent className="space-y-3">
-                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
-                  Source
-                </h3>
-                <InfoRow label="Seller" value={item.seller} />
-                <InfoRow label="Contact" value={item.sellerContact} />
-                <InfoRow label="Batch" value={item.batch} />
-                <InfoRow label="Size" value={item.size} />
-                <InfoRow label="Order Date" value={formatDate(item.orderDate)} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="space-y-3">
-                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
-                  Pricing
-                </h3>
-                <InfoRow label="Price (CNY)" value={formatCNY(item.priceCNY)} mono />
-                {!item.isForwarderBuy && (
-                  <InfoRow
-                    label="Exchange Rate"
-                    value={`PHP${item.exchangeRateUsed.toFixed(2)}/CNY1`}
-                    mono
-                  />
-                )}
-                <InfoRow label="Price (PHP)" value={formatPHP(item.pricePHP)} mono />
-                {item.localShippingPHP != null && item.localShippingPHP > 0 && (
-                  <InfoRow
-                    label="Local Shipping"
-                    value={formatPHP(item.localShippingPHP)}
-                    mono
-                  />
-                )}
-                {item.isForwarderBuy && (
-                  <>
-                    <InfoRow label="Forwarder Buy" value="Yes" />
-                    <InfoRow
-                      label="Service Rate"
-                      value={`PHP${item.forwarderBuyRateUsed?.toFixed(2)}/CNY1`}
-                      mono
-                    />
-                    <InfoRow
-                      label="Commission"
-                      value={`${(item.forwarderBuyCommissionPercent ?? 10).toFixed(2)}%`}
-                      mono
-                    />
-                    <InfoRow
-                      label="Forwarder Buy Fee"
-                      value={formatPHP(item.forwarderBuyFeePHP)}
-                      mono
-                    />
-                    <InfoRow
-                      label="QC Service Fee"
-                      value={formatPHP(item.qcServiceFeePHP)}
-                      mono
-                    />
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="space-y-3">
-                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
-                  Shipping
-                </h3>
-                <InfoRow label="Weight" value={formatWeight(item.weightKg)} mono />
-                <InfoRow label="Tracking No." value={item.trackingNumber} />
-                <InfoRow
-                  label="Rate"
-                  value={`PHP${item.forwarderRatePerKg}/kg`}
-                  mono
-                />
-                <InfoRow
-                  label="Forwarder Fee"
-                  value={formatPHP(item.forwarderFee)}
-                  mono
-                />
-                <InfoRow label="Branded" value={item.isBranded ? "Yes" : "No"} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="space-y-3">
-                <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
-                  Sale
-                </h3>
-                <InfoRow
-                  label="Selling Price"
-                  value={formatPHP(item.sellingPrice)}
-                  mono
-                />
-                <InfoRow label="Customer" value={item.customerName} />
-                <InfoRow label="Sold Date" value={formatDate(item.soldDate)} />
-                <div className="pt-2 border-t border-border-subtle">
-                  <InfoRow label="Total Cost" value={formatPHP(item.totalCost)} mono bold />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-secondary font-semibold">Profit</span>
-                    <span
-                      className={cn(
-                        "font-mono text-sm font-bold",
-                        (item.profit ?? 0) > 0
-                          ? "text-success"
-                          : (item.profit ?? 0) < 0
-                            ? "text-danger"
-                            : "text-tertiary"
-                      )}
-                    >
-                      {formatPHP(item.profit)}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {item.notes && (
-              <Card>
-                <CardContent className="min-w-0">
-                  <h3 className="text-xs font-medium text-secondary uppercase tracking-wider mb-2">
-                    Notes
-                  </h3>
-                  <p className="text-sm text-primary whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                    {item.notes}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Cost Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CostBreakdown
+                pricePHP={item.pricePHP}
+                localShippingPHP={item.localShippingPHP}
+                forwarderFee={item.forwarderFee}
+                forwarderBuyFeePHP={item.forwarderBuyFeePHP}
+                qcServiceFeePHP={item.qcServiceFeePHP}
+                totalCost={item.totalCost}
+                sellingPrice={item.sellingPrice}
+                profit={item.profit}
+              />
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Reference metadata: spread across the X-axis instead of a tall rail */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="space-y-3">
+              <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+                Source
+              </h3>
+              <InfoRow label="Seller" value={item.seller} />
+              <InfoRow label="Contact" value={item.sellerContact} />
+              <InfoRow label="Batch" value={item.batch} />
+              <InfoRow label="Size" value={item.size} />
+              <InfoRow label="Order Date" value={formatDate(item.orderDate)} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-3">
+              <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+                Pricing
+              </h3>
+              <InfoRow label="Price (CNY)" value={formatCNY(item.priceCNY)} mono />
+              {!item.isForwarderBuy && (
+                <InfoRow
+                  label="Exchange Rate"
+                  value={`PHP${item.exchangeRateUsed.toFixed(2)}/CNY1`}
+                  mono
+                />
+              )}
+              <InfoRow label="Price (PHP)" value={formatPHP(item.pricePHP)} mono />
+              {item.localShippingPHP != null && item.localShippingPHP > 0 && (
+                <InfoRow
+                  label="Local Shipping"
+                  value={formatPHP(item.localShippingPHP)}
+                  mono
+                />
+              )}
+              {item.isForwarderBuy && (
+                <>
+                  <InfoRow label="Forwarder Buy" value="Yes" />
+                  <InfoRow
+                    label="Service Rate"
+                    value={`PHP${item.forwarderBuyRateUsed?.toFixed(2)}/CNY1`}
+                    mono
+                  />
+                  <InfoRow
+                    label="Commission"
+                    value={`${(item.forwarderBuyCommissionPercent ?? 10).toFixed(2)}%`}
+                    mono
+                  />
+                  <InfoRow
+                    label="Forwarder Buy Fee"
+                    value={formatPHP(item.forwarderBuyFeePHP)}
+                    mono
+                  />
+                  <InfoRow
+                    label="QC Service Fee"
+                    value={formatPHP(item.qcServiceFeePHP)}
+                    mono
+                  />
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-3">
+              <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+                Shipping
+              </h3>
+              <InfoRow label="Weight" value={formatWeight(item.weightKg)} mono />
+              <InfoRow label="Tracking No." value={item.trackingNumber} />
+              <InfoRow
+                label="Rate"
+                value={`PHP${item.forwarderRatePerKg}/kg`}
+                mono
+              />
+              <InfoRow
+                label="Forwarder Fee"
+                value={formatPHP(item.forwarderFee)}
+                mono
+              />
+              <InfoRow label="Branded" value={item.isBranded ? "Yes" : "No"} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-3">
+              <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+                Sale
+              </h3>
+              <InfoRow
+                label="Selling Price"
+                value={formatPHP(item.sellingPrice)}
+                mono
+              />
+              <InfoRow label="Customer" value={item.customerName} />
+              <InfoRow label="Sold Date" value={formatDate(item.soldDate)} />
+              <div className="pt-2 border-t border-border-subtle">
+                <InfoRow label="Total Cost" value={formatPHP(item.totalCost)} mono bold />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-secondary font-semibold">Profit</span>
+                  <span
+                    className={cn(
+                      "font-mono text-sm font-bold",
+                      (item.profit ?? 0) > 0
+                        ? "text-success"
+                        : (item.profit ?? 0) < 0
+                          ? "text-danger"
+                          : "text-tertiary"
+                    )}
+                  >
+                    {formatPHP(item.profit)}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {item.notes && (
+          <Card>
+            <CardContent className="min-w-0">
+              <h3 className="text-xs font-medium text-secondary uppercase tracking-wider mb-2">
+                Notes
+              </h3>
+              <p className="text-sm text-primary whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                {item.notes}
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete Item">
