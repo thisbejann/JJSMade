@@ -41,3 +41,21 @@ A dedicated page per Customer. Shows: customer name, total orders, total profit,
 
 ## Solo Item
 An Item that is not part of any Group Order. Appears as an individual row in the Orders list.
+
+## Quote Calculator
+The `/calculator` screen — a pre-sale tool for quoting a customer. Computes a single item's **suggested selling price** from its CNY price (`cost + per-category markup`). Stateless and ephemeral — nothing it produces is persisted. Distinct from creating an actual Item or Group Order.
+
+## Bundle
+An **ephemeral, calculator-only** collection of computed item quotes used to price a multi-item order *before* the sale. A Bundle exists only in the Quote Calculator screen during one session — it is **not** persisted and is **not** a Group Order. (A Group Order is the persisted entity in the `orderGroups` table; a Bundle is a throwaway negotiation scratchpad.) Items are added one at a time via "Add to bundle".
+
+## Bundle Quote
+The sum of the suggested selling prices of all items in a Bundle, before any discount. The starting point the customer haggles down from.
+
+## Offer Total
+The negotiated bundle price the customer proposes/agrees to — typed into the calculator. The discount is derived as `Bundle Quote − Offer Total`, shown as both an amount and a percentage. The discount is **never redistributed** back onto individual item quotes — it lives only at the bundle level. (This mirrors the Group Order pricing model: a group-level override, not a per-item rewrite.)
+
+## Break-even Floor
+The sum of item **costs** in a Bundle — the lowest Offer Total before the order loses money. The calculator surfaces this as the "how low can I go" anchor during negotiation.
+
+## Pre-shipping Margin
+`Offer Total − Break-even Floor`. The calculator's profit readout. **Provisional and known to be imperfect:** it excludes the weight-based **forwarder shipping fee**, which is unknown at quote time. Lightweight items therefore over-state profit and heavy items under-state it (or hide a real loss). This is intentional for now and is the motivating case for the planned **weight-aware pricing revision** — once that lands, the Bundle math inherits real shipping cost. Always labelled "excl. forwarder shipping" in the UI so it is never read as final profit.
