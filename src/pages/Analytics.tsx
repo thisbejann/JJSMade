@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { PageContainer } from "../components/layout/PageContainer";
-import { StatCard } from "../components/dashboard/StatCard";
+import { MetricTiles } from "../components/ui/MetricTiles";
 import { Skeleton } from "../components/ui/Skeleton";
 import { formatPHP } from "../lib/formatters";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -29,32 +29,21 @@ export default function Analytics() {
   return (
     <PageContainer>
       <div className="space-y-8">
-        {/* All-time stat cards */}
+        {/* All-time metrics — one tonal tile panel instead of 6 separate cards */}
         {stats === undefined ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28" />)}
-          </div>
+          <Skeleton className="h-28 rounded-3xl sm:h-40 xl:h-24" />
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-            <StatCard label="Total Revenue" value={stats.totalRevenue} format={formatPHP} icon={<HugeiconsIcon icon={DollarCircleIcon} size={20} strokeWidth={1.5} />} />
-            <StatCard label="Total Profit" value={stats.totalProfit} format={formatPHP} icon={<HugeiconsIcon icon={ArrowUpRight01Icon} size={20} strokeWidth={1.5} />} />
-            <StatCard label="Items Sold" value={stats.totalSold} icon={<HugeiconsIcon icon={ShoppingBag01Icon} size={20} strokeWidth={1.5} />} />
-            <StatCard label="Avg Profit/Item" value={stats.avgProfit} format={formatPHP} icon={<HugeiconsIcon icon={Target01Icon} size={20} strokeWidth={1.5} />} />
-            <StatCard
-              label="Best Month"
-              value={stats.bestMonth?.profit ?? 0}
-              format={formatPHP}
-              icon={<HugeiconsIcon icon={Award01Icon} size={20} strokeWidth={1.5} />}
-              trend={stats.bestMonth?.month}
-            />
-            <StatCard
-              label="Best Seller"
-              value={stats.bestSeller?.profit ?? 0}
-              format={formatPHP}
-              icon={<HugeiconsIcon icon={StarIcon} size={20} strokeWidth={1.5} />}
-              trend={stats.bestSeller?.seller}
-            />
-          </div>
+          <MetricTiles
+            className="grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
+            metrics={[
+              { label: "Total Revenue", value: formatPHP(stats.totalRevenue), icon: <HugeiconsIcon icon={DollarCircleIcon} size={20} strokeWidth={1.5} /> },
+              { label: "Total Profit", value: formatPHP(stats.totalProfit), icon: <HugeiconsIcon icon={ArrowUpRight01Icon} size={20} strokeWidth={1.5} /> },
+              { label: "Items Sold", value: String(stats.totalSold), icon: <HugeiconsIcon icon={ShoppingBag01Icon} size={20} strokeWidth={1.5} /> },
+              { label: "Avg Profit/Item", value: formatPHP(stats.avgProfit), icon: <HugeiconsIcon icon={Target01Icon} size={20} strokeWidth={1.5} /> },
+              { label: "Best Month", value: formatPHP(stats.bestMonth?.profit ?? 0), sublabel: stats.bestMonth?.month, icon: <HugeiconsIcon icon={Award01Icon} size={20} strokeWidth={1.5} /> },
+              { label: "Best Seller", value: formatPHP(stats.bestSeller?.profit ?? 0), sublabel: stats.bestSeller?.seller, icon: <HugeiconsIcon icon={StarIcon} size={20} strokeWidth={1.5} /> },
+            ]}
+          />
         )}
 
         {/* Tier 1 — Performance Trends */}

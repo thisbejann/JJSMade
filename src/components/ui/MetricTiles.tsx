@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn } from "../../lib/utils";
 
 export interface MetricTile {
@@ -8,6 +9,10 @@ export interface MetricTile {
    * (e.g. `text-success` on profit) — twMerge overrides the default `text-primary`.
    */
   valueClassName?: string;
+  /** Optional accent icon chip, anchored to the right of the cell. */
+  icon?: ReactNode;
+  /** Optional context line under the label (e.g. "March 2026" for Best Month). */
+  sublabel?: string;
 }
 
 /**
@@ -33,15 +38,27 @@ export function MetricTiles({
     >
       {metrics.map((metric) => (
         <div key={metric.label} className="bg-surface px-4 py-3.5">
-          <p
-            className={cn(
-              "text-lg font-semibold tabular-nums text-primary",
-              metric.valueClassName,
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p
+                className={cn(
+                  "text-lg font-semibold tabular-nums text-primary",
+                  metric.valueClassName,
+                )}
+              >
+                {metric.value}
+              </p>
+              <p className="mt-0.5 text-xs text-tertiary">{metric.label}</p>
+              {metric.sublabel && (
+                <p className="mt-0.5 truncate text-xs text-tertiary">{metric.sublabel}</p>
+              )}
+            </div>
+            {metric.icon && (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-muted text-accent">
+                {metric.icon}
+              </div>
             )}
-          >
-            {metric.value}
-          </p>
-          <p className="mt-0.5 text-xs text-tertiary">{metric.label}</p>
+          </div>
         </div>
       ))}
     </div>
