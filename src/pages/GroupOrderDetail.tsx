@@ -8,6 +8,7 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { ItemStatusBadge } from "../components/items/ItemStatusBadge";
+import { GroupStatusBadge } from "../components/items/GroupStatusBadge";
 import { formatPHP, formatPercent, formatDate } from "../lib/formatters";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -21,25 +22,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
-
-const GROUP_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  ordered:                { label: "Ordered",        color: "bg-blue-500/15 text-blue-400" },
-  qc_sent:                { label: "QC Sent",         color: "bg-yellow-500/15 text-yellow-400" },
-  item_shipout:           { label: "Item Shipout",    color: "bg-blue-500/15 text-blue-400" },
-  arrived_ph_warehouse:   { label: "Arrived in PH",   color: "bg-yellow-500/15 text-yellow-400" },
-  delivered_to_customer:  { label: "Delivered",       color: "bg-green-500/15 text-green-400" },
-  completed:              { label: "Completed",       color: "bg-green-500/15 text-green-400" },
-  cancelled:              { label: "Cancelled",       color: "bg-red-500/15 text-red-400" },
-};
-
-function GroupStatusBadge({ status }: { status: string }) {
-  const cfg = GROUP_STATUS_CONFIG[status] ?? { label: status, color: "bg-surface text-secondary" };
-  return (
-    <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", cfg.color)}>
-      {cfg.label}
-    </span>
-  );
-}
 
 /** Signed profit: "₱1,670.00" / "−₱900.00", colored green ≥0 / red <0. */
 function ProfitNumber({ value, className }: { value: number; className?: string }) {
@@ -391,7 +373,7 @@ export default function GroupOrderDetail() {
                     </td>
                     <td className="px-4 py-3 text-right font-mono">
                       {item.profit != null ? (
-                        <span className={item.profit >= 0 ? "text-green-400" : "text-red-400"}>
+                        <span className={item.profit >= 0 ? "text-success" : "text-danger"}>
                           {formatPHP(item.profit)}
                         </span>
                       ) : (
@@ -433,9 +415,9 @@ export default function GroupOrderDetail() {
           <button
             onClick={() => handleDelete("delete-all")}
             disabled={deleting}
-            className="w-full text-left rounded-lg border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 p-4 transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full text-left rounded-lg border border-danger/30 bg-danger/5 hover:bg-danger/10 p-4 transition-colors cursor-pointer disabled:opacity-50"
           >
-            <p className="font-medium text-red-400 text-sm">Delete All</p>
+            <p className="font-medium text-danger text-sm">Delete All</p>
             <p className="text-xs text-secondary mt-0.5">Delete the group and permanently delete all {group.items.length} item{group.items.length !== 1 ? "s" : ""}.</p>
           </button>
         </div>

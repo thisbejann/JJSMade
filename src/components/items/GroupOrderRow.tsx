@@ -9,20 +9,10 @@ import {
   Alert02Icon,
 } from "@hugeicons/core-free-icons";
 import { ItemStatusBadge } from "./ItemStatusBadge";
+import { GroupStatusBadge } from "./GroupStatusBadge";
 import { ProfitDisplay } from "./ProfitDisplay";
 import { formatPHP, formatPercent } from "../../lib/formatters";
-import { cn } from "../../lib/utils";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
-
-const GROUP_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  ordered:               { label: "Ordered",       color: "bg-blue-500/15 text-blue-400" },
-  qc_sent:               { label: "QC Sent",        color: "bg-yellow-500/15 text-yellow-400" },
-  item_shipout:          { label: "Item Shipout",   color: "bg-blue-500/15 text-blue-400" },
-  arrived_ph_warehouse:  { label: "Arrived in PH",  color: "bg-yellow-500/15 text-yellow-400" },
-  delivered_to_customer: { label: "Delivered",      color: "bg-green-500/15 text-green-400" },
-  completed:             { label: "Completed",      color: "bg-green-500/15 text-green-400" },
-  cancelled:             { label: "Cancelled",      color: "bg-red-500/15 text-red-400" },
-};
 
 interface GroupOrderRowProps {
   group: {
@@ -71,7 +61,6 @@ function ReviewBadge() {
 export function GroupOrderRow({ group }: GroupOrderRowProps) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
-  const statusCfg = GROUP_STATUS_CONFIG[group.status] ?? { label: group.status, color: "bg-surface text-secondary" };
 
   return (
     <>
@@ -105,9 +94,7 @@ export function GroupOrderRow({ group }: GroupOrderRowProps) {
         </td>
         {/* Status */}
         <td className="py-3 px-4">
-          <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", statusCfg.color)}>
-            {statusCfg.label}
-          </span>
+          <GroupStatusBadge status={group.status} />
         </td>
         {/* QC — empty for group rows */}
         <td className="py-3 px-4" />
@@ -170,7 +157,6 @@ export function GroupOrderRow({ group }: GroupOrderRowProps) {
 /** Card variant for mobile/grid view */
 export function GroupOrderCard({ group }: GroupOrderRowProps) {
   const navigate = useNavigate();
-  const statusCfg = GROUP_STATUS_CONFIG[group.status] ?? { label: group.status, color: "bg-surface text-secondary" };
 
   return (
     <div
@@ -183,9 +169,7 @@ export function GroupOrderCard({ group }: GroupOrderRowProps) {
           <h3 className="text-sm font-semibold text-primary truncate">{group.customerName}</h3>
           {group.stale && <ReviewBadge />}
         </div>
-        <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0", statusCfg.color)}>
-          {statusCfg.label}
-        </span>
+        <GroupStatusBadge status={group.status} className="shrink-0" />
       </div>
       <p className="text-xs text-secondary">{group.items.length} item{group.items.length !== 1 ? "s" : ""}</p>
       {/* Customer pays + profit on one row, neutral discount chip beneath */}

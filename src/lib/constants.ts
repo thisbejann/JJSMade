@@ -82,3 +82,17 @@ export const PERSONAL_STATUS_FLOW: PersonalItemStatus[] = [
 ];
 
 export const ALL_PERSONAL_STATUSES = Object.keys(PERSONAL_STATUS_CONFIG) as PersonalItemStatus[];
+
+// Group orders carry their own status set (a superset of item statuses, plus
+// `completed`). Colors are semantic Badge variants — never raw palette values.
+export const GROUP_STATUS_CONFIG = {
+  ordered:              { label: "Ordered",       color: "info" },
+  qc_sent:              { label: "QC Sent",        color: "warning" },
+  item_shipout:         { label: "Item Shipout",   color: "info" },
+  arrived_ph_warehouse: { label: "Arrived in PH",  color: "warning" },
+  delivered_to_customer:{ label: "Delivered",      color: "success" },
+  completed:            { label: "Completed",      color: "success" },
+  cancelled:            { label: "Cancelled",       color: "danger" },
+} as const;
+
+export type GroupStatus = keyof typeof GROUP_STATUS_CONFIG;
