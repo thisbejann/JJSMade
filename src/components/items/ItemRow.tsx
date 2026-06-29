@@ -30,9 +30,10 @@ export function ItemRow({ item, selectable, selected, onSelect }: ItemRowProps) 
         selected && "bg-accent-muted/30"
       )}
     >
-      {/* Checkbox column — shown when selectable */}
-      <td className="py-3 px-4 w-px">
-        {selectable && (
+      {/* Checkbox column — only rendered when selectable, so non-selectable
+          tables (ItemTable) stay column-aligned with their headers */}
+      {selectable && (
+        <td className="py-3 px-4 w-px">
           <input
             type="checkbox"
             checked={selected ?? false}
@@ -41,8 +42,8 @@ export function ItemRow({ item, selectable, selected, onSelect }: ItemRowProps) 
             aria-label={`Select ${item.name}`}
             className="h-4 w-4 rounded border-border-default accent-accent cursor-pointer"
           />
-        )}
-      </td>
+        </td>
+      )}
       <td className="py-3 px-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="min-w-0">
