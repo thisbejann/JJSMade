@@ -82,6 +82,17 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Scroll without a visible scrollbar — for deliberate overflow rails (e.g. the
+   dashboard status pipeline on narrow viewports) where the scrollbar chrome is
+   noise but the swipe/scroll affordance should remain. */
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Remove number input spinners */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {

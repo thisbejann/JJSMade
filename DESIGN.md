@@ -277,11 +277,11 @@ Fixed left sidebar, collapsible to a 64px icon rail on desktop. Mobile renders a
 
 A horizontal flow tracker mapping order lifecycle: Purchased → QC → Delivered. Each stage displays a count; zero-count stages dim to tertiary opacity. Clicking a stage filters the order list.
 
-- **Layout:** Horizontal flex row, `gap-1`, overflow-x-auto on narrow viewports
-- **Stage button:** 10px radius, `px-3.5 py-2`, semantic-color background at 8% opacity, 15% on hover
+- **Layout:** Single-row flex track, `gap-1`. On `sm+` the stages stretch to equal segments (`flex-1`) that span the full container, so the filled segments read as one continuous flow rather than a left-clustered row. On narrow viewports stages fall back to content-sized and the track scrolls horizontally with the scrollbar hidden (`scrollbar-hide` utility) — the swipe affordance stays, the chrome doesn't.
+- **Stage button:** 10px radius, `px-3.5 py-2`, content centered (`justify-center`), semantic-color background at 8% opacity, 15% on hover
 - **Stage count:** 700 weight, 1.125rem, tabular nums, full semantic color when nonzero, tertiary when zero
 - **Stage label:** 0.75rem, 500 weight, secondary-text when nonzero, tertiary when zero
-- **Separator:** Right-arrow icon at 14px stroke, `rgba(255,255,255,0.16)` color
+- **Separator:** Right-arrow icon at 14px stroke, `rgba(255,255,255,0.16)` color, sitting flush between segments (no horizontal margin)
 - **Semantic mapping:** Purchased = info, QC pending = warning, Delivered = success, Cancelled = danger
 
 ## 6. Do's and Don'ts

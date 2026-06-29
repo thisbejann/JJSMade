@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { useNavigate } from "react-router";
 import { STATUS_FLOW, STATUS_CONFIG } from "../../lib/constants";
 import { cn } from "../../lib/utils";
@@ -28,18 +29,23 @@ export function StatusPipeline({ statusCounts }: StatusPipelineProps) {
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center gap-1 overflow-x-auto">
+    // Stages are content-sized + horizontally scrollable on mobile (scrollbar
+    // hidden via `scrollbar-hide`, swipe affordance kept), then stretch to equal
+    // segments (`sm:flex-1`) that span the container as a single-row track on
+    // wider screens — the filled segments read as a continuous flow, killing the
+    // dead space a left-clustered row leaves behind.
+    <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
       {STATUS_FLOW.map((status, i) => {
         const config = STATUS_CONFIG[status];
         const count = statusCounts[status] ?? 0;
         const hasItems = count > 0;
 
         return (
-          <div key={status} className="flex items-center">
+          <Fragment key={status}>
             <button
               onClick={() => navigate(`/orders?status=${status}`)}
               className={cn(
-                "flex items-center gap-2.5 px-3.5 py-2 rounded-lg transition-colors cursor-pointer",
+                "flex items-center justify-center gap-2.5 px-3.5 py-2 rounded-lg transition-colors cursor-pointer shrink-0 sm:flex-1",
                 hasItems
                   ? activeBgMap[config.color]
                   : "hover:bg-hover opacity-40"
@@ -67,10 +73,10 @@ export function StatusPipeline({ statusCounts }: StatusPipelineProps) {
                 icon={ArrowRight01Icon}
                 size={14}
                 strokeWidth={1.5}
-                className="text-border-strong shrink-0 mx-0.5"
+                className="text-border-strong shrink-0"
               />
             )}
-          </div>
+          </Fragment>
         );
       })}
     </div>

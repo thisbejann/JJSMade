@@ -15,7 +15,10 @@ export default function Dashboard() {
 
   return (
     <PageContainer>
-      <div className="space-y-8">
+      {/* Two zones: a "money" band (hero) sits a generous 40px above the
+          "operations" band (pipeline + orders), which groups tightly within
+          itself so the pipeline reads as the scope header for the feed below. */}
+      <div className="space-y-10">
         {/* Hero band — date leads, then the coral profit number, with supporting
             metrics riding a hairline-divided tonal panel (no card chrome) */}
         <div>
@@ -52,17 +55,23 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Pipeline */}
-        {statusCounts === undefined ? (
-          <Skeleton className="h-12" />
-        ) : (
-          <StatusPipeline statusCounts={statusCounts} />
-        )}
+        {/* Operations zone, stacked by workflow priority: pipeline (scope) →
+            pending QC (act now) → recent orders (review). Full-width sections
+            avoid the height mismatch of a short panel stranded beside a feed,
+            and let the actionable QC queue command the top when it has items. */}
+        <div className="space-y-6">
+          {/* Pipeline */}
+          {statusCounts === undefined ? (
+            <Skeleton className="h-11" />
+          ) : (
+            <StatusPipeline statusCounts={statusCounts} />
+          )}
 
-        {/* Recent orders (borderless) + Pending QC (warm tonal panel) */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-          <RecentOrders />
+          {/* Act now: items awaiting QC review (warm tonal panel) */}
           <PendingQcSection />
+
+          {/* Review: recent order activity (borderless feed) */}
+          <RecentOrders />
         </div>
       </div>
     </PageContainer>
