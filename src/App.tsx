@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from "react-router";
 import { AppLayout } from "./components/layout/AppLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
-import DashboardPrototype from "./pages/DashboardPrototype";
 import OrdersList from "./pages/OrdersList";
 import OrderForm from "./pages/OrderForm";
 import OrderDetail from "./pages/OrderDetail";
@@ -27,7 +26,6 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard-lab" element={<DashboardPrototype />} />
             <Route path="/orders" element={<OrdersList />} />
             <Route path="/orders/new" element={<OrderForm />} />
             <Route path="/orders/:id" element={<OrderDetail />} />

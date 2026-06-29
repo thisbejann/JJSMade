@@ -1,7 +1,6 @@
 import { useQuery } from "convex/react";
 import { useNavigate } from "react-router";
 import { api } from "../../../convex/_generated/api";
-import { Card, CardHeader, CardContent, CardTitle, CardAction } from "../ui/Card";
 import { Skeleton } from "../ui/Skeleton";
 import { ItemStatusBadge } from "../items/ItemStatusBadge";
 import { CategoryIcon } from "../items/CategoryIcon";
@@ -14,52 +13,54 @@ export function RecentOrders() {
   const navigate = useNavigate();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Orders</CardTitle>
-        <CardAction>
-          <button
-            onClick={() => navigate("/orders")}
-            className="text-xs text-secondary hover:text-primary transition-colors cursor-pointer"
-          >
-            View all
-          </button>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="p-0">
-        {items === undefined ? (
-          <div className="p-4 space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
-          </div>
-        ) : items.length === 0 ? (
-          <p className="text-center text-secondary py-8 text-sm">
-            No recent orders yet.
-          </p>
-        ) : (
-          <div className="divide-y divide-border-subtle">
-            {items.map((item) => (
-              <button
-                key={item._id}
-                onClick={() => navigate(`/orders/${item._id}`)}
-                className="group w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/5 transition-colors text-left cursor-pointer"
-              >
-                <CategoryIcon category={item.category} />
-                <p className="flex-1 min-w-0 truncate text-sm font-medium text-primary">{item.name}</p>
-                <span className="hidden sm:block shrink-0 text-xs text-tertiary tabular-nums">
-                  {formatRelativeDate(item.createdAt)}
-                </span>
-                <ItemStatusBadge status={item.status} className="shrink-0" />
-                <HugeiconsIcon
-                  icon={ArrowRight01Icon}
-                  size={14}
-                  strokeWidth={2}
-                  className="shrink-0 text-tertiary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150"
-                />
-              </button>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-sm font-medium text-primary">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          Recent orders
+        </h2>
+        <button
+          onClick={() => navigate("/orders")}
+          className="cursor-pointer text-xs text-secondary transition-colors hover:text-primary"
+        >
+          View all
+        </button>
+      </div>
+
+      {items === undefined ? (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-10" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <p className="py-8 text-sm text-tertiary">No orders logged yet.</p>
+      ) : (
+        <div className="space-y-1">
+          {items.map((item) => (
+            <button
+              key={item._id}
+              onClick={() => navigate(`/orders/${item._id}`)}
+              className="group flex w-full cursor-pointer items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-surface"
+            >
+              <CategoryIcon category={item.category} className="h-7 w-7" />
+              <p className="min-w-0 flex-1 truncate text-sm font-medium text-primary">
+                {item.name}
+              </p>
+              <span className="hidden shrink-0 text-xs tabular-nums text-tertiary sm:block">
+                {formatRelativeDate(item.createdAt)}
+              </span>
+              <ItemStatusBadge status={item.status} className="shrink-0" />
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                size={14}
+                strokeWidth={2}
+                className="shrink-0 -translate-x-1 text-tertiary opacity-0 transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

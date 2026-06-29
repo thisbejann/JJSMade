@@ -1,7 +1,6 @@
 import { useQuery, useMutation } from "convex/react";
 import { useNavigate } from "react-router";
 import { api } from "../../../convex/_generated/api";
-import { Card, CardHeader, CardContent, CardTitle, CardAction } from "../ui/Card";
 import { Skeleton } from "../ui/Skeleton";
 import { CategoryIcon } from "../items/CategoryIcon";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -24,80 +23,82 @@ export function PendingQcSection() {
     }
   };
 
-  const hasOverflow = items && items.length > 5;
   const hasItems = items && items.length > 0;
 
   return (
-    <Card className={hasItems ? "ring-1 ring-accent/20" : undefined}>
-      <CardHeader>
-        <CardTitle>
+    <section
+      className={`h-fit rounded-3xl p-4 ${
+        hasItems
+          ? "bg-accent/5 ring-1 ring-accent/20"
+          : "bg-surface ring-1 ring-border-subtle"
+      }`}
+    >
+      <div className="mb-3 flex items-center justify-between px-1">
+        <h2 className="flex items-center gap-2 text-sm font-medium text-primary">
           Pending QC
-          {items && items.length > 0 && (
-            <span className="ml-2 inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium text-accent bg-accent/10 rounded-full tabular-nums">
+          {hasItems && (
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent/15 px-1.5 text-xs font-medium tabular-nums text-accent">
               {items.length}
             </span>
           )}
-        </CardTitle>
-        {hasOverflow && (
-          <CardAction>
-            <button
-              onClick={() => navigate("/orders?qcStatus=pending_review")}
-              className="text-xs text-secondary hover:text-primary transition-colors cursor-pointer"
-            >
-              View all
-            </button>
-          </CardAction>
+        </h2>
+        {items && items.length > 5 && (
+          <button
+            onClick={() => navigate("/orders?qcStatus=pending_review")}
+            className="cursor-pointer text-xs text-secondary transition-colors hover:text-primary"
+          >
+            View all
+          </button>
         )}
-      </CardHeader>
-      <CardContent className="p-0">
-        {items === undefined ? (
-          <div className="p-4 space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
-          </div>
-        ) : items.length === 0 ? (
-          <p className="text-center text-secondary py-6 text-sm">
-            All clear — no items pending review.
-          </p>
-        ) : (
-          <div className="divide-y divide-border-subtle">
-            <AnimatePresence initial={false}>
-              {items.slice(0, 5).map((item) => (
-                <motion.div
-                  key={item._id}
-                  layout
-                  initial={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0, overflow: "hidden" }}
-                  transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                  className="flex items-center gap-3 px-3 py-2.5"
+      </div>
+
+      {items === undefined ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-12" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <p className="px-1 py-2 text-sm text-tertiary">All clear, nothing to review.</p>
+      ) : (
+        <div className="space-y-1">
+          <AnimatePresence initial={false}>
+            {items.slice(0, 5).map((item) => (
+              <motion.div
+                key={item._id}
+                layout
+                initial={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0, overflow: "hidden" }}
+                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                className="flex items-center gap-3 rounded-2xl bg-base/40 px-2.5 py-2.5"
+              >
+                <CategoryIcon category={item.category} className="h-7 w-7" />
+                <button
+                  onClick={() => navigate(`/orders/${item._id}`)}
+                  className="min-w-0 flex-1 cursor-pointer text-left transition-opacity hover:opacity-80"
                 >
-                  <CategoryIcon category={item.category} />
+                  <p className="truncate text-sm font-medium text-primary">{item.name}</p>
+                  <p className="truncate text-xs text-tertiary">{item.seller}</p>
+                </button>
+                <div className="flex shrink-0 gap-1.5">
                   <button
-                    onClick={() => navigate(`/orders/${item._id}`)}
-                    className="flex-1 min-w-0 text-left cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => handleQc(item._id, "gl")}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-success/10 px-2.5 py-1.5 text-xs font-medium text-success transition-colors hover:bg-success/20"
                   >
-                    <p className="text-sm font-medium text-primary truncate">{item.name}</p>
-                    <p className="text-xs text-tertiary truncate">{item.seller}</p>
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} strokeWidth={2} /> GL
                   </button>
-                  <div className="flex gap-1.5 shrink-0">
-                    <button
-                      onClick={() => handleQc(item._id, "gl")}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-success bg-success/8 hover:bg-success/15 transition-colors cursor-pointer"
-                    >
-                      <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} strokeWidth={2} /> GL
-                    </button>
-                    <button
-                      onClick={() => handleQc(item._id, "rl")}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-danger bg-danger/8 hover:bg-danger/15 transition-colors cursor-pointer"
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} /> RL
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                  <button
+                    onClick={() => handleQc(item._id, "rl")}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-danger/10 px-2.5 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/20"
+                  >
+                    <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} /> RL
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+    </section>
   );
 }
