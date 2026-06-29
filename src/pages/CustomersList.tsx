@@ -50,7 +50,7 @@ export default function CustomersList() {
                   >
                     <td className="px-4 py-3 font-medium text-primary">{customer.name}</td>
                     <td className="px-4 py-3 text-right text-secondary">{customer.orderCount}</td>
-                    <td className={`px-4 py-3 text-right font-medium ${customer.totalProfit >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    <td className={`px-4 py-3 text-right font-medium ${customer.totalProfit >= 0 ? "text-success" : "text-danger"}`}>
                       {formatPHP(customer.totalProfit)}
                     </td>
                   </tr>
