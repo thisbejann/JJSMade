@@ -1,5 +1,5 @@
 import { formatPHP } from "../../lib/formatters";
-import { Card, CardContent } from "../ui/Card";
+import { MetricTiles } from "../ui/MetricTiles";
 
 interface SellerStatsProps {
   totalItems: number;
@@ -10,26 +10,16 @@ interface SellerStatsProps {
 }
 
 export function SellerStats({ totalItems, soldItems, totalProfit, avgProfit, totalSpent }: SellerStatsProps) {
-  const stats = [
-    { label: "Total Items", value: totalItems.toString() },
-    { label: "Items Delivered", value: soldItems.toString() },
-    { label: "Total Spent", value: formatPHP(totalSpent) },
-    { label: "Total Profit", value: formatPHP(totalProfit), color: "text-success" },
-    { label: "Avg Profit", value: formatPHP(avgProfit) },
-  ];
-
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-      {stats.map((stat) => (
-        <Card key={stat.label}>
-          <CardContent className="py-3 text-center">
-            <p className="text-xs text-secondary mb-1">{stat.label}</p>
-            <p className={`text-sm font-semibold ${stat.color ?? "text-primary"}`}>
-              {stat.value}
-            </p>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <MetricTiles
+      className="grid-cols-2 sm:grid-cols-5"
+      metrics={[
+        { label: "Total Items", value: totalItems.toString() },
+        { label: "Items Delivered", value: soldItems.toString() },
+        { label: "Total Spent", value: formatPHP(totalSpent) },
+        { label: "Total Profit", value: formatPHP(totalProfit), valueClassName: "text-success" },
+        { label: "Avg Profit", value: formatPHP(avgProfit) },
+      ]}
+    />
   );
 }

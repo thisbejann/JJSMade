@@ -2,7 +2,6 @@ import { useParams, useNavigate } from "react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { PageContainer } from "../components/layout/PageContainer";
-import { Card, CardContent } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -53,25 +52,23 @@ export default function SellerDetail() {
           <HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={1.5} /> Back to Sellers
         </button>
 
-        <Card>
-          <CardContent className="flex items-start justify-between">
-            <div>
-              <h2 className="font-display font-bold text-2xl text-primary">{seller.name}</h2>
-              <div className="flex items-center gap-2 mt-2">
-                {seller.platform && (
-                  <Badge>{PLATFORM_CONFIG[seller.platform as keyof typeof PLATFORM_CONFIG]?.label ?? seller.platform}</Badge>
-                )}
-              </div>
-              {seller.contactInfo && <p className="text-sm text-secondary mt-2">{seller.contactInfo}</p>}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-display font-bold text-2xl text-primary">{seller.name}</h1>
+            <div className="flex items-center gap-2 mt-2">
+              {seller.platform && (
+                <Badge>{PLATFORM_CONFIG[seller.platform as keyof typeof PLATFORM_CONFIG]?.label ?? seller.platform}</Badge>
+              )}
             </div>
-            {seller.storeLink && (
-              <a href={seller.storeLink} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors">
-                <HugeiconsIcon icon={Link01Icon} size={14} strokeWidth={1.5} /> Store
-              </a>
-            )}
-          </CardContent>
-        </Card>
+            {seller.contactInfo && <p className="text-sm text-secondary mt-2">{seller.contactInfo}</p>}
+          </div>
+          {seller.storeLink && (
+            <a href={seller.storeLink} target="_blank" rel="noopener noreferrer"
+              className="flex shrink-0 items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors">
+              <HugeiconsIcon icon={Link01Icon} size={14} strokeWidth={1.5} /> Store
+            </a>
+          )}
+        </div>
 
         <SellerStats
           totalItems={(items ?? []).length}

@@ -6,6 +6,7 @@ import { StatusPipeline } from "../components/items/StatusPipeline";
 import { RecentOrders } from "../components/dashboard/RecentOrders";
 import { PendingQcSection } from "../components/dashboard/PendingQcSection";
 import { Skeleton } from "../components/ui/Skeleton";
+import { MetricTiles } from "../components/ui/MetricTiles";
 import { formatPHP } from "../lib/formatters";
 
 export default function Dashboard() {
@@ -38,12 +39,15 @@ export default function Dashboard() {
             {stats === undefined ? (
               <Skeleton className="h-16 flex-1" />
             ) : (
-              <div className="grid flex-1 grid-cols-2 gap-px overflow-hidden rounded-3xl bg-border-subtle sm:grid-cols-4">
-                <SoftMetric label="Revenue" value={formatPHP(stats.revenueThisMonth)} />
-                <SoftMetric label="Avg profit" value={formatPHP(stats.avgProfitThisMonth)} />
-                <SoftMetric label="Sold" value={String(stats.soldThisMonth)} />
-                <SoftMetric label="In pipeline" value={String(stats.inPipeline)} />
-              </div>
+              <MetricTiles
+                className="flex-1 grid-cols-2 sm:grid-cols-4"
+                metrics={[
+                  { label: "Revenue", value: formatPHP(stats.revenueThisMonth) },
+                  { label: "Avg profit", value: formatPHP(stats.avgProfitThisMonth) },
+                  { label: "Sold", value: String(stats.soldThisMonth) },
+                  { label: "In pipeline", value: String(stats.inPipeline) },
+                ]}
+              />
             )}
           </div>
         </div>
@@ -62,14 +66,5 @@ export default function Dashboard() {
         </div>
       </div>
     </PageContainer>
-  );
-}
-
-function SoftMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-surface px-4 py-3.5">
-      <p className="text-lg font-semibold tabular-nums text-primary">{value}</p>
-      <p className="mt-0.5 text-xs text-tertiary">{label}</p>
-    </div>
   );
 }

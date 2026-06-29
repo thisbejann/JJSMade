@@ -5,19 +5,11 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Button } from "../components/ui/Button";
+import { MetricTiles } from "../components/ui/MetricTiles";
 import { ItemTable } from "../components/items/ItemTable";
 import { formatPHP, formatDate } from "../lib/formatters";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon, PackageIcon, UserGroupIcon } from "@hugeicons/core-free-icons";
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border-default bg-subtle px-4 py-3">
-      <p className="text-xs text-secondary mb-1">{label}</p>
-      <p className="text-lg font-semibold text-primary">{value}</p>
-    </div>
-  );
-}
 
 export default function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -60,17 +52,23 @@ export default function CustomerDetail() {
         {/* Header */}
         <div>
           <h1 className="font-display font-bold text-2xl text-primary mb-4">{profile.name}</h1>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <StatCard label="Total Orders" value={String(orderCount)} />
-            <StatCard label="Lifetime Profit" value={formatPHP(totalProfit)} />
-            <StatCard label="Lifetime Revenue" value={formatPHP(totalRevenue)} />
-          </div>
+          <MetricTiles
+            className="grid-cols-2 sm:grid-cols-3"
+            metrics={[
+              { label: "Total Orders", value: String(orderCount) },
+              { label: "Lifetime Profit", value: formatPHP(totalProfit) },
+              { label: "Lifetime Revenue", value: formatPHP(totalRevenue) },
+            ]}
+          />
         </div>
 
         {/* Group Orders */}
         {groups.length > 0 && (
           <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-secondary uppercase tracking-wide">Group Orders</h2>
+            <h2 className="flex items-center gap-2 text-sm font-medium text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              Group Orders
+            </h2>
             <div className="rounded-lg border border-border-default overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
@@ -107,8 +105,9 @@ export default function CustomerDetail() {
 
         {/* Solo Items */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-secondary uppercase tracking-wide">
-            Solo Items {soloItems.length > 0 && <span className="text-secondary font-normal">({soloItems.length})</span>}
+          <h2 className="flex items-center gap-2 text-sm font-medium text-primary">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+            Solo Items {soloItems.length > 0 && <span className="font-normal text-tertiary">({soloItems.length})</span>}
           </h2>
           {soloItems.length === 0 ? (
             <div className="rounded-lg border border-border-default bg-subtle p-8 text-center">
