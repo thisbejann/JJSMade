@@ -121,13 +121,11 @@ export default function OrderDetail() {
           </div>
         </div>
 
-        <Card>
-          <CardContent>
-            <StatusStepper item={item} />
-          </CardContent>
-        </Card>
+        {/* Status — borderless, like the Dashboard pipeline */}
+        <StatusStepper item={item} />
 
-        {/* Primary content: photos + cost, side by side on wide screens */}
+        {/* Primary content: QC photos (the one genuinely contained unit) stays a
+            card; cost breakdown sits borderless beside it under a section label */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -142,46 +140,42 @@ export default function OrderDetail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Cost Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CostBreakdown
-                pricePHP={item.pricePHP}
-                localShippingPHP={item.localShippingPHP}
-                forwarderFee={item.forwarderFee}
-                forwarderBuyFeePHP={item.forwarderBuyFeePHP}
-                qcServiceFeePHP={item.qcServiceFeePHP}
-                totalCost={item.totalCost}
-                sellingPrice={item.sellingPrice}
-                profit={item.profit}
-              />
-            </CardContent>
-          </Card>
+          <section className="space-y-3">
+            <h2 className="flex items-center gap-2 text-sm font-medium text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              Cost Breakdown
+            </h2>
+            <CostBreakdown
+              pricePHP={item.pricePHP}
+              localShippingPHP={item.localShippingPHP}
+              forwarderFee={item.forwarderFee}
+              forwarderBuyFeePHP={item.forwarderBuyFeePHP}
+              qcServiceFeePHP={item.qcServiceFeePHP}
+              totalCost={item.totalCost}
+              sellingPrice={item.sellingPrice}
+              profit={item.profit}
+            />
+          </section>
         </div>
 
-        {/* Reference metadata: spread across the X-axis instead of a tall rail */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="space-y-3">
-              <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
-                Source
-              </h3>
-              <InfoRow label="Seller" value={item.seller} />
-              <InfoRow label="Contact" value={item.sellerContact} />
-              <InfoRow label="Batch" value={item.batch} />
-              <InfoRow label="Size" value={item.size} />
-              <InfoRow label="Order Date" value={formatDate(item.orderDate)} />
-            </CardContent>
-          </Card>
+        {/* Reference metadata: borderless field groups spread across the X-axis */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-x-6 gap-y-6">
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+              Source
+            </h3>
+            <InfoRow label="Seller" value={item.seller} />
+            <InfoRow label="Contact" value={item.sellerContact} />
+            <InfoRow label="Batch" value={item.batch} />
+            <InfoRow label="Size" value={item.size} />
+            <InfoRow label="Order Date" value={formatDate(item.orderDate)} />
+          </div>
 
-          <Card>
-            <CardContent className="space-y-3">
-              <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
-                Pricing
-              </h3>
-              <InfoRow label="Price (CNY)" value={formatCNY(item.priceCNY)} mono />
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+              Pricing
+            </h3>
+            <InfoRow label="Price (CNY)" value={formatCNY(item.priceCNY)} mono />
               {!item.isForwarderBuy && (
                 <InfoRow
                   label="Exchange Rate"
@@ -189,108 +183,101 @@ export default function OrderDetail() {
                   mono
                 />
               )}
-              <InfoRow label="Price (PHP)" value={formatPHP(item.pricePHP)} mono />
-              {item.localShippingPHP != null && item.localShippingPHP > 0 && (
+            <InfoRow label="Price (PHP)" value={formatPHP(item.pricePHP)} mono />
+            {item.localShippingPHP != null && item.localShippingPHP > 0 && (
+              <InfoRow
+                label="Local Shipping"
+                value={formatPHP(item.localShippingPHP)}
+                mono
+              />
+            )}
+            {item.isForwarderBuy && (
+              <>
+                <InfoRow label="Forwarder Buy" value="Yes" />
                 <InfoRow
-                  label="Local Shipping"
-                  value={formatPHP(item.localShippingPHP)}
+                  label="Service Rate"
+                  value={`PHP${item.forwarderBuyRateUsed?.toFixed(2)}/CNY1`}
                   mono
                 />
-              )}
-              {item.isForwarderBuy && (
-                <>
-                  <InfoRow label="Forwarder Buy" value="Yes" />
-                  <InfoRow
-                    label="Service Rate"
-                    value={`PHP${item.forwarderBuyRateUsed?.toFixed(2)}/CNY1`}
-                    mono
-                  />
-                  <InfoRow
-                    label="Commission"
-                    value={`${(item.forwarderBuyCommissionPercent ?? 10).toFixed(2)}%`}
-                    mono
-                  />
-                  <InfoRow
-                    label="Forwarder Buy Fee"
-                    value={formatPHP(item.forwarderBuyFeePHP)}
-                    mono
-                  />
-                  <InfoRow
-                    label="QC Service Fee"
-                    value={formatPHP(item.qcServiceFeePHP)}
-                    mono
-                  />
-                </>
-              )}
-            </CardContent>
-          </Card>
+                <InfoRow
+                  label="Commission"
+                  value={`${(item.forwarderBuyCommissionPercent ?? 10).toFixed(2)}%`}
+                  mono
+                />
+                <InfoRow
+                  label="Forwarder Buy Fee"
+                  value={formatPHP(item.forwarderBuyFeePHP)}
+                  mono
+                />
+                <InfoRow
+                  label="QC Service Fee"
+                  value={formatPHP(item.qcServiceFeePHP)}
+                  mono
+                />
+              </>
+            )}
+          </div>
 
-          <Card>
-            <CardContent className="space-y-3">
-              <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
-                Shipping
-              </h3>
-              <InfoRow label="Weight" value={formatWeight(item.weightKg)} mono />
-              <InfoRow label="Tracking No." value={item.trackingNumber} />
-              <InfoRow
-                label="Rate"
-                value={`PHP${item.forwarderRatePerKg}/kg`}
-                mono
-              />
-              <InfoRow
-                label="Forwarder Fee"
-                value={formatPHP(item.forwarderFee)}
-                mono
-              />
-              <InfoRow label="Branded" value={item.isBranded ? "Yes" : "No"} />
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+              Shipping
+            </h3>
+            <InfoRow label="Weight" value={formatWeight(item.weightKg)} mono />
+            <InfoRow label="Tracking No." value={item.trackingNumber} />
+            <InfoRow
+              label="Rate"
+              value={`PHP${item.forwarderRatePerKg}/kg`}
+              mono
+            />
+            <InfoRow
+              label="Forwarder Fee"
+              value={formatPHP(item.forwarderFee)}
+              mono
+            />
+            <InfoRow label="Branded" value={item.isBranded ? "Yes" : "No"} />
+          </div>
 
-          <Card>
-            <CardContent className="space-y-3">
-              <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
-                Sale
-              </h3>
-              <InfoRow
-                label="Selling Price"
-                value={formatPHP(item.sellingPrice)}
-                mono
-              />
-              <InfoRow label="Customer" value={item.customerName} />
-              <InfoRow label="Sold Date" value={formatDate(item.soldDate)} />
-              <div className="pt-2 border-t border-border-subtle">
-                <InfoRow label="Total Cost" value={formatPHP(item.totalCost)} mono bold />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-secondary font-semibold">Profit</span>
-                  <span
-                    className={cn(
-                      "font-mono text-sm font-bold",
-                      (item.profit ?? 0) > 0
-                        ? "text-success"
-                        : (item.profit ?? 0) < 0
-                          ? "text-danger"
-                          : "text-tertiary"
-                    )}
-                  >
-                    {formatPHP(item.profit)}
-                  </span>
-                </div>
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+              Sale
+            </h3>
+            <InfoRow
+              label="Selling Price"
+              value={formatPHP(item.sellingPrice)}
+              mono
+            />
+            <InfoRow label="Customer" value={item.customerName} />
+            <InfoRow label="Sold Date" value={formatDate(item.soldDate)} />
+            <div className="pt-2 border-t border-border-subtle">
+              <InfoRow label="Total Cost" value={formatPHP(item.totalCost)} mono bold />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-secondary font-semibold">Profit</span>
+                <span
+                  className={cn(
+                    "font-mono text-sm font-bold",
+                    (item.profit ?? 0) > 0
+                      ? "text-success"
+                      : (item.profit ?? 0) < 0
+                        ? "text-danger"
+                        : "text-tertiary"
+                  )}
+                >
+                  {formatPHP(item.profit)}
+                </span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {item.notes && (
-          <Card>
-            <CardContent className="min-w-0">
-              <h3 className="text-xs font-medium text-secondary uppercase tracking-wider mb-2">
-                Notes
-              </h3>
-              <p className="text-sm text-primary whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                {item.notes}
-              </p>
-            </CardContent>
-          </Card>
+          <section className="min-w-0 space-y-2">
+            <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
+              Notes
+            </h3>
+            <p className="text-sm text-primary whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+              {item.notes}
+            </p>
+          </section>
         )}
       </div>
 
