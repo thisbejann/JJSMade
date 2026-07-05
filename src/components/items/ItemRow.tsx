@@ -106,3 +106,27 @@ export function ItemRow({ item, selectable, selected, onSelect }: ItemRowProps) 
     </tr>
   );
 }
+
+/** Compact single-line entry for the mobile list view (table mode on small screens). */
+export function ItemListRow({ item }: { item: Doc<"items"> }) {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      onClick={() => navigate(`/orders/${item._id}`)}
+      className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors active:bg-hover"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-primary">{item.name}</p>
+        <div className="mt-1 flex items-center gap-2 min-w-0">
+          <ItemStatusBadge status={item.status} />
+          <span className="min-w-0 truncate text-xs text-tertiary">{item.seller}</span>
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className="font-mono text-sm text-primary">{formatPHP(item.sellingPrice)}</p>
+        <ProfitDisplay profit={item.profit} className="text-xs" />
+      </div>
+    </div>
+  );
+}

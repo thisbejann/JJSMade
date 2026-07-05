@@ -8,11 +8,10 @@ import { Select } from "../components/ui/Select";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Skeleton } from "../components/ui/Skeleton";
-import { ItemRow } from "../components/items/ItemRow";
+import { ItemRow, ItemListRow } from "../components/items/ItemRow";
 import { ItemCard } from "../components/items/ItemCard";
-import { GroupOrderRow, GroupOrderCard } from "../components/items/GroupOrderRow";
+import { GroupOrderRow, GroupOrderCard, GroupListRow } from "../components/items/GroupOrderRow";
 import { GroupPickerModal } from "../components/items/GroupPickerModal";
-import { NewControl } from "../components/items/NewControl";
 import { useDebounce } from "../hooks/useDebounce";
 import { ALL_STATUSES, ALL_QC_STATUSES, ALL_CATEGORIES, STATUS_CONFIG, QC_STATUS_CONFIG, CATEGORY_CONFIG } from "../lib/constants";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -115,68 +114,92 @@ export default function OrdersList() {
         />
       )}
 
-      <div className="space-y-4">
-        {/* Filter bar */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px]">
-            <HugeiconsIcon icon={Search01Icon} size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search items..."
-              className="w-full rounded-lg border border-border-default bg-base pl-9 pr-3 py-2 text-sm text-primary placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all"
+      <div className="space-y-5">
+        {/* Control cluster: command row (search / view) over filter row.
+            Creation lives in the TopBar's split button; this row only shapes the list. */}
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <HugeiconsIcon icon={Search01Icon} size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search items..."
+                className="h-9 w-full rounded-3xl border border-transparent bg-input/50 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-[color,box-shadow,background-color] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+              />
+            </div>
+            <div className="flex h-9 shrink-0 items-center gap-0.5 rounded-3xl bg-input/50 p-1">
+              <button
+                onClick={() => setViewMode("table")}
+                aria-label="List view"
+                aria-pressed={viewMode === "table"}
+                className={cn(
+                  "flex h-7 items-center rounded-full px-2.5 transition-colors cursor-pointer",
+                  viewMode === "table" ? "bg-accent-muted text-accent" : "text-secondary hover:text-primary"
+                )}
+              >
+                <HugeiconsIcon icon={ListViewIcon} size={16} strokeWidth={1.5} />
+              </button>
+              <button
+                onClick={() => setViewMode("grid")}
+                aria-label="Grid view"
+                aria-pressed={viewMode === "grid"}
+                className={cn(
+                  "flex h-7 items-center rounded-full px-2.5 transition-colors cursor-pointer",
+                  viewMode === "grid" ? "bg-accent-muted text-accent" : "text-secondary hover:text-primary"
+                )}
+              >
+                <HugeiconsIcon icon={LayoutGridIcon} size={16} strokeWidth={1.5} />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={ALL_STATUSES.map((s) => ({ value: s, label: STATUS_CONFIG[s].label }))}
+              placeholder="All Statuses"
             />
+            <Select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              options={ALL_CATEGORIES.map((c) => ({ value: c, label: CATEGORY_CONFIG[c].label }))}
+              placeholder="All Categories"
+            />
+            <Select
+              value={qcFilter}
+              onChange={(e) => setQcFilter(e.target.value)}
+              options={ALL_QC_STATUSES.map((q) => ({ value: q, label: QC_STATUS_CONFIG[q].label }))}
+              placeholder="All QC"
+            />
+            <Select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [field, order] = e.target.value.split("-");
+                setSortBy(field);
+                setSortOrder(order as "asc" | "desc");
+              }}
+              options={[
+                { value: "orderDate-desc", label: "Newest First" },
+                { value: "orderDate-asc", label: "Oldest First" },
+                { value: "pricePHP-desc", label: "Price: High → Low" },
+                { value: "pricePHP-asc", label: "Price: Low → High" },
+                { value: "profit-desc", label: "Profit: High → Low" },
+                { value: "profit-asc", label: "Profit: Low → High" },
+              ]}
+            />
+            {!loading && (
+              <span className="hidden sm:block sm:ml-auto text-xs text-tertiary tabular-nums">
+                {mixed.length} order{mixed.length !== 1 ? "s" : ""}
+              </span>
+            )}
           </div>
-          <Select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            options={ALL_STATUSES.map((s) => ({ value: s, label: STATUS_CONFIG[s].label }))}
-            placeholder="All Statuses"
-          />
-          <Select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            options={ALL_CATEGORIES.map((c) => ({ value: c, label: CATEGORY_CONFIG[c].label }))}
-            placeholder="All Categories"
-          />
-          <Select
-            value={qcFilter}
-            onChange={(e) => setQcFilter(e.target.value)}
-            options={ALL_QC_STATUSES.map((q) => ({ value: q, label: QC_STATUS_CONFIG[q].label }))}
-            placeholder="All QC"
-          />
-          <Select
-            value={`${sortBy}-${sortOrder}`}
-            onChange={(e) => {
-              const [field, order] = e.target.value.split("-");
-              setSortBy(field);
-              setSortOrder(order as "asc" | "desc");
-            }}
-            options={[
-              { value: "orderDate-desc", label: "Newest First" },
-              { value: "orderDate-asc", label: "Oldest First" },
-              { value: "pricePHP-desc", label: "Price: High → Low" },
-              { value: "pricePHP-asc", label: "Price: Low → High" },
-              { value: "profit-desc", label: "Profit: High → Low" },
-              { value: "profit-asc", label: "Profit: Low → High" },
-            ]}
-          />
-          <div className="flex border border-border-default rounded-lg overflow-hidden">
-            <button onClick={() => setViewMode("table")}
-              className={cn("p-2 transition-colors cursor-pointer", viewMode === "table" ? "bg-accent-muted text-accent" : "text-secondary hover:bg-hover")}>
-              <HugeiconsIcon icon={ListViewIcon} size={16} strokeWidth={1.5} />
-            </button>
-            <button onClick={() => setViewMode("grid")}
-              className={cn("p-2 transition-colors cursor-pointer", viewMode === "grid" ? "bg-accent-muted text-accent" : "text-secondary hover:bg-hover")}>
-              <HugeiconsIcon icon={LayoutGridIcon} size={16} strokeWidth={1.5} />
-            </button>
-          </div>
-          <NewControl />
         </div>
 
         {/* Selection action bar */}
         {selectedIds.size > 0 && (
-          <div className="flex items-center gap-3 rounded-lg border border-accent/30 bg-accent-muted/20 px-4 py-2.5">
+          <div className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent-muted/20 px-4 py-2.5">
             <span className="text-sm font-medium text-accent">{selectedIds.size} item{selectedIds.size !== 1 ? "s" : ""} selected</span>
             <Button size="sm" onClick={handleGroupSelected}>
               <HugeiconsIcon icon={UserGroupIcon} size={14} strokeWidth={1.5} />
@@ -217,7 +240,7 @@ export default function OrdersList() {
                 <tbody>
                   {mixed.map((entry) =>
                     entry.type === "group" ? (
-                      <GroupOrderRow key={`group-${entry.data._id}`} group={entry.data} />
+                      <GroupOrderRow key={`group-${entry.data._id}`} group={entry.data} colSpan={columns.length} />
                     ) : (
                       <ItemRow
                         key={`item-${entry.data._id}`}
@@ -231,13 +254,14 @@ export default function OrdersList() {
                 </tbody>
               </table>
             </div>
-            {/* Mobile fallback */}
-            <div className="md:hidden grid grid-cols-1 gap-3">
+            {/* Mobile list view: compact divided rows, deliberately distinct
+                from grid mode's cards so the toggle means something here too */}
+            <div className="md:hidden overflow-hidden rounded-xl border border-border-subtle bg-surface divide-y divide-border-subtle">
               {mixed.map((entry) =>
                 entry.type === "group" ? (
-                  <GroupOrderCard key={`group-${entry.data._id}`} group={entry.data} />
+                  <GroupListRow key={`group-${entry.data._id}`} group={entry.data} />
                 ) : (
-                  <ItemCard key={`item-${entry.data._id}`} item={entry.data} />
+                  <ItemListRow key={`item-${entry.data._id}`} item={entry.data} />
                 )
               )}
             </div>
