@@ -5,11 +5,18 @@ import { PlusSignIcon, UserGroupIcon, ArrowDown01Icon } from "@hugeicons/core-fr
 import { cn } from "../../lib/utils";
 
 /**
- * Split button for the Orders header. The main area is the frequent action
- * (Add Item, one tap → /orders/new); the divided chevron opens a menu with the
- * full set. "New Group Order" routes to the Quote Calculator, where a bundle is
- * built and negotiated before being promoted to a group, so each menu item
- * carries a one-line descriptor to make that destination unsurprising.
+ * Create control for the app TopBar, responsive in shape:
+ *
+ * - `sm+`: a split button in the header. The main area is the frequent action
+ *   (Add Item, one tap → /orders/new); the divided chevron opens a menu with
+ *   the full set.
+ * - Below `sm`: a floating action button pinned to the lower right, inside
+ *   thumb reach, with the menu opening upward from it. Reaching the top of the
+ *   screen one-handed is the worst gesture a phone UI can ask for.
+ *
+ * "New Group Order" routes to the Quote Calculator, where a bundle is built
+ * and negotiated before being promoted to a group, so each menu item carries
+ * a one-line descriptor to make that destination unsurprising.
  *
  * Built on Radix DropdownMenu for keyboard nav, focus restore, Escape, and
  * click-outside without hand-rolling any of it.
@@ -18,57 +25,92 @@ export function NewControl() {
   const navigate = useNavigate();
 
   return (
-    <div className="inline-flex h-8 shrink-0 items-stretch rounded-4xl bg-accent text-sm font-medium text-accent-foreground">
-      <button
-        type="button"
-        onClick={() => navigate("/orders/new")}
-        className="inline-flex items-center gap-1.5 rounded-l-4xl pl-3 pr-2.5 outline-none transition-colors hover:bg-accent-foreground/15 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset"
-      >
-        <HugeiconsIcon icon={PlusSignIcon} size={14} strokeWidth={2} />
-        Add Item
-      </button>
-
-      <div className="my-1.5 w-px bg-accent-foreground/25" aria-hidden />
-
+    <>
+      {/* Mobile: floating action button, menu opens upward from the thumb */}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
-          aria-label="More create options"
-          className="group inline-flex items-center rounded-r-4xl px-1.5 outline-none transition-colors hover:bg-accent-foreground/15 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset data-[state=open]:bg-accent-foreground/15"
+          aria-label="Create new"
+          className="group fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-5 z-20 flex size-14 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-lg shadow-black/40 outline-none transition-colors hover:bg-accent-hover focus-visible:ring-3 focus-visible:ring-ring/40 data-[state=open]:bg-accent-hover sm:hidden"
         >
           <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            size={14}
+            icon={PlusSignIcon}
+            size={24}
             strokeWidth={2}
-            className="transition-transform duration-150 group-data-[state=open]:rotate-180"
+            className="transition-transform duration-150 group-data-[state=open]:rotate-45"
           />
         </DropdownMenu.Trigger>
-
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            align="end"
-            sideOffset={6}
-            className={cn(
-              "dark relative z-50 min-w-60 origin-(--radix-dropdown-menu-content-transform-origin) rounded-3xl p-1.5 text-popover-foreground shadow-lg ring-1 ring-foreground/10",
-              "bg-popover/70 before:pointer-events-none before:absolute before:inset-0 before:-z-1 before:rounded-[inherit] before:backdrop-blur-2xl before:backdrop-saturate-150",
-              "duration-100 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2"
-            )}
-          >
-            <MenuItem
-              icon={PlusSignIcon}
-              label="Add Item"
-              hint="A single order for one customer"
-              onSelect={() => navigate("/orders/new")}
-            />
-            <MenuItem
-              icon={UserGroupIcon}
-              label="New Group Order"
-              hint="Build & negotiate a bundle in the calculator"
-              onSelect={() => navigate("/calculator")}
-            />
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
+        <CreateMenu onNavigate={navigate} side="top" />
       </DropdownMenu.Root>
-    </div>
+
+      {/* sm+: split button */}
+      <div className="hidden h-9 shrink-0 items-stretch rounded-4xl bg-accent text-sm font-medium text-accent-foreground sm:inline-flex">
+        <button
+          type="button"
+          onClick={() => navigate("/orders/new")}
+          className="inline-flex items-center gap-1.5 rounded-l-4xl pl-3 pr-2.5 outline-none transition-colors hover:bg-accent-foreground/15 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset"
+        >
+          <HugeiconsIcon icon={PlusSignIcon} size={14} strokeWidth={2} />
+          Add Item
+        </button>
+
+        <div className="my-1.5 w-px bg-accent-foreground/25" aria-hidden />
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger
+            aria-label="More create options"
+            className="group inline-flex items-center rounded-r-4xl px-1.5 outline-none transition-colors hover:bg-accent-foreground/15 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset data-[state=open]:bg-accent-foreground/15"
+          >
+            <HugeiconsIcon
+              icon={ArrowDown01Icon}
+              size={14}
+              strokeWidth={2}
+              className="transition-transform duration-150 group-data-[state=open]:rotate-180"
+            />
+          </DropdownMenu.Trigger>
+          <CreateMenu onNavigate={navigate} />
+        </DropdownMenu.Root>
+      </div>
+    </>
+  );
+}
+
+function CreateMenu({
+  onNavigate,
+  side = "bottom",
+}: {
+  onNavigate: (to: string) => void;
+  side?: "top" | "bottom";
+}) {
+  return (
+    <DropdownMenu.Portal>
+      <DropdownMenu.Content
+        side={side}
+        align="end"
+        sideOffset={8}
+        collisionPadding={12}
+        className={cn(
+          // Fixed width so hints size the panel, not stretch it: on mobile an
+          // unconstrained panel hits the screen edge and reads as a broken sheet.
+          // Solid Elevated Void per the design system; popovers earn depth from
+          // surface color, not blur.
+          "dark z-50 w-72 origin-(--radix-dropdown-menu-content-transform-origin) rounded-3xl bg-popover p-1.5 text-popover-foreground shadow-lg ring-1 ring-foreground/10",
+          "duration-100 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2"
+        )}
+      >
+        <MenuItem
+          icon={PlusSignIcon}
+          label="Add Item"
+          hint="A single order for one customer"
+          onSelect={() => onNavigate("/orders/new")}
+        />
+        <MenuItem
+          icon={UserGroupIcon}
+          label="New Group Order"
+          hint="Build a bundle in the calculator"
+          onSelect={() => onNavigate("/calculator")}
+        />
+      </DropdownMenu.Content>
+    </DropdownMenu.Portal>
   );
 }
 

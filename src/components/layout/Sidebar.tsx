@@ -6,22 +6,20 @@ import {
   UserGroupIcon,
   Contact01Icon,
   BarChartIcon,
-  Settings01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   ShoppingBag01Icon,
-  Calculator01Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "../../lib/utils";
 
+// Utilities (Calculator, Settings) live in the TopBar; the sidebar holds
+// only the pipeline destinations the operator moves between.
 const NAV_ITEMS = [
   { to: "/", icon: DashboardSquare01Icon, label: "Dashboard" },
   { to: "/orders", icon: PackageIcon, label: "Orders" },
   { to: "/customers", icon: Contact01Icon, label: "Customers" },
   { to: "/sellers", icon: UserGroupIcon, label: "Sellers" },
-  { to: "/calculator", icon: Calculator01Icon, label: "Calculator" },
   { to: "/analytics", icon: BarChartIcon, label: "Analytics" },
-  { to: "/settings", icon: Settings01Icon, label: "Settings" },
 ];
 
 interface SidebarProps {
@@ -63,7 +61,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false }: SidebarProp
               cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
                 isActive
-                  ? "bg-accent-muted text-accent border-l-2 border-accent"
+                  ? "bg-accent-muted text-accent"
                   : "text-secondary hover:text-primary hover:bg-hover"
               )
             }
@@ -82,7 +80,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false }: SidebarProp
               cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
                 isActive
-                  ? "bg-accent-muted text-accent border-l-2 border-accent"
+                  ? "bg-accent-muted text-accent"
                   : "text-secondary hover:text-primary hover:bg-hover"
               )
             }
