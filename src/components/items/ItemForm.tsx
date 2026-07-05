@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, type ReactNode } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useSettings } from "../../hooks/useSettings";
@@ -61,6 +62,54 @@ interface ItemFormProps {
   lockedCustomerId?: Id<"customers">;
   groupId?: Id<"orderGroups">;
   onSuccess: (id: string) => void;
+}
+
+// Smoothly expands/collapses conditional field groups. Spacing must live
+// INSIDE the children (pt-*) — an outer margin would jump instead of animating.
+function Reveal({ show, children }: { show: boolean; children: ReactNode }) {
+  return (
+    <AnimatePresence initial={false}>
+      {show && (
+        <motion.div
+          initial={{ height: 0, opacity: 0, overflow: "hidden" }}
+          animate={{
+            height: "auto",
+            opacity: 1,
+            // release clipping once open so card shadows and focus rings render
+            transitionEnd: { overflow: "visible" },
+          }}
+          exit={{ height: 0, opacity: 0, overflow: "hidden" }}
+          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function FeeLine({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: number;
+  accent?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="text-xs text-secondary">{label}</span>
+      <span
+        className={cn(
+          "font-mono text-sm",
+          accent ? "font-semibold text-accent" : "text-primary"
+        )}
+      >
+        {formatPHP(value)}
+      </span>
+    </div>
+  );
 }
 
 function sanitizeSizeForCategory(category: ItemCategory, currentSize: string) {
@@ -320,9 +369,9 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6"
+      className="mx-auto w-full max-w-[1080px] grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 pb-16 lg:pb-0"
     >
-      <div className="space-y-6">
+      <div>
         <Card>
           <CardContent className="space-y-4">
             <h2 className="font-display font-semibold text-base text-primary">
@@ -367,65 +416,72 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
               </div>
             </div>
 
-            {category === "shoes" && (
-              <Input
-                label="EU Size *"
-                type="number"
-                step="0.5"
-                value={size}
-                onChange={(e) => setSize(e.target.value)}
-                placeholder="e.g. 42.5"
-              />
-            )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {category === "shoes" && (
+                <Input
+                  label="EU Size *"
+                  type="number"
+                  step="0.5"
+                  value={size}
+                  onChange={(e) => setSize(e.target.value)}
+                  placeholder="e.g. 42.5"
+                />
+              )}
 
-            {category === "clothes" && (
+              {category === "clothes" && (
+                <Select
+                  label="Size *"
+                  value={size}
+                  onChange={(e) => setSize(e.target.value)}
+                  options={CLOTHES_SIZES.map((itemSize) => ({
+                    value: itemSize,
+                    label: itemSize,
+                  }))}
+                  placeholder="Select size"
+                />
+              )}
+
               <Select
-                label="Size *"
-                value={size}
-                onChange={(e) => setSize(e.target.value)}
-                options={CLOTHES_SIZES.map((itemSize) => ({
-                  value: itemSize,
-                  label: itemSize,
+                label="Status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as Doc<"items">["status"])}
+                options={ALL_STATUSES.map((itemStatus) => ({
+                  value: itemStatus,
+                  label: STATUS_CONFIG[itemStatus].label,
                 }))}
-                placeholder="Select size"
               />
-            )}
+            </div>
 
-            <Select
-              label="Status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as Doc<"items">["status"])}
-              options={ALL_STATUSES.map((itemStatus) => ({
-                value: itemStatus,
-                label: STATUS_CONFIG[itemStatus].label,
-              }))}
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Combobox
+                label="Seller *"
+                value={seller}
+                onChange={setSeller}
+                options={sellers}
+                placeholder="Search or type seller name"
+              />
+              <Input
+                label="Seller Contact"
+                value={sellerContact}
+                onChange={(e) => setSellerContact(e.target.value)}
+                placeholder="WeChat ID, link, etc."
+              />
+            </div>
 
-            <Combobox
-              label="Seller *"
-              value={seller}
-              onChange={setSeller}
-              options={sellers}
-              placeholder="Search or type seller name"
-            />
-            <Input
-              label="Seller Contact"
-              value={sellerContact}
-              onChange={(e) => setSellerContact(e.target.value)}
-              placeholder="WeChat ID, link, etc."
-            />
-            <Combobox
-              label="Batch / Factory"
-              value={batch}
-              onChange={setBatch}
-              options={batches}
-              placeholder="e.g. HP Batch, LJR"
-            />
-            <DatePicker
-              label="Order Date"
-              value={orderDate}
-              onChange={(e) => setOrderDate(e.target.value)}
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Combobox
+                label="Batch / Factory"
+                value={batch}
+                onChange={setBatch}
+                options={batches}
+                placeholder="e.g. HP Batch, LJR"
+              />
+              <DatePicker
+                label="Order Date"
+                value={orderDate}
+                onChange={(e) => setOrderDate(e.target.value)}
+              />
+            </div>
 
             <div className="space-y-1.5">
               <label className="block text-xs font-medium text-secondary">Notes</label>
@@ -439,92 +495,75 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="space-y-4">
-            <h2 className="font-display font-semibold text-base text-primary">
-              Pricing
-            </h2>
-            <Input
-              label="Price in CNY *"
-              type="number"
-              value={priceCNY || ""}
-              onChange={(e) => setPriceCNY(Number(e.target.value))}
-              step="0.01"
-              prefix="CNY"
-            />
-            {!isForwarderBuy && (
-              <>
-                <Input
-                  label="Exchange Rate (CNY to PHP)"
-                  type="number"
-                  value={exchangeRate || ""}
-                  onChange={(e) => {
-                    setExchangeRateTouched(true);
-                    setExchangeRateInput(Number(e.target.value));
-                  }}
-                  step="0.01"
-                  suffix={`1 CNY = PHP ${exchangeRate.toFixed(2)}`}
-                />
+        <Card className="mt-6">
+          <CardContent>
+            <div className="space-y-4">
+              <h2 className="font-display font-semibold text-base text-primary">
+                Pricing
+              </h2>
 
-                <div className="rounded-lg bg-accent-muted px-3 py-2">
-                  <p className="text-xs text-secondary">Price in PHP</p>
-                  <p className="font-mono text-lg font-semibold text-accent">
-                    PHP{" "}
-                    {costs.pricePHP.toLocaleString("en-PH", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </p>
+              <div>
+                <label className="block text-xs font-medium text-secondary mb-2">
+                  Purchase Method
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([false, true] as const).map((viaForwarder) => (
+                    <button
+                      key={String(viaForwarder)}
+                      type="button"
+                      onClick={() => setIsForwarderBuy(viaForwarder)}
+                      className={cn(
+                        "px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border",
+                        isForwarderBuy === viaForwarder
+                          ? "border-accent bg-accent-muted text-accent"
+                          : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
+                      )}
+                    >
+                      {viaForwarder ? "Bought by Forwarder" : "Regular Order"}
+                    </button>
+                  ))}
                 </div>
-              </>
-            )}
+              </div>
 
-            <Toggle
-              label="Has Local Shipping?"
-              checked={hasLocalShipping}
-              onChange={setHasLocalShipping}
-            />
-            {hasLocalShipping && (
-              <>
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Input
-                  label="Local Shipping (CNY, Optional)"
+                  label="Price in CNY *"
                   type="number"
-                  value={localShippingCNY || ""}
-                  onChange={(e) => setLocalShippingCNY(Number(e.target.value))}
+                  value={priceCNY || ""}
+                  onChange={(e) => setPriceCNY(Number(e.target.value))}
                   step="0.01"
                   prefix="CNY"
-                  placeholder="Leave blank or 0 for free shipping"
                 />
-                <div className="rounded-lg bg-surface px-3 py-2 border border-border-subtle">
-                  <p className="text-xs text-secondary">Local Shipping PHP</p>
-                  <p className="font-mono text-sm text-primary">
-                    PHP{" "}
-                    {costs.localShippingPHP.toLocaleString("en-PH", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </p>
-                </div>
-              </>
-            )}
+                {isForwarderBuy ? (
+                  <Input
+                    label="Buy Service Rate (CNY to PHP)"
+                    type="number"
+                    value={forwarderBuyRateUsed || ""}
+                    onChange={(e) => {
+                      setForwarderBuyRateTouched(true);
+                      setForwarderBuyRateInput(Number(e.target.value));
+                    }}
+                    step="0.01"
+                  />
+                ) : (
+                  <Input
+                    label="Exchange Rate (CNY to PHP)"
+                    type="number"
+                    value={exchangeRate || ""}
+                    onChange={(e) => {
+                      setExchangeRateTouched(true);
+                      setExchangeRateInput(Number(e.target.value));
+                    }}
+                    step="0.01"
+                  />
+                )}
+              </div>
+            </div>
 
-            <Toggle
-              label="Bought by Forwarder?"
-              checked={isForwarderBuy}
-              onChange={setIsForwarderBuy}
-            />
-            {isForwarderBuy && (
-              <>
+            <Reveal show={isForwarderBuy}>
+              <div className="grid gap-4 sm:grid-cols-2 pt-4">
                 <Input
-                  label="Forwarder Buy Service Rate (CNY to PHP)"
-                  type="number"
-                  value={forwarderBuyRateUsed || ""}
-                  onChange={(e) => {
-                    setForwarderBuyRateTouched(true);
-                    setForwarderBuyRateInput(Number(e.target.value));
-                  }}
-                  step="0.01"
-                />
-                <Input
-                  label="Forwarder Buy Commission (%)"
+                  label="Buy Commission (%)"
                   type="number"
                   value={forwarderBuyCommissionPercent}
                   onChange={(e) =>
@@ -532,29 +571,56 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
                   }
                   step="0.01"
                 />
-                <div className="rounded-lg bg-surface px-3 py-2 border border-border-subtle space-y-1">
-                  <p className="text-xs text-secondary">
-                    Forwarder Buy Fee ({forwarderBuyCommissionPercent.toFixed(2)}% of item)
-                  </p>
-                  <p className="text-xs text-secondary">
-                    CNY {costs.forwarderBuyFeeCNY.toFixed(2)}
-                  </p>
-                  <p className="font-mono text-sm text-primary">
-                    PHP {costs.forwarderBuyFeePHP.toFixed(2)}
-                  </p>
+              </div>
+            </Reveal>
+
+            <div className="pt-4">
+              <Toggle
+                label="Has Local Shipping?"
+                checked={hasLocalShipping}
+                onChange={setHasLocalShipping}
+              />
+            </div>
+
+            <Reveal show={hasLocalShipping}>
+              <div className="grid gap-4 sm:grid-cols-2 pt-4">
+                <Input
+                  label="Local Shipping (CNY, Optional)"
+                  type="number"
+                  value={localShippingCNY || ""}
+                  onChange={(e) => setLocalShippingCNY(Number(e.target.value))}
+                  step="0.01"
+                  prefix="CNY"
+                  placeholder="0 for free shipping"
+                />
+              </div>
+            </Reveal>
+
+            <div className="mt-4 border-t border-border-subtle pt-3">
+              <FeeLine label="Price in PHP" value={costs.pricePHP} accent />
+              <Reveal show={isForwarderBuy}>
+                <div className="space-y-1.5 pt-1.5">
+                  <FeeLine
+                    label={`Forwarder Buy Fee (${forwarderBuyCommissionPercent.toFixed(0)}% of item)`}
+                    value={costs.forwarderBuyFeePHP}
+                  />
+                  <FeeLine label="QC Service Fee" value={costs.qcServiceFeePHP} />
                 </div>
-                <div className="rounded-lg bg-surface px-3 py-2 border border-border-subtle">
-                  <p className="text-xs text-secondary">QC Service Fee</p>
-                  <p className="font-mono text-sm text-primary">
-                    PHP {costs.qcServiceFeePHP.toFixed(2)}
-                  </p>
+              </Reveal>
+              <Reveal show={hasLocalShipping && localShippingCNY > 0}>
+                <div className="pt-1.5">
+                  <FeeLine
+                    label="Local Shipping in PHP"
+                    value={costs.localShippingPHP}
+                  />
                 </div>
-              </>
-            )}
+              </Reveal>
+            </div>
           </CardContent>
         </Card>
 
-        {showQcSection && (
+        <Reveal show={showQcSection}>
+          <div className="pt-6">
           <Card>
             <CardContent className="space-y-4">
               <h2 className="font-display font-semibold text-base text-primary">
@@ -610,9 +676,11 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
               </div>
             </CardContent>
           </Card>
-        )}
+          </div>
+        </Reveal>
 
-        {showShippingSection && (
+        <Reveal show={showShippingSection}>
+          <div className="pt-6">
           <Card>
             <CardContent className="space-y-4">
               <h2 className="font-display font-semibold text-base text-primary">
@@ -623,57 +691,61 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
                 checked={isBranded}
                 onChange={setIsBranded}
               />
-              <Input
-                label="Forwarder Rate (PHP/kg)"
-                type="number"
-                value={forwarderRate || ""}
-                onChange={(e) => {
-                  setForwarderRateTouched(true);
-                  setForwarderRateInput(Number(e.target.value));
-                }}
-                prefix="PHP"
-              />
-              <Input
-                label="Weight (kg)"
-                type="number"
-                value={weightKg || ""}
-                onChange={(e) => setWeightKg(Number(e.target.value))}
-                step="0.01"
-              />
-              <Input
-                label="Tracking Number"
-                value={trackingNumber}
-                onChange={(e) => setTrackingNumber(e.target.value)}
-                placeholder="Optional"
-              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  label="Forwarder Rate (PHP/kg)"
+                  type="number"
+                  value={forwarderRate || ""}
+                  onChange={(e) => {
+                    setForwarderRateTouched(true);
+                    setForwarderRateInput(Number(e.target.value));
+                  }}
+                  prefix="PHP"
+                />
+                <Input
+                  label="Weight (kg)"
+                  type="number"
+                  value={weightKg || ""}
+                  onChange={(e) => setWeightKg(Number(e.target.value))}
+                  step="0.01"
+                />
+                <Input
+                  label="Tracking Number"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
               {weightKg > 0 && (
-                <div className="rounded-lg bg-surface px-3 py-2 border border-border-subtle">
-                  <p className="text-xs text-secondary">Forwarder Fee</p>
-                  <p className="font-mono text-sm text-primary">
-                    PHP{" "}
-                    {costs.forwarderFee.toLocaleString("en-PH", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </p>
-                </div>
+                <FeeLine label="Forwarder Fee" value={costs.forwarderFee} />
               )}
 
             </CardContent>
           </Card>
-        )}
+          </div>
+        </Reveal>
 
-        <Card className="overflow-visible">
+        <Card className="mt-6 overflow-visible">
           <CardContent className="space-y-4">
             <h2 className="font-display font-semibold text-base text-primary">
               Sale Info
             </h2>
-            <Input
-              label="Selling Price (PHP)"
-              type="number"
-              value={sellingPrice || ""}
-              onChange={(e) => setSellingPrice(Number(e.target.value))}
-              prefix="PHP"
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label="Selling Price (PHP)"
+                type="number"
+                value={sellingPrice || ""}
+                onChange={(e) => setSellingPrice(Number(e.target.value))}
+                prefix="PHP"
+              />
+              <CustomerPicker
+                label={lockedCustomerId ? "Customer (locked to group)" : "Customer *"}
+                value={customerId}
+                onChange={setCustomerId}
+                placeholder="Search or create customer..."
+                disabled={!!lockedCustomerId}
+              />
+            </div>
             {sellingPrice > 0 && (
               <MarkupIndicator
                 markup={costs.profit}
@@ -681,30 +753,22 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
                 max={settings.defaultMarkupMax}
               />
             )}
-            <CustomerPicker
-              label={lockedCustomerId ? "Customer (locked to group)" : "Customer *"}
-              value={customerId}
-              onChange={setCustomerId}
-              placeholder="Search or create customer..."
-              disabled={!!lockedCustomerId}
-            />
           </CardContent>
         </Card>
 
-        <PriceCalculator
-          cnyToPhpRate={settings.cnyToPhpRate}
-          forwarderBuyServiceRate={settings.forwarderBuyServiceRate ?? 8.6}
-          priceCNY={priceCNY}
-        />
-
-        <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+        <Button
+          type="submit"
+          size="lg"
+          className="mt-6 w-full hidden lg:flex"
+          disabled={submitting}
+        >
           {submitting ? "Saving..." : existingItem ? "Update Item" : "Save Item"}
         </Button>
       </div>
 
-      {/* Desktop: sticky sidebar calculator */}
-      <div className="hidden lg:block">
-        <div className="sticky top-20">
+      {/* Rail: sticky on desktop, stacks after the form on mobile */}
+      <div>
+        <div className="lg:sticky lg:top-20 space-y-4">
           <LiveProfitCalculator
             pricePHP={costs.pricePHP}
             localShippingPHP={costs.localShippingPHP}
@@ -716,13 +780,18 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
             profit={costs.profit}
             markupPercent={costs.markupPercent}
           />
+          <PriceCalculator
+            cnyToPhpRate={settings.cnyToPhpRate}
+            forwarderBuyServiceRate={settings.forwarderBuyServiceRate ?? 8.6}
+            priceCNY={priceCNY}
+          />
         </div>
       </div>
 
-      {/* Mobile: sticky bottom summary bar */}
+      {/* Mobile: sticky bottom bar with cost, profit, and save */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-surface border-t border-border-subtle px-4 py-3">
-        <div className="flex items-center justify-between max-w-[1400px] mx-auto">
-          <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-4 text-sm min-w-0">
             <div>
               <span className="text-secondary">Cost </span>
               <span className="font-mono font-medium text-primary">{formatPHP(costs.totalCost)}</span>
@@ -739,6 +808,9 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
               </div>
             )}
           </div>
+          <Button type="submit" size="sm" disabled={submitting}>
+            {submitting ? "Saving..." : existingItem ? "Update" : "Save"}
+          </Button>
         </div>
       </div>
 
