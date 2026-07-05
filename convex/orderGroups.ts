@@ -112,6 +112,61 @@ export const listWithItems = query({
   },
 });
 
+/**
+ * Mixed recency feed for the dashboard. Groups appear once with computed
+ * totals instead of leaking member items as loose rows. A group's recency is
+ * its latest item log time, so adding an item to an old bundle resurfaces it:
+ * the feed answers "what just happened", not "which record is newest".
+ */
+export const recentFeed = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 10;
+
+    const groups = await ctx.db.query("orderGroups").collect();
+    const groupEntries = await Promise.all(
+      groups.map(async (group) => {
+        const items = await ctx.db
+          .query("items")
+          .withIndex("by_orderGroupId", (q) => q.eq("orderGroupId", group._id))
+          .collect();
+        const computed = computeGroupFields(items, group);
+        const customer = await ctx.db.get(group.customerId);
+        const activityAt =
+          items.length > 0 ? Math.max(...items.map((i) => i.createdAt)) : group.createdAt;
+        return {
+          kind: "group" as const,
+          activityAt,
+          _id: group._id,
+          customerName: customer?.name ?? "",
+          itemCount: items.length,
+          status: computed.status,
+          effectiveTotal: computed.effectiveTotal,
+        };
+      })
+    );
+
+    // Solo items only — grouped items already surface through their group entry.
+    const allItems = await ctx.db.query("items").order("desc").collect();
+    const itemEntries = allItems
+      .filter((i) => !i.orderGroupId)
+      .slice(0, limit)
+      .map((i) => ({
+        kind: "item" as const,
+        activityAt: i.createdAt,
+        _id: i._id,
+        name: i.name,
+        category: i.category,
+        status: i.status,
+        sellingPrice: i.sellingPrice ?? null,
+      }));
+
+    return [...groupEntries, ...itemEntries]
+      .sort((a, b) => b.activityAt - a.activityAt)
+      .slice(0, limit);
+  },
+});
+
 export const list = query({
   handler: async (ctx) => {
     const groups = await ctx.db.query("orderGroups").collect();

@@ -419,14 +419,6 @@ export const getById = query({
   },
 });
 
-export const getRecent = query({
-  args: { limit: v.optional(v.number()) },
-  handler: async (ctx, args) => {
-    const limit = args.limit ?? 8;
-    return await ctx.db.query("items").order("desc").take(limit);
-  },
-});
-
 export const getUniqueSellers = query({
   args: {},
   handler: async (ctx) => {
