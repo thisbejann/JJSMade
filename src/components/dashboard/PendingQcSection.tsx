@@ -70,7 +70,7 @@ export function PendingQcSection() {
                 initial={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0, overflow: "hidden" }}
                 transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                className="flex items-center gap-3 rounded-2xl bg-base/40 px-2.5 py-2.5"
+                className="flex min-w-0 items-center gap-3 rounded-2xl bg-base/40 px-2.5 py-2.5"
               >
                 <CategoryIcon category={item.category} className="h-7 w-7" />
                 <button
