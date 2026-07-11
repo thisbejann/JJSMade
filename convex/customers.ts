@@ -71,9 +71,32 @@ export const getProfile = query({
     const groupIds = new Set(groups.map((g) => g._id));
     const soloItems = allItems.filter((i) => !i.orderGroupId || !groupIds.has(i.orderGroupId));
 
+    // Each group carries a content-derived identity (preview names, count, value)
+    // so a group with no note is still distinguishable in the UI. Query items by
+    // the group index rather than filtering allItems — that's the authoritative
+    // link, matching how orderGroups.ts resolves membership.
+    const enrichedGroups = (
+      await Promise.all(
+        groups.map(async (group) => {
+          const groupItems = await ctx.db
+            .query("items")
+            .withIndex("by_orderGroupId", (q) => q.eq("orderGroupId", group._id))
+            .collect();
+          const quotesSum = groupItems.reduce((sum, i) => sum + (i.sellingPrice ?? 0), 0);
+          const value = group.negotiatedTotal ?? quotesSum;
+          return {
+            ...group,
+            itemCount: groupItems.length,
+            previewNames: groupItems.slice(0, 3).map((i) => i.name),
+            value: Math.round(value * 100) / 100,
+          };
+        })
+      )
+    ).sort((a, b) => b.createdAt - a.createdAt);
+
     const stats = computeCustomerStats(allItems);
 
-    return { ...customer, ...stats, groups, soloItems };
+    return { ...customer, ...stats, groups: enrichedGroups, soloItems };
   },
 });
 
