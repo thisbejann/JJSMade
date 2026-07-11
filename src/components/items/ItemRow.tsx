@@ -107,6 +107,59 @@ export function ItemRow({ item, selectable, selected, onSelect }: ItemRowProps) 
   );
 }
 
+/**
+ * Two-line "object row" for the unified **All** feed. No shared table header
+ * sits above it, so nothing can misalign — the only aligned axis is the
+ * right-hand money rail, which lines up with the group object row's rail.
+ * Stays selectable so the "Group Selected" flow works from the All view too.
+ */
+export function ItemObjectRow({ item, selectable, selected, onSelect }: ItemRowProps) {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      onClick={() => navigate(`/orders/${item._id}`)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/orders/${item._id}`); } }}
+      tabIndex={0}
+      role="link"
+      className={cn(
+        "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset",
+        selected && "bg-accent-muted/30"
+      )}
+    >
+      {selectable && (
+        <input
+          type="checkbox"
+          checked={selected ?? false}
+          onChange={(e) => { e.stopPropagation(); onSelect?.(e.target.checked); }}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Select ${item.name}`}
+          className="h-4 w-4 shrink-0 rounded border-border-default accent-accent cursor-pointer"
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="truncate text-sm font-medium text-primary">{item.name}</p>
+          <CategoryBadge category={item.category} />
+        </div>
+        <div className="mt-1 flex items-center gap-1.5 min-w-0 text-xs">
+          <span className="min-w-0 truncate text-tertiary">{item.seller}</span>
+          <span className="shrink-0 text-tertiary">·</span>
+          <span className="shrink-0 font-mono text-secondary whitespace-nowrap">
+            {formatCNY(item.priceCNY)} → {formatPHP(item.pricePHP)}
+          </span>
+          <ItemStatusBadge status={item.status} />
+          <QcStatusBadge qcStatus={item.qcStatus} />
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className="font-mono text-sm text-primary">{formatPHP(item.sellingPrice)}</p>
+        <ProfitDisplay profit={item.profit} className="text-xs" />
+      </div>
+    </div>
+  );
+}
+
 /** Compact single-line entry for the mobile list view (table mode on small screens). */
 export function ItemListRow({ item }: { item: Doc<"items"> }) {
   const navigate = useNavigate();

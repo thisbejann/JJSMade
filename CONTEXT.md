@@ -36,7 +36,17 @@ The primary path starts at a **+ New** split control in the Orders header, offer
 Two secondary paths remain for adding to groups *after* a sale: **multi-select grouping** (select Solo Items in the Orders list → "Group Selected" → add to or create a group) and the group detail's **Add Item** button (one more item into an existing group via ItemForm, customer locked).
 
 ## Orders List Layout
-The Orders list shows Group Orders and Solo Items in a single mixed list. A Group Order appears as a collapsible summary row (customer name, item count, lagging status, combined selling price, combined profit). The row expands minimally to reveal its items as sub-rows — each sub-row links directly to that item's detail page. Clicking the group row itself (not the expand toggle) navigates to the Group Order detail page. Collapsed by default.
+The Orders list shows Group Orders and Solo Items in a single mixed list. A Group Order appears as an opaque summary row (customer name, item count, lagging status, combined selling price, combined profit). Clicking the group row navigates to the Group Order detail page. There is **no manual expand toggle** — a group is opaque by default and reveals its items inline only under a [Partial Group Match]. Each revealed sub-row links directly to that item's detail page.
+
+## Partial Group Match
+How the Orders list filters *into* a Group Order rather than treating it as one atomic unit. The three item-level dropdown filters — **Status**, **Category**, **QC** — match against a group's individual member items (an item qualifies only if it matches *every* active dropdown). This replaces the older "a group matches or hides whole" rule, whose status filter compared against the group's single derived [Group Status] and so hid a group whenever its lagging item disagreed (e.g. a group of 3 `qc_sent` + 2 `ordered` items vanished under a `qc_sent` filter).
+
+Rendering depends on how many members match:
+- **No dropdown active** — opaque summary row, full bundle money. (Search alone never drills: a search hit reveals the *whole* group, because searching a customer name means "show this customer's entire bundle.")
+- **Full match** (every member qualifies) — identical to no-filter: opaque row, full money. An expanded row is therefore always a reliable signal that *some members are hidden*.
+- **Partial match** (some members qualify) — the group auto-reveals, listing **only** the matching items as read-only sub-rows, with a "N of M match" marker. **Money is hidden** in this state on both the band and the sub-rows — a subset of a bundle has no honest price, since the customer pays one negotiated total for the whole group that is never redistributed to items (see [Offer Total]). Money returns when the filter is cleared.
+
+The reveal is **filter-driven only** — there is no persistent expand affordance — and applies across every group surface (All feed, Bundles table, mobile list, grid card).
 
 ## Customer Profile Page
 A dedicated page per Customer. Shows: customer name, total orders, total profit, and a list of all their orders (both Solo Items and Group Orders). Accessible from a Customers section in the sidebar — similar in structure to the Sellers section. The order history list uses the same mixed layout as the main Orders list (expandable group rows + solo item rows), filtered to that customer.

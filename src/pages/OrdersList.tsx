@@ -8,19 +8,33 @@ import { Select } from "../components/ui/Select";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Skeleton } from "../components/ui/Skeleton";
-import { ItemRow, ItemListRow } from "../components/items/ItemRow";
+import { ItemRow, ItemListRow, ItemObjectRow } from "../components/items/ItemRow";
 import { ItemCard } from "../components/items/ItemCard";
-import { GroupOrderRow, GroupOrderCard, GroupListRow } from "../components/items/GroupOrderRow";
+import { GroupOrderCard, GroupListRow, GroupObjectRow, GroupTableRow } from "../components/items/GroupOrderRow";
 import { GroupPickerModal } from "../components/items/GroupPickerModal";
 import { useDebounce } from "../hooks/useDebounce";
+import { matchGroupsToFilters } from "../lib/groupMatch";
 import { ALL_STATUSES, ALL_QC_STATUSES, ALL_CATEGORIES, STATUS_CONFIG, QC_STATUS_CONFIG, CATEGORY_CONFIG } from "../lib/constants";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PackageIcon, LayoutGridIcon, ListViewIcon, Search01Icon, UserGroupIcon } from "@hugeicons/core-free-icons";
+import { PackageIcon, LayoutGridIcon, ListViewIcon, Search01Icon, UserGroupIcon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../lib/utils";
 import { toast } from "sonner";
 
 const COLUMNS = ["", "Item", "Seller", "Price", "Status", "QC", "Weight", "Selling Price", "Profit", "Actions"];
 const COLUMNS_SELECTABLE = ["sel", "Item", "Seller", "Price", "Status", "QC", "Weight", "Selling Price", "Profit", "Actions"];
+
+// Group-native columns for the Bundles segment. Every one maps to a real group
+// field — no borrowed solo-item columns — so the headers can't lie.
+const BUNDLE_COLUMNS: { label: string; align: "left" | "right" }[] = [
+  { label: "Customer", align: "left" },
+  { label: "Items", align: "left" },
+  { label: "Status", align: "left" },
+  { label: "Discount", align: "right" },
+  { label: "Customer Pays", align: "right" },
+  { label: "Profit", align: "right" },
+];
+
+type TypeFilter = "all" | "bundles" | "items";
 
 export default function OrdersList() {
   const navigate = useNavigate();
@@ -33,6 +47,9 @@ export default function OrdersList() {
   const [sortBy, setSortBy] = useState("orderDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  // Segmented lens over the one feed: All (unified) / Bundles / Items. A filter,
+  // not a second route — the timeline, filters, and counts stay whole.
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -53,19 +70,50 @@ export default function OrdersList() {
 
   const loading = groups === undefined || soloItems === undefined;
 
+  type GroupType = NonNullable<typeof groups>[number];
+  // A group paired with the members that cleared the active filters. When
+  // visibleItems is a strict subset of the membership the group renders a
+  // partial reveal (see docs/adr/0003-partial-group-match).
+  type MatchedGroup = { group: GroupType; visibleItems: Doc<"items">[] };
+
   type MixedEntry =
-    | { type: "group"; orderDate: number; data: NonNullable<typeof groups>[number] }
+    | { type: "group"; orderDate: number; data: MatchedGroup }
     | { type: "item"; orderDate: number; data: Doc<"items"> };
+
+  // Groups are fetched unfiltered (listWithItems takes no args), so the same
+  // controls must be applied here for both halves of the feed to obey one set.
+  // Unlike solo items, the dropdowns drill *into* a group's members rather than
+  // matching the bundle whole — matchGroupsToFilters returns each surviving
+  // group with its visible subset. Lifted out of `mixed` so the Bundles segment
+  // and its tally can read it.
+  const matchedGroups = useMemo<MatchedGroup[]>(() => {
+    if (loading) return [];
+    return matchGroupsToFilters(groups ?? [], {
+      status: statusFilter,
+      category: categoryFilter,
+      qc: qcFilter,
+      search: debouncedSearch,
+    });
+  }, [groups, loading, statusFilter, categoryFilter, qcFilter, debouncedSearch]);
 
   const mixed: MixedEntry[] = useMemo(() => {
     if (loading) return [];
     return [
-      ...(groups ?? []).map((g) => ({ type: "group" as const, orderDate: g.orderDate, data: g })),
+      ...matchedGroups.map((m) => ({ type: "group" as const, orderDate: m.group.orderDate, data: m })),
       ...(soloItems ?? []).map((i) => ({ type: "item" as const, orderDate: i.orderDate, data: i })),
     ].sort((a, b) => sortOrder === "asc" ? a.orderDate - b.orderDate : b.orderDate - a.orderDate);
-  }, [groups, soloItems, loading, sortOrder]);
+  }, [matchedGroups, soloItems, loading, sortOrder]);
+
+  // Per-segment tallies for the lens control. All = the whole mixed feed.
+  const bundlesCount = matchedGroups.length;
+  const itemsCount = soloItems?.length ?? 0;
+  const allCount = mixed.length;
+  const activeCount = typeFilter === "bundles" ? bundlesCount : typeFilter === "items" ? itemsCount : allCount;
 
   const isEmpty = !loading && mixed.length === 0;
+  // A segment can be empty while others aren't (e.g. no bundles yet). Distinct
+  // from the page-level empty state, which only fires when there's nothing at all.
+  const segmentEmpty = !loading && !isEmpty && activeCount === 0;
 
   // Derive the shared customerId of all selected items (null if mixed or none)
   const selectedItems = useMemo(
@@ -101,6 +149,16 @@ export default function OrdersList() {
     setShowGroupPicker(true);
   };
 
+  // Sort is ordering, not filtering, so it's deliberately excluded — clearing
+  // resets what's shown, not how it's ordered.
+  const hasActiveFilters = Boolean(search || statusFilter || categoryFilter || qcFilter);
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("");
+    setCategoryFilter("");
+    setQcFilter("");
+  };
+
   const columns = selectedIds.size > 0 ? COLUMNS_SELECTABLE : COLUMNS;
 
   return (
@@ -118,6 +176,34 @@ export default function OrdersList() {
         {/* Control cluster: command row (search / view) over filter row.
             Creation lives in the TopBar's split button; this row only shapes the list. */}
         <div className="space-y-2.5">
+          {/* Segmented lens — the primary control. Each segment tunes columns to
+              its own shape; the mono tally reads current counts at a glance. */}
+          <div className="flex h-9 w-fit items-center gap-0.5 rounded-3xl bg-input/50 p-1">
+            {([
+              { value: "all" as const, label: "All", count: allCount },
+              { value: "bundles" as const, label: "Bundles", count: bundlesCount },
+              { value: "items" as const, label: "Items", count: itemsCount },
+            ]).map((seg) => {
+              const active = typeFilter === seg.value;
+              return (
+                <button
+                  key={seg.value}
+                  onClick={() => setTypeFilter(seg.value)}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex h-7 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors cursor-pointer",
+                    active ? "bg-accent-muted text-accent" : "text-secondary hover:text-primary"
+                  )}
+                >
+                  {seg.label}
+                  <span className={cn("font-mono text-xs tabular-nums", active ? "text-accent" : "text-tertiary")}>
+                    {loading ? "–" : seg.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="flex items-center gap-2">
             <div className="relative min-w-0 flex-1">
               <HugeiconsIcon icon={Search01Icon} size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -189,11 +275,22 @@ export default function OrdersList() {
                 { value: "profit-asc", label: "Profit: Low → High" },
               ]}
             />
-            {!loading && (
-              <span className="hidden sm:block sm:ml-auto text-xs text-tertiary tabular-nums">
-                {mixed.length} order{mixed.length !== 1 ? "s" : ""}
-              </span>
-            )}
+            <div className="col-span-2 flex items-center justify-end gap-2 sm:col-auto sm:ml-auto">
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-secondary transition-colors cursor-pointer hover:bg-input/50 hover:text-primary"
+                >
+                  <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2} />
+                  Clear
+                </button>
+              )}
+              {!loading && (
+                <span className="hidden sm:block text-xs text-tertiary tabular-nums">
+                  {mixed.length} order{mixed.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -224,25 +321,34 @@ export default function OrdersList() {
             actionLabel="Add Item"
             onAction={() => navigate("/orders/new")}
           />
+        ) : segmentEmpty ? (
+          // One segment is empty while others have orders — a light inline note,
+          // not the page-level empty state.
+          <div className="rounded-xl border border-border-subtle bg-surface px-4 py-12 text-center">
+            <p className="text-sm text-secondary">
+              {typeFilter === "bundles" ? "No bundles yet" : "No solo items"}
+            </p>
+            <p className="mt-1 text-xs text-tertiary">
+              Switch to {typeFilter === "bundles" ? "Items or All" : "Bundles or All"} to see the rest.
+            </p>
+          </div>
         ) : viewMode === "table" ? (
           <>
+            {/* Desktop — columns tuned per segment */}
             <div className="hidden md:block overflow-x-auto rounded-xl border border-border-subtle">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border-subtle bg-surface">
-                    {columns.map((col, i) => (
-                      <th key={i} className="py-3 px-4 text-left text-xs font-medium text-secondary uppercase tracking-wider">
-                        {col === "sel" ? "" : col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
+              {typeFilter === "all" ? (
+                // Object rows: no shared column header, so nothing can misalign.
+                // The only aligned axis is the right-hand money rail.
+                <div className="divide-y divide-border-subtle">
                   {mixed.map((entry) =>
                     entry.type === "group" ? (
-                      <GroupOrderRow key={`group-${entry.data._id}`} group={entry.data} colSpan={columns.length} />
+                      <GroupObjectRow
+                        key={`group-${entry.data.group._id}`}
+                        group={entry.data.group}
+                        visibleItems={entry.data.visibleItems}
+                      />
                     ) : (
-                      <ItemRow
+                      <ItemObjectRow
                         key={`item-${entry.data._id}`}
                         item={entry.data}
                         selectable
@@ -251,30 +357,87 @@ export default function OrdersList() {
                       />
                     )
                   )}
-                </tbody>
-              </table>
+                </div>
+              ) : typeFilter === "bundles" ? (
+                // Group-native table — every header maps to a real group field.
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border-subtle bg-surface">
+                      {BUNDLE_COLUMNS.map((col) => (
+                        <th
+                          key={col.label}
+                          className={cn(
+                            "py-3 px-4 text-xs font-medium text-secondary uppercase tracking-wider",
+                            col.align === "right" ? "text-right" : "text-left"
+                          )}
+                        >
+                          {col.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matchedGroups.map((m) => (
+                      <GroupTableRow key={`group-${m.group._id}`} group={m.group} visibleItems={m.visibleItems} />
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                // Items — the existing solo item table, no group bands.
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border-subtle bg-surface">
+                      {columns.map((col, i) => (
+                        <th key={i} className="py-3 px-4 text-left text-xs font-medium text-secondary uppercase tracking-wider">
+                          {col === "sel" ? "" : col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(soloItems ?? []).map((item) => (
+                      <ItemRow
+                        key={`item-${item._id}`}
+                        item={item}
+                        selectable
+                        selected={selectedIds.has(item._id)}
+                        onSelect={(checked) => toggleSelect(item._id, checked)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
             {/* Mobile list view: compact divided rows, deliberately distinct
                 from grid mode's cards so the toggle means something here too */}
             <div className="md:hidden overflow-hidden rounded-xl border border-border-subtle bg-surface divide-y divide-border-subtle">
-              {mixed.map((entry) =>
-                entry.type === "group" ? (
-                  <GroupListRow key={`group-${entry.data._id}`} group={entry.data} />
-                ) : (
-                  <ItemListRow key={`item-${entry.data._id}`} item={entry.data} />
-                )
-              )}
+              {typeFilter === "bundles"
+                ? matchedGroups.map((m) => <GroupListRow key={`group-${m.group._id}`} group={m.group} visibleItems={m.visibleItems} />)
+                : typeFilter === "items"
+                  ? (soloItems ?? []).map((item) => <ItemListRow key={`item-${item._id}`} item={item} />)
+                  : mixed.map((entry) =>
+                      entry.type === "group" ? (
+                        <GroupListRow key={`group-${entry.data.group._id}`} group={entry.data.group} visibleItems={entry.data.visibleItems} />
+                      ) : (
+                        <ItemListRow key={`item-${entry.data._id}`} item={entry.data} />
+                      )
+                    )}
             </div>
           </>
         ) : (
+          // Grid view — the segment decides which cards render.
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {mixed.map((entry) =>
-              entry.type === "group" ? (
-                <GroupOrderCard key={`group-${entry.data._id}`} group={entry.data} />
-              ) : (
-                <ItemCard key={`item-${entry.data._id}`} item={entry.data} />
-              )
-            )}
+            {typeFilter === "bundles"
+              ? matchedGroups.map((m) => <GroupOrderCard key={`group-${m.group._id}`} group={m.group} visibleItems={m.visibleItems} />)
+              : typeFilter === "items"
+                ? (soloItems ?? []).map((item) => <ItemCard key={`item-${item._id}`} item={item} />)
+                : mixed.map((entry) =>
+                    entry.type === "group" ? (
+                      <GroupOrderCard key={`group-${entry.data.group._id}`} group={entry.data.group} visibleItems={entry.data.visibleItems} />
+                    ) : (
+                      <ItemCard key={`item-${entry.data._id}`} item={entry.data} />
+                    )
+                  )}
           </div>
         )}
       </div>
