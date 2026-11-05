@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useLocation } from "react-router";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { PageContainer } from "../components/layout/PageContainer";
@@ -23,6 +23,13 @@ import type { Id } from "../../convex/_generated/dataModel";
 export default function OrderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  // Router state set by GroupOrderDetail's item links. Using state (not the
+  // item's orderGroupId) keeps Back pointing at wherever the user actually
+  // came from — opening a grouped item from Orders still returns to Orders.
+  const location = useLocation();
+  const fromGroupId = (location.state as { fromGroupId?: string } | null)?.fromGroupId;
+  const backTo = fromGroupId ? `/groups/${fromGroupId}` : "/orders";
+  const backLabel = fromGroupId ? "Back to Group Order" : "Back to Orders";
   const item = useQuery(api.items.getById, { id: id as Id<"items"> });
   const updateItem = useMutation(api.items.update);
   const removeItem = useMutation(api.items.remove);
@@ -52,10 +59,10 @@ export default function OrderDetail() {
           <p className="text-secondary">Item not found</p>
           <Button
             variant="ghost"
-            onClick={() => navigate("/orders")}
+            onClick={() => navigate(backTo)}
             className="mt-4"
           >
-            Back to Orders
+            {backLabel}
           </Button>
         </div>
       </PageContainer>
@@ -83,7 +90,7 @@ export default function OrderDetail() {
     try {
       await removeItem({ id: item._id });
       toast.success("Item deleted");
-      navigate("/orders");
+      navigate(backTo);
     } catch {
       toast.error("Failed to delete item");
     }
@@ -106,10 +113,10 @@ export default function OrderDetail() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="space-y-2">
             <button
-              onClick={() => navigate("/orders")}
+              onClick={() => navigate(backTo)}
               className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors cursor-pointer"
             >
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={1.5} /> Back to Orders
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={1.5} /> {backLabel}
             </button>
             <h2 className="font-display font-bold text-2xl text-primary">{item.name}</h2>
             <div className="flex items-center gap-2 flex-wrap">
@@ -125,7 +132,7 @@ export default function OrderDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/orders/${item._id}/edit`)}
+              onClick={() => navigate(`/orders/${item._id}/edit`, { state: location.state })}
             >
               <HugeiconsIcon icon={PencilEdit01Icon} size={14} strokeWidth={1.5} /> Edit
             </Button>

@@ -359,6 +359,7 @@ export default function GroupOrderDetail() {
                     <td className="px-4 py-3">
                       <Link
                         to={`/orders/${item._id}`}
+                        state={{ fromGroupId: groupId }}
                         className="font-medium text-primary hover:text-accent transition-colors line-clamp-1"
                       >
                         {item.name}
