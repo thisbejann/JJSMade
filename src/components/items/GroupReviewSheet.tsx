@@ -384,10 +384,11 @@ function AccordionRow({
           >
             <div
               className="px-3 pb-3 pt-2 space-y-2.5 border-t border-border-subtle"
-              // Enter (or the mobile keyboard's Go/Done) moves to the next item.
-              // An open seller dropdown claims Enter via preventDefault.
+              // Enter (or the mobile keyboard's Go/Done) in a text field moves to
+              // the next item. Buttons keep native Enter activation, and an Enter
+              // that picks a seller option never reaches here (Combobox stops it).
               onKeyDown={(e) => {
-                if (e.key !== "Enter" || e.defaultPrevented) return;
+                if (e.key !== "Enter" || !(e.target instanceof HTMLInputElement)) return;
                 e.preventDefault();
                 onAdvance();
               }}
