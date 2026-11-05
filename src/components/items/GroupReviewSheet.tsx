@@ -113,15 +113,20 @@ export function GroupReviewSheet({
 
   const getRow = (id: string) => rows[id] ?? BLANK;
 
-  function setField(line: BundleLine, field: keyof RowFields, value: string) {
+  // Collapse a complete row and open the next still-incomplete one.
+  function advanceFrom(line: BundleLine, row: RowFields) {
+    if (line.id !== expandedId || !rowComplete(line, row)) return;
+    const next = lines.find((l) => l.id !== line.id && !rowComplete(l, rows[l.id] ?? BLANK));
+    setExpandedId(next ? next.id : null);
+  }
+
+  // Only discrete picks (a clothes-size chip) advance on change. Typed fields
+  // must not: "4" already satisfies "has a size" while the user is mid-way to
+  // "42", so they advance on Enter instead (see AccordionRow).
+  function setField(line: BundleLine, field: keyof RowFields, value: string, advance = false) {
     const updated = { ...getRow(line.id), [field]: value };
     setRows((prev) => ({ ...prev, [line.id]: updated }));
-    // Auto-advance: when this (expanded) row just became complete, collapse it
-    // and open the next still-incomplete row.
-    if (line.id === expandedId && rowComplete(line, updated)) {
-      const next = lines.find((l) => l.id !== line.id && !rowComplete(l, rows[l.id] ?? BLANK));
-      setExpandedId(next ? next.id : null);
-    }
+    if (advance) advanceFrom(line, updated);
   }
 
   const readyCount = lines.filter((l) => rowComplete(l, getRow(l.id))).length;
@@ -239,7 +244,8 @@ export function GroupReviewSheet({
                   expanded={expandedId === line.id}
                   sellers={sellers}
                   onToggle={() => setExpandedId(expandedId === line.id ? null : line.id)}
-                  onField={(field, value) => setField(line, field, value)}
+                  onField={(field, value, advance) => setField(line, field, value, advance)}
+                  onAdvance={() => advanceFrom(line, getRow(line.id))}
                 />
               ))}
             </div>
@@ -300,6 +306,7 @@ function AccordionRow({
   sellers,
   onToggle,
   onField,
+  onAdvance,
 }: {
   line: BundleLine;
   fields: RowFields;
@@ -307,7 +314,8 @@ function AccordionRow({
   expanded: boolean;
   sellers: string[];
   onToggle: () => void;
-  onField: (field: keyof RowFields, value: string) => void;
+  onField: (field: keyof RowFields, value: string, advance?: boolean) => void;
+  onAdvance: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -374,7 +382,16 @@ function AccordionRow({
             onAnimationComplete={() => setSettled(true)}
             className={escapeClip ? "overflow-visible" : "overflow-hidden"}
           >
-            <div className="px-3 pb-3 pt-2 space-y-2.5 border-t border-border-subtle">
+            <div
+              className="px-3 pb-3 pt-2 space-y-2.5 border-t border-border-subtle"
+              // Enter (or the mobile keyboard's Go/Done) moves to the next item.
+              // An open seller dropdown claims Enter via preventDefault.
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" || e.defaultPrevented) return;
+                e.preventDefault();
+                onAdvance();
+              }}
+            >
               <input
                 autoFocus
                 value={fields.name}
@@ -416,7 +433,7 @@ function AccordionRow({
                           <button
                             key={sz}
                             type="button"
-                            onClick={() => onField("size", sz)}
+                            onClick={() => onField("size", sz, true)}
                             className={cn(
                               "h-9 flex-1 rounded-2xl text-xs font-medium border transition-colors",
                               active
