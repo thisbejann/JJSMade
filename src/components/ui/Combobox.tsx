@@ -74,6 +74,8 @@ export function Combobox({ label, value, onChange, options, placeholder, error }
       case "Enter":
         e.preventDefault();
         if (activeIndex >= 0 && filtered[activeIndex]) {
+          // This Enter picked an option, so ancestors must not act on it too.
+          e.stopPropagation();
           selectOption(filtered[activeIndex]);
         }
         break;
