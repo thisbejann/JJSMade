@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -16,10 +16,11 @@ import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
 import { useSettings } from "../hooks/useSettings";
-import { CATEGORY_CONFIG, type ItemCategory, FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT, FORWARDER_BUY_QC_FEE_PHP } from "../lib/constants";
+import { CATEGORY_CONFIG, type ItemCategory, FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT } from "../lib/constants";
+import { bundleTotals, quoteLine, type MarginState, type QuoteMode } from "../lib/pricing";
 import { cn } from "../lib/utils";
 
-type CalcMode = "regular" | "forwarder";
+type CalcMode = QuoteMode;
 
 type CalcView = "add" | "bundle";
 
@@ -75,34 +76,17 @@ export default function QuoteCalculator() {
   const rate =
     mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
 
-  const commissionPercent = FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT;
-
   const markupMap: Record<ItemCategory, number> = {
     shoes: settings.calculatorMarkupShoes,
     clothes: settings.calculatorMarkupClothes,
     watches_accessories: settings.calculatorMarkupWatchesAccessories,
   };
-  const markup = markupMap[category];
 
-  let baseCost = 0;
-  let commissionCost = 0;
-  let qcFee = 0;
-  let totalCost = 0;
-  let customerQuote = 0;
+  const line = quoteLine({ priceCNY, localShippingCNY, mode, rate, category, markups: markupMap });
+  const { markup, commissionCNY, qcFee } = line;
+
   let formulaParts: string[] = [];
-
   if (priceCNY > 0) {
-    baseCost = (priceCNY + localShippingCNY) * rate;
-
-    if (mode === "forwarder") {
-      commissionCost = priceCNY * (commissionPercent / 100) * rate;
-      qcFee = FORWARDER_BUY_QC_FEE_PHP;
-    }
-
-    totalCost = baseCost + commissionCost + qcFee;
-    customerQuote = Math.round((totalCost + markup) * 100) / 100;
-
-    // Build formula breakdown
     if (mode === "regular") {
       formulaParts = [
         `(${priceCNY} + ${localShippingCNY}) × ${rate.toFixed(2)} + ${markup}`,
@@ -110,7 +94,7 @@ export default function QuoteCalculator() {
     } else {
       formulaParts = [
         `(${priceCNY} + ${localShippingCNY}) × ${rate.toFixed(2)}`,
-        `+ ${commissionPercent}% commission: ${(priceCNY * (commissionPercent / 100)).toFixed(2)} × ${rate.toFixed(2)}`,
+        `+ ${FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT}% commission: ${commissionCNY.toFixed(2)} × ${rate.toFixed(2)}`,
         `+ QC fee: ${qcFee}`,
         `+ markup: ${markup}`,
       ];
@@ -118,26 +102,14 @@ export default function QuoteCalculator() {
   }
 
   // --- Bundle math ---
-  const bundleQuote = useMemo(
-    () => Math.round(bundle.reduce((sum, it) => sum + it.quote, 0) * 100) / 100,
-    [bundle]
-  );
-  const floor = useMemo(
-    () => Math.round(bundle.reduce((sum, it) => sum + it.cost, 0) * 100) / 100,
-    [bundle]
-  );
+  const { bundleQuote } = bundleTotals(bundle);
 
   const rawOffer = offerTouched ? offerStr : bundleQuote > 0 ? String(bundleQuote) : "";
   const offerEmpty = rawOffer.trim() === "";
   const offer = offerEmpty ? 0 : Number(rawOffer);
 
-  const discount = Math.round((bundleQuote - offer) * 100) / 100;
-  const discountPct = bundleQuote > 0 ? (discount / bundleQuote) * 100 : 0;
-  const margin = Math.round((offer - floor) * 100) / 100;
-
-  type MarginState = "green" | "yellow" | "red";
-  const marginState: MarginState =
-    offer >= bundleQuote ? "green" : offer >= floor ? "yellow" : "red";
+  const { breakEvenFloor, discount, discountPct, estimatedMargin, marginState } =
+    bundleTotals(bundle, offerEmpty ? undefined : offer);
 
   function addToBundle() {
     if (priceCNY <= 0) return;
@@ -149,8 +121,8 @@ export default function QuoteCalculator() {
         mode,
         priceCNY,
         localShippingCNY,
-        quote: customerQuote,
-        cost: Math.round(totalCost * 100) / 100,
+        quote: line.quote,
+        cost: line.cost,
       },
     ]);
     setPriceCNY(0); // reset price for the next item; keep mode/category/shipping
@@ -307,7 +279,7 @@ export default function QuoteCalculator() {
                   <div className="border-t border-border-subtle pt-3">
                     <p className="text-xs text-secondary mb-1">Suggested customer price</p>
                     <p className="font-mono text-2xl font-bold text-accent">
-                      {peso(customerQuote)}
+                      {peso(line.quote)}
                     </p>
                   </div>
                 </CardContent>
@@ -353,7 +325,7 @@ export default function QuoteCalculator() {
                 {/* Margin signal (hero) */}
                 <MarginSignal
                   state={marginState}
-                  margin={margin}
+                  margin={estimatedMargin}
                   discountPct={discountPct}
                   empty={offerEmpty}
                 />
@@ -396,7 +368,7 @@ export default function QuoteCalculator() {
                 {/* Supporting figures */}
                 <div className="grid grid-cols-2 gap-3 border-t border-border-subtle pt-4">
                   <Figure label="Bundle quote" value={peso(bundleQuote)} />
-                  <Figure label="Break-even floor" value={peso(floor)} muted />
+                  <Figure label="Break-even floor" value={peso(breakEvenFloor)} muted />
                 </div>
 
                 {/* Persistent caveat */}
@@ -500,9 +472,9 @@ export default function QuoteCalculator() {
 }
 
 const MARGIN_META = {
-  green: { icon: CheckmarkCircle02Icon, text: "text-success", bg: "bg-success-muted", label: "Full margin" },
-  yellow: { icon: Alert02Icon, text: "text-warning", bg: "bg-warning-muted", label: "Discounted, still profitable" },
-  red: { icon: CancelCircleIcon, text: "text-danger", bg: "bg-danger-muted", label: "Below cost" },
+  full: { icon: CheckmarkCircle02Icon, text: "text-success", bg: "bg-success-muted", label: "Full margin" },
+  discounted: { icon: Alert02Icon, text: "text-warning", bg: "bg-warning-muted", label: "Discounted, still profitable" },
+  belowCost: { icon: CancelCircleIcon, text: "text-danger", bg: "bg-danger-muted", label: "Below cost" },
 } as const;
 
 function MarginSignal({
@@ -511,7 +483,7 @@ function MarginSignal({
   discountPct,
   empty,
 }: {
-  state: "green" | "yellow" | "red";
+  state: MarginState;
   margin: number;
   discountPct: number;
   empty: boolean;
@@ -526,9 +498,9 @@ function MarginSignal({
 
   const meta = MARGIN_META[state];
   const sub =
-    state === "green"
+    state === "full"
       ? "At or above your quote price."
-      : state === "yellow"
+      : state === "discounted"
         ? `${discountPct.toFixed(1)}% off, still above cost.`
         : "This offer loses money.";
 
