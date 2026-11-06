@@ -1,5 +1,5 @@
 import { HugeiconsIcon } from "@hugeicons/react";
-import { RunningShoesIcon, Shirt01Icon, Watch01Icon } from "@hugeicons/core-free-icons";
+import { HandBag01Icon, RunningShoesIcon, Shirt01Icon, Watch01Icon } from "@hugeicons/core-free-icons";
 import { CATEGORY_CONFIG, type ItemCategory } from "../../lib/constants";
 import { Badge } from "../ui/Badge";
 
@@ -7,6 +7,7 @@ const iconMap = {
   shoes: RunningShoesIcon,
   clothes: Shirt01Icon,
   watches_accessories: Watch01Icon,
+  bags: HandBag01Icon,
 } as const;
 
 interface CategoryBadgeProps {

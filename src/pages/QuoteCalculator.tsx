@@ -40,6 +40,7 @@ const CATEGORIES: { value: ItemCategory; label: string }[] = [
   { value: "shoes", label: CATEGORY_CONFIG.shoes.label },
   { value: "clothes", label: CATEGORY_CONFIG.clothes.label },
   { value: "watches_accessories", label: CATEGORY_CONFIG.watches_accessories.label },
+  { value: "bags", label: CATEGORY_CONFIG.bags.label },
 ];
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
@@ -81,6 +82,8 @@ export default function QuoteCalculator() {
     shoes: settings.calculatorMarkupShoes,
     clothes: settings.calculatorMarkupClothes,
     watches_accessories: settings.calculatorMarkupWatchesAccessories,
+    // Interim: no Bags markup setting. Profit Target and Bag Size replace this.
+    bags: settings.calculatorMarkupShoes,
   };
   const markup = markupMap[category];
 
