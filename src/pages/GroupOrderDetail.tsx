@@ -6,6 +6,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
 import { Modal } from "../components/ui/Modal";
 import { ItemStatusBadge } from "../components/items/ItemStatusBadge";
 import { GroupStatusBadge } from "../components/items/GroupStatusBadge";
@@ -234,9 +235,9 @@ function NegotiatedTotalBlock({ group }: { group: NegotiationGroup }) {
               <span className="text-secondary">
                 Your profit{!hasPrice ? " (at full price)" : ""}
                 {profitEstimated && (
-                  <span className="ml-2 rounded-full bg-warning-muted px-2 py-0.5 text-[10px] font-semibold text-warning">
+                  <Badge variant="warning" className="ml-2">
                     Estimated
-                  </span>
+                  </Badge>
                 )}
               </span>
               <ProfitNumber value={group.groupProfit} className="text-base font-semibold" />
@@ -400,7 +401,7 @@ export default function GroupOrderDetail() {
                         <span className={item.profit >= 0 ? "text-success" : "text-danger"}>
                           {formatPHP(item.profit)}
                           {isShippingEstimated(item) && (
-                            <span className="ml-1 text-[10px] text-warning">est.</span>
+                            <span className="ml-1 text-[11px] text-warning">est.</span>
                           )}
                         </span>
                       ) : (

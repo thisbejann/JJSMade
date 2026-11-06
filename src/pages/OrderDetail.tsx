@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
 import { Modal } from "../components/ui/Modal";
 import { Skeleton } from "../components/ui/Skeleton";
 import { ItemStatusBadge } from "../components/items/ItemStatusBadge";
@@ -166,9 +167,9 @@ export default function OrderDetail() {
                 <p className="flex items-center gap-2 text-xs font-medium text-secondary uppercase tracking-wider">
                   Profit
                   {estimatedShippingPHP != null && (
-                    <span className="rounded-full bg-warning-muted px-2 py-0.5 text-[10px] font-semibold text-warning normal-case tracking-normal">
+                    <Badge variant="warning" className="normal-case tracking-normal">
                       Estimated
-                    </span>
+                    </Badge>
                   )}
                 </p>
                 <p
