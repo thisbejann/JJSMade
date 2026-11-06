@@ -4,6 +4,7 @@ import { api } from "../../convex/_generated/api";
 import { PageContainer } from "../components/layout/PageContainer";
 import { ItemForm } from "../components/items/ItemForm";
 import { Skeleton } from "../components/ui/Skeleton";
+import { TdWatchFormPrototype } from "../components/items/TdWatchForm.prototype";
 import type { Id } from "../../convex/_generated/dataModel";
 
 export default function OrderForm() {
@@ -19,6 +20,16 @@ export default function OrderForm() {
     api.items.getById,
     id ? { id: id as Id<"items"> } : "skip"
   );
+
+  // PROTOTYPE: /orders/new?variant=A|B|C shows the TD watch form variants.
+  const protoVariant = searchParams.get("variant");
+  if (!isEdit && protoVariant && !import.meta.env.PROD) {
+    return (
+      <PageContainer>
+        <TdWatchFormPrototype variant={protoVariant} />
+      </PageContainer>
+    );
+  }
 
   if (isEdit && existingItem === undefined) {
     return (
