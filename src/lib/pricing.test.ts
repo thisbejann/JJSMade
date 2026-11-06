@@ -43,6 +43,13 @@ describe("weightPreset", () => {
     expect(weightPreset("clothes")).toBe(0.5);
   });
 
+  it.each([
+    ["small", 1.5],
+    ["large", 3.5],
+  ] as const)("Bags %s is %s kg", (size, kg) => {
+    expect(weightPreset("bags", { size })).toBe(kg);
+  });
+
   it("Bags with no Bag Size default to Large", () => {
     expect(weightPreset("bags")).toBe(3.5);
   });
@@ -89,6 +96,38 @@ describe("quoteLine", () => {
     expect(line.cost).toBe(3074);
     expect(line.estimatedShippingPHP).toBe(480);
     expect(line.quote).toBe(3954);
+  });
+
+  it("a Large bag quotes cost + 3.5 kg × forwarder rate + the Profit Target", () => {
+    const line = quoteLine({
+      ...BASE,
+      priceCNY: 300,
+      localShippingCNY: 10,
+      mode: "regular",
+      rate: 8.2,
+      category: "bags",
+      weightClass: { size: "large" },
+    });
+
+    // 2542 + 3.5 × 480 = 1680 + 400
+    expect(line.estimatedShippingPHP).toBe(1680);
+    expect(line.quote).toBe(4622);
+  });
+
+  it("a typed kg replaces a Bag Size preset", () => {
+    const line = quoteLine({
+      ...BASE,
+      priceCNY: 300,
+      localShippingCNY: 10,
+      mode: "regular",
+      rate: 8.2,
+      category: "bags",
+      weightClass: { size: "small" },
+      kgOverride: 2.2,
+    });
+
+    expect(line.estimatedWeightKg).toBe(2.2);
+    expect(line.estimatedShippingPHP).toBe(1056);
   });
 
   it("a typed kg replaces the preset", () => {
