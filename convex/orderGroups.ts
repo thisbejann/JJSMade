@@ -6,7 +6,8 @@ import { normalizeSize, validateItemRules } from "./items";
 const categoryValidator = v.union(
   v.literal("shoes"),
   v.literal("clothes"),
-  v.literal("watches_accessories")
+  v.literal("watches_accessories"),
+  v.literal("bags")
 );
 
 const STATUS_FLOW = [

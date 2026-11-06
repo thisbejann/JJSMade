@@ -19,6 +19,8 @@ export function getCalculatorMarkupMap(
     shoes: settings.calculatorMarkupShoes,
     clothes: settings.calculatorMarkupClothes,
     watches_accessories: settings.calculatorMarkupWatchesAccessories,
+    // Interim: no Bags markup setting. Profit Target and Bag Size replace this.
+    bags: settings.calculatorMarkupShoes,
   };
 }
 

@@ -25,7 +25,8 @@ export default defineSchema({
     category: v.union(
       v.literal("shoes"),
       v.literal("clothes"),
-      v.literal("watches_accessories")
+      v.literal("watches_accessories"),
+      v.literal("bags")
     ),
     imageUrl: v.optional(v.string()),
     size: v.optional(v.string()),
@@ -148,7 +149,8 @@ export default defineSchema({
     category: v.union(
       v.literal("shoes"),
       v.literal("clothes"),
-      v.literal("watches_accessories")
+      v.literal("watches_accessories"),
+      v.literal("bags")
     ),
     imageUrl: v.optional(v.string()),
     size: v.optional(v.string()),
