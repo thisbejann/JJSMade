@@ -43,6 +43,13 @@ describe("weightPreset", () => {
     expect(weightPreset("clothes")).toBe(0.5);
   });
 
+  it.each([
+    ["small", 1.5],
+    ["large", 3.5],
+  ] as const)("Bags %s is %s kg", (size, kg) => {
+    expect(weightPreset("bags", { size })).toBe(kg);
+  });
+
   it("Bags with no Bag Size default to Large", () => {
     expect(weightPreset("bags")).toBe(3.5);
   });
@@ -89,6 +96,38 @@ describe("quoteLine", () => {
     expect(line.cost).toBe(3074);
     expect(line.estimatedShippingPHP).toBe(480);
     expect(line.quote).toBe(3954);
+  });
+
+  it("a Large bag quotes cost + 3.5 kg × forwarder rate + the Profit Target", () => {
+    const line = quoteLine({
+      ...BASE,
+      priceCNY: 300,
+      localShippingCNY: 10,
+      mode: "regular",
+      rate: 8.2,
+      category: "bags",
+      weightClass: { size: "large" },
+    });
+
+    // 2542 + 3.5 × 480 = 1680 + 400
+    expect(line.estimatedShippingPHP).toBe(1680);
+    expect(line.quote).toBe(4622);
+  });
+
+  it("a typed kg replaces a Bag Size preset", () => {
+    const line = quoteLine({
+      ...BASE,
+      priceCNY: 300,
+      localShippingCNY: 10,
+      mode: "regular",
+      rate: 8.2,
+      category: "bags",
+      weightClass: { size: "small" },
+      kgOverride: 2.2,
+    });
+
+    expect(line.estimatedWeightKg).toBe(2.2);
+    expect(line.estimatedShippingPHP).toBe(1056);
   });
 
   it("a typed kg replaces the preset", () => {
@@ -170,35 +209,47 @@ describe("quoteLine", () => {
   });
 });
 
+// Each line is cost + Estimated Shipping + the ₱400 Profit Target.
 const LINES = [
-  { quote: 3392, cost: 2542 },
-  { quote: 1934.95, cost: 1084.95 },
-  { quote: 3824, cost: 3074 },
+  { quote: 3392, cost: 2542, estimatedShippingPHP: 450 },
+  { quote: 1934.95, cost: 1084.95, estimatedShippingPHP: 450 },
+  { quote: 3824, cost: 3074, estimatedShippingPHP: 350 },
 ];
 
 describe("bundleTotals", () => {
-  it("sums line quotes into the Bundle Quote and line costs into the Break-even Floor", () => {
+  it("sums line quotes into the Bundle Quote and cost + shipping into the Break-even Floor", () => {
     const totals = bundleTotals(LINES);
 
     expect(totals.bundleQuote).toBe(9150.95);
-    expect(totals.breakEvenFloor).toBe(6700.95);
+    // 6700.95 cost + 1250 shipping
+    expect(totals.breakEvenFloor).toBe(7950.95);
   });
 
-  it("with a discounted Offer Total, derives the discount and the margin over the floor", () => {
+  it("totals Estimated Shipping as the plain sum of its lines", () => {
+    const totals = bundleTotals([
+      { quote: 1000, cost: 500, estimatedShippingPHP: 100.01 },
+      { quote: 1000, cost: 500, estimatedShippingPHP: 0.02 },
+    ]);
+
+    expect(totals.estimatedShippingTotal).toBe(100.03);
+  });
+
+  it("with a discounted Offer Total, derives the discount and the Estimated Margin over the floor", () => {
     const totals = bundleTotals(LINES, 8000);
 
     expect(totals.discount).toBe(1150.95);
     expect(totals.discountPct).toBeCloseTo(12.5774, 4);
-    expect(totals.estimatedMargin).toBe(1299.05);
+    expect(totals.estimatedMargin).toBe(49.05);
     expect(totals.marginState).toBe("discounted");
   });
 
-  it("without an Offer Total, prices at the full Bundle Quote", () => {
+  it("without an Offer Total, prices at the full Bundle Quote and earns the Profit Targets", () => {
     const totals = bundleTotals(LINES);
 
     expect(totals.discount).toBe(0);
     expect(totals.discountPct).toBe(0);
-    expect(totals.estimatedMargin).toBe(2450);
+    expect(totals.estimatedMargin).toBe(1200);
+    expect(totals.estimatedShippingTotal).toBe(1250);
     expect(totals.marginState).toBe("full");
   });
 
@@ -206,22 +257,36 @@ describe("bundleTotals", () => {
     const totals = bundleTotals(LINES, 9500);
 
     expect(totals.discount).toBe(-349.05);
-    expect(totals.estimatedMargin).toBe(2799.05);
+    expect(totals.estimatedMargin).toBe(1549.05);
     expect(totals.marginState).toBe("full");
   });
 
   it("an offer exactly at the Break-even Floor is discounted, not below cost", () => {
-    const totals = bundleTotals(LINES, 6700.95);
+    const totals = bundleTotals(LINES, 7950.95);
 
     expect(totals.estimatedMargin).toBe(0);
     expect(totals.marginState).toBe("discounted");
   });
 
-  it("an offer under the Break-even Floor is below cost with a negative margin", () => {
-    const totals = bundleTotals(LINES, 6000);
+  it("an offer that covers cost but not shipping is below cost", () => {
+    const totals = bundleTotals(LINES, 7000);
 
-    expect(totals.estimatedMargin).toBe(-700.95);
+    expect(totals.estimatedMargin).toBe(-950.95);
     expect(totals.marginState).toBe("belowCost");
+  });
+
+  it("an all-watch Bundle carries no shipping, so its floor is the cost alone", () => {
+    const totals = bundleTotals(
+      [
+        { quote: 5400, cost: 5000, estimatedShippingPHP: 0 },
+        { quote: 3400, cost: 3000, estimatedShippingPHP: 0 },
+      ],
+      8500
+    );
+
+    expect(totals.breakEvenFloor).toBe(8000);
+    expect(totals.estimatedShippingTotal).toBe(0);
+    expect(totals.estimatedMargin).toBe(500);
   });
 
   it("an empty Bundle has zero totals and no discount percentage", () => {
@@ -229,6 +294,7 @@ describe("bundleTotals", () => {
 
     expect(totals.bundleQuote).toBe(0);
     expect(totals.breakEvenFloor).toBe(0);
+    expect(totals.estimatedShippingTotal).toBe(0);
     expect(totals.discountPct).toBe(0);
   });
 });

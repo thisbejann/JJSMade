@@ -11,6 +11,7 @@ export type QuoteMode = "regular" | "forwarder";
 
 export type ShoeBuild = "light" | "regular" | "chunky";
 export type ClothingWeight = "light" | "heavy";
+export type BagSize = "small" | "large";
 
 /** The quick class that picks a Weight Preset. Each category reads its own field. */
 export interface WeightClass {
@@ -20,6 +21,8 @@ export interface WeightClass {
   euSize?: number;
   /** Clothes */
   weight?: ClothingWeight;
+  /** Bags */
+  size?: BagSize;
 }
 
 // Weight Presets, kg with full packaging (ADR 0005). Changing one is a code
@@ -30,9 +33,8 @@ const SHOE_PRESETS: Record<ShoeBuild, readonly [number, number]> = {
   chunky: [1.5, 1.7],
 };
 const CLOTHING_PRESETS: Record<ClothingWeight, number> = { light: 0.5, heavy: 1.0 };
+const BAG_PRESETS: Record<BagSize, number> = { small: 1.5, large: 3.5 };
 const ACCESSORIES_PRESET = 0.5;
-// Bags default to Large: a missing Bag Size must never under-quote.
-const BAGS_LARGE_PRESET = 3.5;
 
 /**
  * The typical shipped weight for a China-route line, in kg. Null means the
@@ -49,7 +51,8 @@ export function weightPreset(category: ItemCategory, cls: WeightClass = {}): num
     case "clothes":
       return CLOTHING_PRESETS[cls.weight ?? "light"];
     case "bags":
-      return BAGS_LARGE_PRESET;
+      // Bags default to Large: a missing Bag Size must never under-quote.
+      return BAG_PRESETS[cls.size ?? "large"];
     case "watches_accessories":
       // Until Watches split off (ADR 0004), this category prices as Accessories.
       return ACCESSORIES_PRESET;
@@ -111,7 +114,9 @@ export function quoteLine(input: QuoteLineInput): QuoteLine {
 export interface BundleTotals {
   /** Sum of line quotes: the full price before any discount. */
   bundleQuote: number;
-  /** Sum of line costs: the lowest Offer Total that doesn't lose money. */
+  /** Plain sum of line Estimated Shipping, unrounded beyond centavos. */
+  estimatedShippingTotal: number;
+  /** Sum of line cost + Estimated Shipping: the lowest Offer Total expected not to lose money. */
   breakEvenFloor: number;
   /** Bundle Quote − Offer Total. */
   discount: number;
@@ -126,11 +131,14 @@ export interface BundleTotals {
 export type MarginState = "full" | "discounted" | "belowCost";
 
 export function bundleTotals(
-  lines: ReadonlyArray<Pick<QuoteLine, "quote" | "cost">>,
+  lines: ReadonlyArray<Pick<QuoteLine, "quote" | "cost" | "estimatedShippingPHP">>,
   offerTotal?: number
 ): BundleTotals {
   const bundleQuote = round2(lines.reduce((sum, l) => sum + l.quote, 0));
-  const breakEvenFloor = round2(lines.reduce((sum, l) => sum + l.cost, 0));
+  const estimatedShippingTotal = round2(lines.reduce((sum, l) => sum + l.estimatedShippingPHP, 0));
+  const breakEvenFloor = round2(
+    lines.reduce((sum, l) => sum + l.cost + l.estimatedShippingPHP, 0)
+  );
   // No Offer Total means the customer pays the full Bundle Quote.
   const offer = offerTotal ?? bundleQuote;
   const discount = round2(bundleQuote - offer);
@@ -138,6 +146,7 @@ export function bundleTotals(
     offer >= bundleQuote ? "full" : offer >= breakEvenFloor ? "discounted" : "belowCost";
   return {
     bundleQuote,
+    estimatedShippingTotal,
     breakEvenFloor,
     discount,
     discountPct: bundleQuote > 0 ? (discount / bundleQuote) * 100 : 0,
