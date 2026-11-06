@@ -21,6 +21,7 @@ import {
   bundleTotals,
   quoteLine,
   weightPreset,
+  type BagSize,
   type ClothingWeight,
   type MarginState,
   type QuoteMode,
@@ -66,6 +67,11 @@ const CLOTHING_WEIGHTS: { value: ClothingWeight; label: string }[] = [
   { value: "heavy", label: "Heavy" },
 ];
 
+const BAG_SIZES: { value: BagSize; label: string }[] = [
+  { value: "small", label: "Small" },
+  { value: "large", label: "Large" },
+];
+
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
 function kg(n: number): string {
@@ -97,6 +103,7 @@ export default function QuoteCalculator() {
   const [shoeBuild, setShoeBuild] = useState<ShoeBuild>("regular");
   const [euSizeStr, setEuSizeStr] = useState("");
   const [clothingWeight, setClothingWeight] = useState<ClothingWeight>("light");
+  const [bagSize, setBagSize] = useState<BagSize>("large");
   const [kgStr, setKgStr] = useState("");
 
   // --- Bundle scratchpad (ephemeral) ---
@@ -120,7 +127,9 @@ export default function QuoteCalculator() {
       ? { build: shoeBuild, euSize }
       : category === "clothes"
         ? { weight: clothingWeight }
-        : {};
+        : category === "bags"
+          ? { size: bagSize }
+          : {};
   const preset = weightPreset(category, weightClass);
   const kgOverride = kgStr.trim() === "" ? undefined : Number(kgStr);
 
@@ -350,6 +359,14 @@ export default function QuoteCalculator() {
                     options={CLOTHING_WEIGHTS}
                     value={clothingWeight}
                     onChange={setClothingWeight}
+                  />
+                )}
+                {category === "bags" && (
+                  <Segmented
+                    label="Bag size"
+                    options={BAG_SIZES}
+                    value={bagSize}
+                    onChange={setBagSize}
                   />
                 )}
                 {preset !== null && (
