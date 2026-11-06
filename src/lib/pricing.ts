@@ -155,6 +155,40 @@ export function bundleTotals(
   };
 }
 
+/** Forwarder Shipping Fee for a weight, in PHP. Estimated or actual, the same formula. */
+export function shippingCost(weightKg: number, ratePerKg: number): number {
+  return round2(weightKg * ratePerKg);
+}
+
+/**
+ * Actual minus Estimated Shipping, in PHP. Positive means I absorbed more than
+ * the quote expected. Null unless the Item has both an estimate and a real weight.
+ */
+export function shippingGap(
+  estimatedWeightKg: number | undefined,
+  actualWeightKg: number | undefined,
+  ratePerKg: number
+): number | null {
+  if (estimatedWeightKg == null || actualWeightKg == null) return null;
+  return round2(shippingCost(actualWeightKg, ratePerKg) - shippingCost(estimatedWeightKg, ratePerKg));
+}
+
+/** A Group Order's summed gap across members with both weights. Null when none qualify. */
+export function shippingGapTotal(
+  members: ReadonlyArray<{
+    estimatedWeightKg?: number;
+    weightKg?: number;
+    forwarderRatePerKg: number;
+  }>
+): number | null {
+  let total: number | null = null;
+  for (const m of members) {
+    const gap = shippingGap(m.estimatedWeightKg, m.weightKg, m.forwarderRatePerKg);
+    if (gap !== null) total = (total ?? 0) + gap;
+  }
+  return total === null ? null : round2(total);
+}
+
 function round2(value: number) {
   return Math.round(value * 100) / 100;
 }

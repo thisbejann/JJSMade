@@ -9,7 +9,8 @@ import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { ItemStatusBadge } from "../components/items/ItemStatusBadge";
 import { GroupStatusBadge } from "../components/items/GroupStatusBadge";
-import { formatPHP, formatPercent, formatDate } from "../lib/formatters";
+import { formatPHP, formatSignedPHP, formatPercent, formatDate } from "../lib/formatters";
+import { shippingGap, shippingGapTotal } from "../lib/pricing";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowLeft01Icon,
@@ -44,7 +45,7 @@ interface NegotiationGroup {
   status: string;
   notes?: string;
   createdAt: number;
-  items: { weightKg?: number; estimatedWeightKg?: number }[];
+  items: { weightKg?: number; estimatedWeightKg?: number; forwarderRatePerKg: number }[];
   sumOfQuotes: number;
   negotiatedTotal: number | null;
   effectiveTotal: number;
@@ -143,6 +144,11 @@ function NegotiatedTotalBlock({ group }: { group: NegotiationGroup }) {
   const itemCount = group.items.length;
   const isLoss = group.groupProfit < 0;
   const profitEstimated = group.items.some(isShippingEstimated);
+  // Only members with both an estimate and a real weight count. Positive: I absorbed more.
+  const gapTotal = shippingGapTotal(group.items);
+  const gapCount = group.items.filter(
+    (i) => shippingGap(i.estimatedWeightKg, i.weightKg, i.forwarderRatePerKg) != null
+  ).length;
 
   return (
     <div className="rounded-xl border border-border-default bg-surface overflow-hidden">
@@ -247,6 +253,21 @@ function NegotiatedTotalBlock({ group }: { group: NegotiationGroup }) {
               <p className="text-right text-xs text-danger">
                 Below cost — this bundle loses money.
               </p>
+            )}
+            {gapTotal != null && (
+              <div className="flex items-center justify-between gap-3 text-secondary">
+                <span className="min-w-0 truncate">
+                  Shipping gap ({gapCount} of {itemCount} weighed)
+                </span>
+                <span
+                  className={cn(
+                    "shrink-0 whitespace-nowrap font-mono tabular-nums",
+                    gapTotal > 0 ? "text-danger" : gapTotal < 0 ? "text-success" : undefined
+                  )}
+                >
+                  {formatSignedPHP(gapTotal)}
+                </span>
+              </div>
             )}
           </div>
         </div>

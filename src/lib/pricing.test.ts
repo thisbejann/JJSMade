@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bundleTotals, quoteLine, weightPreset } from "./pricing";
+import { bundleTotals, quoteLine, shippingGap, shippingGapTotal, weightPreset } from "./pricing";
 
 describe("weightPreset", () => {
   it.each([
@@ -296,5 +296,53 @@ describe("bundleTotals", () => {
     expect(totals.breakEvenFloor).toBe(0);
     expect(totals.estimatedShippingTotal).toBe(0);
     expect(totals.discountPct).toBe(0);
+  });
+});
+
+describe("shippingGap", () => {
+  it("is positive when the Item weighed more than estimated: I absorbed more", () => {
+    // est. 1.7 kg = ₱816, actual 1.9 kg = ₱912 at ₱480/kg
+    expect(shippingGap(1.7, 1.9, 480)).toBe(96);
+  });
+
+  it("is negative when the Item weighed less than estimated", () => {
+    // est. 3.5 kg = ₱1,680, actual 3.3 kg = ₱1,584
+    expect(shippingGap(3.5, 3.3, 480)).toBe(-96);
+  });
+
+  it("is zero when the estimate was exact", () => {
+    expect(shippingGap(1.2, 1.2, 480)).toBe(0);
+  });
+
+  it("is none when the Item has no estimate", () => {
+    expect(shippingGap(undefined, 1.9, 480)).toBeNull();
+  });
+
+  it("is none when the Item is not yet weighed", () => {
+    expect(shippingGap(1.7, undefined, 480)).toBeNull();
+  });
+});
+
+describe("shippingGapTotal", () => {
+  it("sums the gap across members that have both weights, skipping the rest", () => {
+    expect(
+      shippingGapTotal([
+        { estimatedWeightKg: 1.7, weightKg: 1.9, forwarderRatePerKg: 480 }, // +96
+        { estimatedWeightKg: 3.5, weightKg: 3.3, forwarderRatePerKg: 480 }, // −96
+        { estimatedWeightKg: 1.2, weightKg: 1.5, forwarderRatePerKg: 500 }, // +150
+        { estimatedWeightKg: 0.5, forwarderRatePerKg: 480 }, // not weighed
+        { weightKg: 0.8, forwarderRatePerKg: 480 }, // no estimate
+      ])
+    ).toBe(150);
+  });
+
+  it("is none when no member has both weights", () => {
+    expect(
+      shippingGapTotal([
+        { estimatedWeightKg: 0.5, forwarderRatePerKg: 480 },
+        { weightKg: 0.8, forwarderRatePerKg: 480 },
+      ])
+    ).toBeNull();
+    expect(shippingGapTotal([])).toBeNull();
   });
 });

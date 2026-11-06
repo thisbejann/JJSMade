@@ -13,7 +13,14 @@ import { CategoryBadge } from "../components/items/CategoryBadge";
 import { StatusStepper } from "../components/items/StatusStepper";
 import { CostBreakdown } from "../components/items/CostBreakdown";
 import { QcPhotoGallery } from "../components/items/QcPhotoGallery";
-import { formatPHP, formatCNY, formatDate, formatWeight } from "../lib/formatters";
+import {
+  formatPHP,
+  formatSignedPHP,
+  formatCNY,
+  formatDate,
+  formatWeight,
+} from "../lib/formatters";
+import { shippingCost, shippingGap } from "../lib/pricing";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PencilEdit01Icon, Delete02Icon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../lib/utils";
@@ -103,8 +110,10 @@ export default function OrderDetail() {
   // in its cost and profit. Once weighed, the actual forwarder fee replaces it.
   const estimatedShippingPHP =
     item.weightKg == null && item.estimatedWeightKg != null
-      ? Math.round(item.estimatedWeightKg * item.forwarderRatePerKg * 100) / 100
+      ? shippingCost(item.estimatedWeightKg, item.forwarderRatePerKg)
       : undefined;
+  // Once weighed, the estimate is kept to compare against. Positive: I absorbed more.
+  const gap = shippingGap(item.estimatedWeightKg, item.weightKg, item.forwarderRatePerKg);
   const estimateClass = item.shoeBuild ?? item.weightClass;
 
   return (
@@ -318,6 +327,21 @@ export default function OrderDetail() {
                   mono
                 />
               )}
+              {gap != null && item.estimatedWeightKg != null && (
+                <>
+                  <InfoRow
+                    label="Est. Shipping"
+                    value={formatPHP(shippingCost(item.estimatedWeightKg, item.forwarderRatePerKg))}
+                    mono
+                  />
+                  <InfoRow
+                    label="Shipping Gap"
+                    value={formatSignedPHP(gap)}
+                    valueClassName={gap > 0 ? "text-danger" : gap < 0 ? "text-success" : undefined}
+                    mono
+                  />
+                </>
+              )}
               <InfoRow label="Branded" value={item.isBranded ? "Yes" : "No"} />
             </div>
 
@@ -366,11 +390,13 @@ function InfoRow({
   value,
   mono,
   bold,
+  valueClassName,
 }: {
   label: string;
   value?: string | null;
   mono?: boolean;
   bold?: boolean;
+  valueClassName?: string;
 }) {
   return (
     <div className="flex justify-between items-start gap-3 min-w-0">
@@ -381,7 +407,8 @@ function InfoRow({
         className={cn(
           "text-sm text-primary text-right min-w-0 max-w-[60%] break-words [overflow-wrap:anywhere]",
           mono && "font-mono",
-          bold && "font-semibold"
+          bold && "font-semibold",
+          valueClassName
         )}
       >
         {value ?? "--"}
