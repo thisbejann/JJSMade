@@ -3,7 +3,6 @@ import { useMutation, useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Alert02Icon,
   Cancel01Icon,
   ArrowRight01Icon,
   ArrowDown01Icon,
@@ -244,7 +243,7 @@ export function GroupReviewSheet({
               ))}
             </div>
 
-            {/* Footer — negotiated total, caveat, create */}
+            {/* Footer — negotiated total, create */}
             <div className="px-5 pt-3 pb-5 border-t border-border-subtle space-y-3 shrink-0">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -262,10 +261,6 @@ export function GroupReviewSheet({
                     onChange={(e) => setOfferStr(e.target.value)}
                   />
                 </div>
-                <p className="flex items-center gap-1 text-[11px] text-warning text-right max-w-[9rem]">
-                  <HugeiconsIcon icon={Alert02Icon} size={13} strokeWidth={1.5} className="shrink-0" />
-                  <span>excl. forwarder shipping</span>
-                </p>
               </div>
 
               {error && <p className="text-[11px] text-danger">{error}</p>}

@@ -111,7 +111,9 @@ export function quoteLine(input: QuoteLineInput): QuoteLine {
 export interface BundleTotals {
   /** Sum of line quotes: the full price before any discount. */
   bundleQuote: number;
-  /** Sum of line costs: the lowest Offer Total that doesn't lose money. */
+  /** Plain sum of line Estimated Shipping, unrounded beyond centavos. */
+  estimatedShippingTotal: number;
+  /** Sum of line cost + Estimated Shipping: the lowest Offer Total expected not to lose money. */
   breakEvenFloor: number;
   /** Bundle Quote − Offer Total. */
   discount: number;
@@ -126,11 +128,14 @@ export interface BundleTotals {
 export type MarginState = "full" | "discounted" | "belowCost";
 
 export function bundleTotals(
-  lines: ReadonlyArray<Pick<QuoteLine, "quote" | "cost">>,
+  lines: ReadonlyArray<Pick<QuoteLine, "quote" | "cost" | "estimatedShippingPHP">>,
   offerTotal?: number
 ): BundleTotals {
   const bundleQuote = round2(lines.reduce((sum, l) => sum + l.quote, 0));
-  const breakEvenFloor = round2(lines.reduce((sum, l) => sum + l.cost, 0));
+  const estimatedShippingTotal = round2(lines.reduce((sum, l) => sum + l.estimatedShippingPHP, 0));
+  const breakEvenFloor = round2(
+    lines.reduce((sum, l) => sum + l.cost + l.estimatedShippingPHP, 0)
+  );
   // No Offer Total means the customer pays the full Bundle Quote.
   const offer = offerTotal ?? bundleQuote;
   const discount = round2(bundleQuote - offer);
@@ -138,6 +143,7 @@ export function bundleTotals(
     offer >= bundleQuote ? "full" : offer >= breakEvenFloor ? "discounted" : "belowCost";
   return {
     bundleQuote,
+    estimatedShippingTotal,
     breakEvenFloor,
     discount,
     discountPct: bundleQuote > 0 ? (discount / bundleQuote) * 100 : 0,

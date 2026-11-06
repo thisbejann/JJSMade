@@ -159,8 +159,14 @@ export default function QuoteCalculator() {
   const offerEmpty = rawOffer.trim() === "";
   const offer = offerEmpty ? 0 : Number(rawOffer);
 
-  const { breakEvenFloor, discount, discountPct, estimatedMargin, marginState } =
-    bundleTotals(bundle, offerEmpty ? undefined : offer);
+  const {
+    breakEvenFloor,
+    discount,
+    discountPct,
+    estimatedMargin,
+    estimatedShippingTotal,
+    marginState,
+  } = bundleTotals(bundle, offerEmpty ? undefined : offer);
 
   function addToBundle() {
     if (priceCNY <= 0) return;
@@ -464,16 +470,11 @@ export default function QuoteCalculator() {
                 </div>
 
                 {/* Supporting figures */}
-                <div className="grid grid-cols-2 gap-3 border-t border-border-subtle pt-4">
+                <div className="grid grid-cols-3 gap-3 border-t border-border-subtle pt-4">
                   <Figure label="Bundle quote" value={peso(bundleQuote)} />
+                  <Figure label="Est. shipping" value={peso(estimatedShippingTotal)} muted />
                   <Figure label="Break-even floor" value={peso(breakEvenFloor)} muted />
                 </div>
-
-                {/* Persistent caveat */}
-                <p className="flex items-start gap-1.5 text-[11px] text-warning">
-                  <HugeiconsIcon icon={Alert02Icon} size={14} strokeWidth={1.5} className="shrink-0 mt-px" />
-                  <span>Excludes forwarder shipping fee. Optimistic for heavy items.</span>
-                </p>
               </CardContent>
             </Card>
 
@@ -619,7 +620,8 @@ function MarginSignal({
         <HugeiconsIcon icon={meta.icon} size={16} strokeWidth={1.5} />
         <span className="text-xs font-semibold uppercase tracking-wide">{meta.label}</span>
       </div>
-      <p className={cn("font-mono text-3xl font-bold mt-2 tabular-nums", meta.text)}>
+      <p className="text-[11px] text-secondary mt-3">Estimated margin</p>
+      <p className={cn("font-mono text-3xl font-bold tabular-nums", meta.text)}>
         {peso(margin)}
       </p>
       <p className="text-xs text-secondary mt-1">{sub}</p>
