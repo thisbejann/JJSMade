@@ -1,9 +1,12 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 import { computeDerivedFields } from "./helpers";
 import { deleteUnreferencedQcPhotos } from "./qcPhotoCleanup";
 
 const CLOTHES_SIZES = new Set(["S", "M", "L", "XL"]);
+
+type ItemCategory = Doc<"items">["category"];
 
 const statusValidator = v.union(
   // Current statuses
@@ -25,18 +28,18 @@ const statusValidator = v.union(
 );
 
 export function normalizeSize(
-  category: "shoes" | "clothes" | "watches_accessories",
+  category: ItemCategory,
   size?: string
 ) {
   const trimmed = size?.trim();
   if (!trimmed) return undefined;
   if (category === "clothes") return trimmed.toUpperCase();
-  if (category === "watches_accessories") return undefined;
+  if (category === "watches_accessories" || category === "bags") return undefined;
   return trimmed;
 }
 
 export function validateItemRules(data: {
-  category: "shoes" | "clothes" | "watches_accessories";
+  category: ItemCategory;
   size?: string;
   isForwarderBuy: boolean;
   forwarderBuyRateUsed?: number;
@@ -79,7 +82,7 @@ export function validateItemRules(data: {
 export const create = mutation({
   args: {
     name: v.string(),
-    category: v.union(v.literal("shoes"), v.literal("clothes"), v.literal("watches_accessories")),
+    category: v.union(v.literal("shoes"), v.literal("clothes"), v.literal("watches_accessories"), v.literal("bags")),
     imageUrl: v.optional(v.string()),
     size: v.optional(v.string()),
     seller: v.string(),
@@ -166,7 +169,7 @@ export const update = mutation({
   args: {
     id: v.id("items"),
     name: v.optional(v.string()),
-    category: v.optional(v.union(v.literal("shoes"), v.literal("clothes"), v.literal("watches_accessories"))),
+    category: v.optional(v.union(v.literal("shoes"), v.literal("clothes"), v.literal("watches_accessories"), v.literal("bags"))),
     imageUrl: v.optional(v.string()),
     size: v.optional(v.string()),
     seller: v.optional(v.string()),
@@ -452,5 +455,36 @@ export const getByStatus = query({
       grouped[item.status] = (grouped[item.status] ?? 0) + 1;
     }
     return grouped;
+  },
+});
+
+// ── Migrations ──
+
+export function planBagReclassification<Id>(items: { _id: Id; category: ItemCategory }[]) {
+  const toMove: Id[] = [];
+  const alreadyBags: Id[] = [];
+  for (const item of items) {
+    (item.category === "bags" ? alreadyBags : toMove).push(item._id);
+  }
+  return { toMove, alreadyBags };
+}
+
+// One-time move of past bag orders into Bags. The owner passes the confirmed
+// Item IDs at run time; nothing is matched by name. Only `category` changes,
+// and re-running it skips Items that are already Bags.
+export const reclassifyAsBags = internalMutation({
+  args: { itemIds: v.array(v.id("items")) },
+  handler: async (ctx, { itemIds }) => {
+    const items = await Promise.all(itemIds.map((id) => ctx.db.get(id)));
+    const missing = itemIds.filter((_, i) => items[i] === null);
+    if (missing.length > 0) {
+      throw new Error(`Items not found: ${missing.join(", ")}`);
+    }
+
+    const plan = planBagReclassification(items.filter((item) => item !== null));
+    for (const id of plan.toMove) {
+      await ctx.db.patch(id, { category: "bags" });
+    }
+    return { moved: plan.toMove, alreadyBags: plan.alreadyBags };
   },
 });

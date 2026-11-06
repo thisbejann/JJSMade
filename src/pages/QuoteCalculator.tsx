@@ -52,6 +52,7 @@ const CATEGORIES: { value: ItemCategory; label: string }[] = [
   { value: "shoes", label: CATEGORY_CONFIG.shoes.label },
   { value: "clothes", label: CATEGORY_CONFIG.clothes.label },
   { value: "watches_accessories", label: CATEGORY_CONFIG.watches_accessories.label },
+  { value: "bags", label: CATEGORY_CONFIG.bags.label },
 ];
 
 const SHOE_BUILDS: { value: ShoeBuild; label: string }[] = [
@@ -299,7 +300,7 @@ export default function QuoteCalculator() {
                   <label className="block text-xs font-medium text-secondary mb-2">
                     Category
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {CATEGORIES.map((cat) => (
                       <button
                         key={cat.value}

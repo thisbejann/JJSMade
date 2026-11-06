@@ -22,7 +22,7 @@ import {
   type PersonalItemStatus,
 } from "../../lib/constants";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { RunningShoesIcon, Shirt01Icon, Watch01Icon } from "@hugeicons/core-free-icons";
+import { HandBag01Icon, RunningShoesIcon, Shirt01Icon, Watch01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../../lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ const CATEGORY_ICONS = {
   shoes: RunningShoesIcon,
   clothes: Shirt01Icon,
   watches_accessories: Watch01Icon,
+  bags: HandBag01Icon,
 };
 
 const CLOTHES_SIZES = ["S", "M", "L", "XL"] as const;
@@ -56,7 +57,7 @@ interface PersonalItemFormProps {
 
 function sanitizeSizeForCategory(category: ItemCategory, currentSize: string) {
   const trimmed = currentSize.trim();
-  if (category === "watches_accessories") return "";
+  if (category === "watches_accessories" || category === "bags") return "";
   if (category === "clothes") {
     const upper = trimmed.toUpperCase();
     return CLOTHES_SIZES.includes(upper as (typeof CLOTHES_SIZES)[number]) ? upper : "";
@@ -291,7 +292,7 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
 
           <div>
             <label className="block text-xs font-medium text-secondary mb-2">Category *</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {(Object.keys(CATEGORY_CONFIG) as ItemCategory[]).map((cat) => {
                 const icon = CATEGORY_ICONS[cat];
                 return (

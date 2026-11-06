@@ -43,6 +43,10 @@ describe("weightPreset", () => {
     expect(weightPreset("clothes")).toBe(0.5);
   });
 
+  it("Bags with no Bag Size default to Large", () => {
+    expect(weightPreset("bags")).toBe(3.5);
+  });
+
   it("Watches & Accessories uses the Accessories preset until Watches split off", () => {
     expect(weightPreset("watches_accessories")).toBe(0.5);
   });

@@ -31,6 +31,8 @@ const SHOE_PRESETS: Record<ShoeBuild, readonly [number, number]> = {
 };
 const CLOTHING_PRESETS: Record<ClothingWeight, number> = { light: 0.5, heavy: 1.0 };
 const ACCESSORIES_PRESET = 0.5;
+// Bags default to Large: a missing Bag Size must never under-quote.
+const BAGS_LARGE_PRESET = 3.5;
 
 /**
  * The typical shipped weight for a China-route line, in kg. Null means the
@@ -46,6 +48,8 @@ export function weightPreset(category: ItemCategory, cls: WeightClass = {}): num
     }
     case "clothes":
       return CLOTHING_PRESETS[cls.weight ?? "light"];
+    case "bags":
+      return BAGS_LARGE_PRESET;
     case "watches_accessories":
       // Until Watches split off (ADR 0004), this category prices as Accessories.
       return ACCESSORIES_PRESET;
