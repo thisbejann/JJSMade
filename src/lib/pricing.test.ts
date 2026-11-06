@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { bundleTotals, quoteLine } from "./pricing";
 
-const MARKUPS = { shoes: 850, clothes: 750, watches_accessories: 850 };
+const MARKUPS = { shoes: 850, clothes: 750, watches_accessories: 850, bags: 850 };
 
 describe("quoteLine", () => {
   it("regular mode quotes (price + local shipping) × rate + the category markup", () => {
