@@ -73,7 +73,7 @@ function lineEstimate(line: BundleLine) {
   return {
     estimatedWeightKg: line.estimatedWeightKg,
     shoeBuild: line.category === "shoes" ? line.weightClass.build : undefined,
-    weightClass: line.weightClass.weight,
+    weightClass: line.weightClass.weight ?? line.weightClass.size,
     estimatedWeightTyped: line.estimatedWeightTyped,
   };
 }
