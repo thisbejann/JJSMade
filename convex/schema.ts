@@ -136,6 +136,8 @@ export default defineSchema({
     defaultForwarderRate: v.number(),
     defaultMarkupMin: v.number(),
     defaultMarkupMax: v.number(),
+    calculatorProfitTarget: v.optional(v.number()),
+    // Retired by the single Profit Target (ADR 0005); kept for old records.
     calculatorMarkupShoes: v.optional(v.number()),
     calculatorMarkupClothes: v.optional(v.number()),
     calculatorMarkupWatchesAccessories: v.optional(v.number()),

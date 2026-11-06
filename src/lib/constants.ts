@@ -50,9 +50,7 @@ export const DEFAULTS = {
   forwarderRate: 480,
   markupMin: 700,
   markupMax: 850,
-  calculatorMarkupShoes: 850,
-  calculatorMarkupClothes: 750,
-  calculatorMarkupWatchesAccessories: 850,
+  calculatorProfitTarget: 400,
 } as const;
 
 export const FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT = 10;

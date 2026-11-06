@@ -9,9 +9,7 @@ export interface AppSettings {
   defaultForwarderRate: number;
   defaultMarkupMin: number;
   defaultMarkupMax: number;
-  calculatorMarkupShoes: number;
-  calculatorMarkupClothes: number;
-  calculatorMarkupWatchesAccessories: number;
+  calculatorProfitTarget: number;
   updatedAt: number;
 }
 
@@ -23,9 +21,7 @@ export function useSettings() {
   useEffect(() => {
     if (
       settings === null ||
-      settings?.calculatorMarkupShoes === undefined ||
-      settings?.calculatorMarkupClothes === undefined ||
-      settings?.calculatorMarkupWatchesAccessories === undefined
+      (settings !== undefined && settings.calculatorProfitTarget === undefined)
     ) {
       initialize();
     }
@@ -37,10 +33,7 @@ export function useSettings() {
     defaultForwarderRate: DEFAULTS.forwarderRate,
     defaultMarkupMin: DEFAULTS.markupMin,
     defaultMarkupMax: DEFAULTS.markupMax,
-    calculatorMarkupShoes: DEFAULTS.calculatorMarkupShoes,
-    calculatorMarkupClothes: DEFAULTS.calculatorMarkupClothes,
-    calculatorMarkupWatchesAccessories:
-      DEFAULTS.calculatorMarkupWatchesAccessories,
+    calculatorProfitTarget: DEFAULTS.calculatorProfitTarget,
     updatedAt: 0,
   };
 
@@ -54,14 +47,8 @@ export function useSettings() {
           defaultForwarderRate: settings.defaultForwarderRate,
           defaultMarkupMin: settings.defaultMarkupMin,
           defaultMarkupMax: settings.defaultMarkupMax,
-          calculatorMarkupShoes:
-            settings.calculatorMarkupShoes ?? DEFAULTS.calculatorMarkupShoes,
-          calculatorMarkupClothes:
-            settings.calculatorMarkupClothes ??
-            DEFAULTS.calculatorMarkupClothes,
-          calculatorMarkupWatchesAccessories:
-            settings.calculatorMarkupWatchesAccessories ??
-            DEFAULTS.calculatorMarkupWatchesAccessories,
+          calculatorProfitTarget:
+            settings.calculatorProfitTarget ?? DEFAULTS.calculatorProfitTarget,
           updatedAt: settings.updatedAt,
         }
       : fallbackSettings,

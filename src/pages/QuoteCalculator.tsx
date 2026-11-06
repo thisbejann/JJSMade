@@ -17,7 +17,16 @@ import { Button } from "../components/ui/Button";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
 import { useSettings } from "../hooks/useSettings";
 import { CATEGORY_CONFIG, type ItemCategory, FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT } from "../lib/constants";
-import { bundleTotals, quoteLine, type MarginState, type QuoteMode } from "../lib/pricing";
+import {
+  bundleTotals,
+  quoteLine,
+  weightPreset,
+  type ClothingWeight,
+  type MarginState,
+  type QuoteMode,
+  type ShoeBuild,
+  type WeightClass,
+} from "../lib/pricing";
 import { cn } from "../lib/utils";
 
 type CalcMode = QuoteMode;
@@ -35,6 +44,8 @@ interface BundleItem {
   localShippingCNY: number;
   quote: number;
   cost: number;
+  estimatedWeightKg: number | null;
+  estimatedShippingPHP: number;
 }
 
 const CATEGORIES: { value: ItemCategory; label: string }[] = [
@@ -43,7 +54,26 @@ const CATEGORIES: { value: ItemCategory; label: string }[] = [
   { value: "watches_accessories", label: CATEGORY_CONFIG.watches_accessories.label },
 ];
 
+const SHOE_BUILDS: { value: ShoeBuild; label: string }[] = [
+  { value: "light", label: "Light" },
+  { value: "regular", label: "Regular" },
+  { value: "chunky", label: "Chunky" },
+];
+
+const CLOTHING_WEIGHTS: { value: ClothingWeight; label: string }[] = [
+  { value: "light", label: "Light" },
+  { value: "heavy", label: "Heavy" },
+];
+
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
+
+function kg(n: number): string {
+  return n.toLocaleString("en-PH", { maximumFractionDigits: 2 });
+}
+
+function estimateLabel(weightKg: number, shippingPHP: number): string {
+  return `est. ${kg(weightKg)} kg · ${peso(shippingPHP)} shipping`;
+}
 
 function peso(n: number): string {
   const sign = n < 0 ? "−" : "";
@@ -62,6 +92,11 @@ export default function QuoteCalculator() {
   const [localShippingCNY, setLocalShippingCNY] = useState(10);
   const [mode, setMode] = useState<CalcMode>("regular");
   const [category, setCategory] = useState<ItemCategory>("shoes");
+  // Weight Preset class. Each category reads only its own field.
+  const [shoeBuild, setShoeBuild] = useState<ShoeBuild>("regular");
+  const [euSizeStr, setEuSizeStr] = useState("");
+  const [clothingWeight, setClothingWeight] = useState<ClothingWeight>("light");
+  const [kgStr, setKgStr] = useState("");
 
   // --- Bundle scratchpad (ephemeral) ---
   const [view, setView] = useState<CalcView>("add");
@@ -76,29 +111,44 @@ export default function QuoteCalculator() {
   const rate =
     mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
 
-  const markupMap: Record<ItemCategory, number> = {
-    shoes: settings.calculatorMarkupShoes,
-    clothes: settings.calculatorMarkupClothes,
-    watches_accessories: settings.calculatorMarkupWatchesAccessories,
-  };
+  const ratePerKg = settings.defaultForwarderRate;
+  const profitTarget = settings.calculatorProfitTarget;
+  const euSize = euSizeStr.trim() === "" ? undefined : Number(euSizeStr);
+  const weightClass: WeightClass =
+    category === "shoes"
+      ? { build: shoeBuild, euSize }
+      : category === "clothes"
+        ? { weight: clothingWeight }
+        : {};
+  const preset = weightPreset(category, weightClass);
+  const kgOverride = kgStr.trim() === "" ? undefined : Number(kgStr);
 
-  const line = quoteLine({ priceCNY, localShippingCNY, mode, rate, category, markups: markupMap });
-  const { markup, commissionCNY, qcFee } = line;
+  const line = quoteLine({
+    priceCNY,
+    localShippingCNY,
+    mode,
+    rate,
+    category,
+    weightClass,
+    kgOverride,
+    ratePerKg,
+    profitTarget,
+  });
+  const { commissionCNY, qcFee, estimatedWeightKg, estimatedShippingPHP } = line;
 
   let formulaParts: string[] = [];
   if (priceCNY > 0) {
-    if (mode === "regular") {
-      formulaParts = [
-        `(${priceCNY} + ${localShippingCNY}) × ${rate.toFixed(2)} + ${markup}`,
-      ];
-    } else {
-      formulaParts = [
-        `(${priceCNY} + ${localShippingCNY}) × ${rate.toFixed(2)}`,
+    formulaParts = [`(${priceCNY} + ${localShippingCNY}) × ${rate.toFixed(2)}`];
+    if (mode === "forwarder") {
+      formulaParts.push(
         `+ ${FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT}% commission: ${commissionCNY.toFixed(2)} × ${rate.toFixed(2)}`,
-        `+ QC fee: ${qcFee}`,
-        `+ markup: ${markup}`,
-      ];
+        `+ QC fee: ${qcFee}`
+      );
     }
+    if (estimatedWeightKg !== null) {
+      formulaParts.push(`+ shipping: ${kg(estimatedWeightKg)} kg × ${ratePerKg}`);
+    }
+    formulaParts.push(`+ profit target: ${profitTarget}`);
   }
 
   // --- Bundle math ---
@@ -123,9 +173,13 @@ export default function QuoteCalculator() {
         localShippingCNY,
         quote: line.quote,
         cost: line.cost,
+        estimatedWeightKg,
+        estimatedShippingPHP,
       },
     ]);
-    setPriceCNY(0); // reset price for the next item; keep mode/category/shipping
+    // Reset what's specific to this item; keep mode/category/class/shipping.
+    setPriceCNY(0);
+    setKgStr("");
   }
 
   function removeFromBundle(id: string) {
@@ -259,11 +313,49 @@ export default function QuoteCalculator() {
                         )}
                       >
                         {cat.label}
-                        <span className="block opacity-60 mt-0.5">+{markupMap[cat.value]}</span>
                       </button>
                     ))}
                   </div>
                 </div>
+
+                {/* Weight Preset class */}
+                {category === "shoes" && (
+                  <div className="grid grid-cols-[1fr_6rem] gap-3 items-end">
+                    <Segmented
+                      label="Shoe build"
+                      options={SHOE_BUILDS}
+                      value={shoeBuild}
+                      onChange={setShoeBuild}
+                    />
+                    <Input
+                      label="EU size"
+                      type="number"
+                      value={euSizeStr}
+                      onChange={(e) => setEuSizeStr(e.target.value)}
+                      step="0.5"
+                      placeholder="43"
+                    />
+                  </div>
+                )}
+                {category === "clothes" && (
+                  <Segmented
+                    label="Clothing weight"
+                    options={CLOTHING_WEIGHTS}
+                    value={clothingWeight}
+                    onChange={setClothingWeight}
+                  />
+                )}
+                {preset !== null && (
+                  <Input
+                    label="Weight (kg), optional"
+                    type="number"
+                    value={kgStr}
+                    onChange={(e) => setKgStr(e.target.value)}
+                    step="0.01"
+                    suffix="kg"
+                    placeholder={kg(preset)}
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -281,6 +373,11 @@ export default function QuoteCalculator() {
                     <p className="font-mono text-2xl font-bold text-accent">
                       {peso(line.quote)}
                     </p>
+                    {estimatedWeightKg !== null && (
+                      <p className="text-[11px] text-tertiary font-mono mt-1">
+                        {estimateLabel(estimatedWeightKg, estimatedShippingPHP)}
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -413,6 +510,11 @@ export default function QuoteCalculator() {
                           <p className="text-[11px] text-tertiary font-mono">
                             ¥{it.priceCNY} · {it.mode === "forwarder" ? "Forwarder" : "Regular"}
                           </p>
+                          {it.estimatedWeightKg !== null && (
+                            <p className="text-[11px] text-tertiary font-mono">
+                              {estimateLabel(it.estimatedWeightKg, it.estimatedShippingPHP)}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="font-mono text-sm text-secondary tabular-nums">
@@ -521,6 +623,45 @@ function MarginSignal({
       </p>
       <p className="text-xs text-secondary mt-1">{sub}</p>
     </motion.div>
+  );
+}
+
+function Segmented<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-secondary mb-2">{label}</label>
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+      >
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            aria-pressed={value === opt.value}
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              "px-3 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center",
+              value === opt.value
+                ? "border-accent bg-accent-muted text-accent"
+                : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

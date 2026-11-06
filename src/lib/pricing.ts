@@ -9,6 +9,49 @@ import {
 
 export type QuoteMode = "regular" | "forwarder";
 
+export type ShoeBuild = "light" | "regular" | "chunky";
+export type ClothingWeight = "light" | "heavy";
+
+/** The quick class that picks a Weight Preset. Each category reads its own field. */
+export interface WeightClass {
+  /** Shoes */
+  build?: ShoeBuild;
+  /** Shoes */
+  euSize?: number;
+  /** Clothes */
+  weight?: ClothingWeight;
+}
+
+// Weight Presets, kg with full packaging (ADR 0005). Changing one is a code
+// change by design. Shoes: [≤ 42, 43+].
+const SHOE_PRESETS: Record<ShoeBuild, readonly [number, number]> = {
+  light: [0.8, 0.9],
+  regular: [1.1, 1.2],
+  chunky: [1.5, 1.7],
+};
+const CLOTHING_PRESETS: Record<ClothingWeight, number> = { light: 0.5, heavy: 1.0 };
+const ACCESSORIES_PRESET = 0.5;
+
+/**
+ * The typical shipped weight for a China-route line, in kg. Null means the
+ * category carries no Estimated Shipping (Watches, once they exist).
+ * A missing class falls back to the heavier-leaning default, never to 0 kg.
+ */
+export function weightPreset(category: ItemCategory, cls: WeightClass = {}): number | null {
+  switch (category) {
+    case "shoes": {
+      const [upTo42, from43] = SHOE_PRESETS[cls.build ?? "regular"];
+      // A half size follows its numeric value: 42.5 is 43+. No size leans heavy.
+      return cls.euSize !== undefined && cls.euSize <= 42 ? upTo42 : from43;
+    }
+    case "clothes":
+      return CLOTHING_PRESETS[cls.weight ?? "light"];
+    case "watches_accessories":
+      // Until Watches split off (ADR 0004), this category prices as Accessories.
+      return ACCESSORIES_PRESET;
+  }
+}
+
 export interface QuoteLineInput {
   priceCNY: number;
   localShippingCNY: number;
@@ -16,7 +59,12 @@ export interface QuoteLineInput {
   /** CNY → PHP rate for the chosen mode. */
   rate: number;
   category: ItemCategory;
-  markups: Record<ItemCategory, number>;
+  weightClass?: WeightClass;
+  /** A typed weight in kg. Replaces the Weight Preset when above zero. */
+  kgOverride?: number;
+  /** Forwarder Shipping Fee rate, PHP per kg. */
+  ratePerKg: number;
+  profitTarget: number;
 }
 
 export interface QuoteLine {
@@ -24,27 +72,35 @@ export interface QuoteLine {
   commissionCNY: number;
   /** Zero in regular mode. */
   qcFee: number;
+  /** What the item costs before shipping to PH. */
   cost: number;
-  markup: number;
+  /** Null when the category carries no Estimated Shipping. */
+  estimatedWeightKg: number | null;
+  estimatedShippingPHP: number;
   quote: number;
 }
 
 export function quoteLine(input: QuoteLineInput): QuoteLine {
-  const { priceCNY, localShippingCNY, mode, rate, category, markups } = input;
+  const { priceCNY, localShippingCNY, mode, rate, category, kgOverride, ratePerKg, profitTarget } =
+    input;
   const isForwarder = mode === "forwarder";
   const commissionCNY = isForwarder
     ? priceCNY * (FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT / 100)
     : 0;
   const qcFee = isForwarder ? FORWARDER_BUY_QC_FEE_PHP : 0;
   const cost = (priceCNY + localShippingCNY) * rate + commissionCNY * rate + qcFee;
-  const markup = markups[category];
+  const preset = weightPreset(category, input.weightClass);
+  const estimatedWeightKg =
+    preset !== null && kgOverride !== undefined && kgOverride > 0 ? kgOverride : preset;
+  const shipping = (estimatedWeightKg ?? 0) * ratePerKg;
   // The quote rounds from the unrounded cost, as the calculator always has.
   return {
     commissionCNY,
     qcFee,
     cost: round2(cost),
-    markup,
-    quote: round2(cost + markup),
+    estimatedWeightKg,
+    estimatedShippingPHP: round2(shipping),
+    quote: round2(cost + shipping + profitTarget),
   };
 }
 
