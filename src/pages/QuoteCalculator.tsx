@@ -320,7 +320,7 @@ export default function QuoteCalculator() {
 
                 {/* Weight Preset class */}
                 {category === "shoes" && (
-                  <div className="grid grid-cols-[1fr_6rem] gap-3 items-end">
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_6rem] gap-3 items-end">
                     <Segmented
                       label="Shoe build"
                       options={SHOE_BUILDS}
