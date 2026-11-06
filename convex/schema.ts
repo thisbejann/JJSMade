@@ -1,5 +1,23 @@
 import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+import { v, type Infer } from "convex/values";
+
+// Shared validators. Declared here, not in a new module: schema.ts is never a
+// Convex function entry point, so adding to it leaves _generated/api.d.ts as is.
+
+export const categoryValidator = v.union(
+  v.literal("shoes"),
+  v.literal("clothes"),
+  v.literal("watches_accessories"),
+  v.literal("bags")
+);
+export const shoeBuildValidator = v.union(v.literal("light"), v.literal("regular"), v.literal("chunky"));
+export const clothingWeightValidator = v.union(v.literal("light"), v.literal("heavy"));
+export const bagSizeValidator = v.union(v.literal("small"), v.literal("large"));
+
+export type ItemCategory = Infer<typeof categoryValidator>;
+export type ShoeBuild = Infer<typeof shoeBuildValidator>;
+export type ClothingWeight = Infer<typeof clothingWeightValidator>;
+export type BagSize = Infer<typeof bagSizeValidator>;
 
 export default defineSchema({
   customers: defineTable({
@@ -22,12 +40,7 @@ export default defineSchema({
   items: defineTable({
     // Item Identity
     name: v.string(),
-    category: v.union(
-      v.literal("shoes"),
-      v.literal("clothes"),
-      v.literal("watches_accessories"),
-      v.literal("bags")
-    ),
+    category: categoryValidator,
     imageUrl: v.optional(v.string()),
     size: v.optional(v.string()),
 
@@ -70,12 +83,10 @@ export default defineSchema({
     // Quote-time estimate, carried from the calculator by Save as Group Order.
     // Absent on Items created through ItemForm and on legacy Items.
     estimatedWeightKg: v.optional(v.number()),
-    shoeBuild: v.optional(v.union(v.literal("light"), v.literal("regular"), v.literal("chunky"))),
-    // The non-shoe class that picked the Weight Preset: Clothing Weight
-    // (light/heavy) or Bag Size (small/large). Category says which.
-    weightClass: v.optional(
-      v.union(v.literal("light"), v.literal("heavy"), v.literal("small"), v.literal("large"))
-    ),
+    // The class that picked the Weight Preset. Only the category's own field is set.
+    shoeBuild: v.optional(shoeBuildValidator),
+    clothingWeight: v.optional(clothingWeightValidator),
+    bagSize: v.optional(bagSizeValidator),
     // True when the estimate was a typed weight, not a Weight Preset.
     estimatedWeightTyped: v.optional(v.boolean()),
 
@@ -160,12 +171,7 @@ export default defineSchema({
   personalItems: defineTable({
     // Item Identity
     name: v.string(),
-    category: v.union(
-      v.literal("shoes"),
-      v.literal("clothes"),
-      v.literal("watches_accessories"),
-      v.literal("bags")
-    ),
+    category: categoryValidator,
     imageUrl: v.optional(v.string()),
     size: v.optional(v.string()),
 

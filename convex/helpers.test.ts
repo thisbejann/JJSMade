@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeDerivedFields } from "./helpers";
+import { categoryHasSize, computeDerivedFields, shippingCost } from "./helpers";
 
 // ¥500 at 8.0 = ₱4,000, sold for ₱5,500, forwarder ₱480/kg.
 const base = {
@@ -29,5 +29,23 @@ describe("computeDerivedFields profit before weighing", () => {
     const d = computeDerivedFields(base);
     expect(d.totalCost).toBe(4000);
     expect(d.profit).toBe(1500);
+  });
+});
+
+describe("shippingCost", () => {
+  it("is weight × the forwarder rate, rounded to centavos", () => {
+    expect(shippingCost(1.7, 480)).toBe(816);
+    expect(shippingCost(0.333, 480)).toBe(159.84);
+  });
+});
+
+describe("categoryHasSize", () => {
+  it.each([
+    ["shoes", true],
+    ["clothes", true],
+    ["watches_accessories", false],
+    ["bags", false],
+  ] as const)("%s takes a size: %s", (category, expected) => {
+    expect(categoryHasSize(category)).toBe(expected);
   });
 });

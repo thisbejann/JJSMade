@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { bundleTotals, quoteLine, shippingGap, shippingGapTotal, weightPreset } from "./pricing";
+import {
+  bundleTotals,
+  isShippingEstimated,
+  quoteLine,
+  shippingGap,
+  shippingGapTotal,
+  weightClassFor,
+  weightPreset,
+} from "./pricing";
 
 describe("weightPreset", () => {
   it.each([
@@ -10,16 +18,16 @@ describe("weightPreset", () => {
     ["chunky", 42, 1.5],
     ["chunky", 43, 1.7],
   ] as const)("Shoes %s at EU %s is %s kg", (build, euSize, kg) => {
-    expect(weightPreset("shoes", { build, euSize })).toBe(kg);
+    expect(weightPreset("shoes", { shoeBuild: build, euSize })).toBe(kg);
   });
 
   it("a half size follows its numeric value, so EU 42.5 counts as 43+", () => {
-    expect(weightPreset("shoes", { build: "chunky", euSize: 42.5 })).toBe(1.7);
-    expect(weightPreset("shoes", { build: "light", euSize: 42.5 })).toBe(0.9);
+    expect(weightPreset("shoes", { shoeBuild: "chunky", euSize: 42.5 })).toBe(1.7);
+    expect(weightPreset("shoes", { shoeBuild: "light", euSize: 42.5 })).toBe(0.9);
   });
 
   it("small sizes stay in the ≤ 42 range", () => {
-    expect(weightPreset("shoes", { build: "regular", euSize: 36 })).toBe(1.1);
+    expect(weightPreset("shoes", { shoeBuild: "regular", euSize: 36 })).toBe(1.1);
   });
 
   it("Shoes with no build default to Regular", () => {
@@ -28,7 +36,7 @@ describe("weightPreset", () => {
   });
 
   it("Shoes with no EU size lean heavy and use the 43+ range", () => {
-    expect(weightPreset("shoes", { build: "chunky" })).toBe(1.7);
+    expect(weightPreset("shoes", { shoeBuild: "chunky" })).toBe(1.7);
     expect(weightPreset("shoes")).toBe(1.2);
   });
 
@@ -36,7 +44,7 @@ describe("weightPreset", () => {
     ["light", 0.5],
     ["heavy", 1.0],
   ] as const)("Clothes %s is %s kg", (weight, kg) => {
-    expect(weightPreset("clothes", { weight })).toBe(kg);
+    expect(weightPreset("clothes", { clothingWeight: weight })).toBe(kg);
   });
 
   it("Clothes with no weight default to Light", () => {
@@ -47,7 +55,7 @@ describe("weightPreset", () => {
     ["small", 1.5],
     ["large", 3.5],
   ] as const)("Bags %s is %s kg", (size, kg) => {
-    expect(weightPreset("bags", { size })).toBe(kg);
+    expect(weightPreset("bags", { bagSize: size })).toBe(kg);
   });
 
   it("Bags with no Bag Size default to Large", () => {
@@ -71,7 +79,7 @@ describe("quoteLine", () => {
       mode: "regular",
       rate: 8.2,
       category: "shoes",
-      weightClass: { build: "chunky", euSize: 44 },
+      weightClass: { shoeBuild: "chunky", euSize: 44 },
     });
 
     // (300 + 10) × 8.2 = 2542; 1.7 kg × 480 = 816
@@ -89,7 +97,7 @@ describe("quoteLine", () => {
       mode: "forwarder",
       rate: 8.6,
       category: "clothes",
-      weightClass: { weight: "heavy" },
+      weightClass: { clothingWeight: "heavy" },
     });
 
     // 310 × 8.6 = 2666, commission 30 × 8.6 = 258, QC 150; 1.0 kg × 480 = 480
@@ -106,7 +114,7 @@ describe("quoteLine", () => {
       mode: "regular",
       rate: 8.2,
       category: "bags",
-      weightClass: { size: "large" },
+      weightClass: { bagSize: "large" },
     });
 
     // 2542 + 3.5 × 480 = 1680 + 400
@@ -122,7 +130,7 @@ describe("quoteLine", () => {
       mode: "regular",
       rate: 8.2,
       category: "bags",
-      weightClass: { size: "small" },
+      weightClass: { bagSize: "small" },
       kgOverride: 2.2,
     });
 
@@ -138,13 +146,14 @@ describe("quoteLine", () => {
       mode: "regular",
       rate: 8.2,
       category: "shoes",
-      weightClass: { build: "regular", euSize: 41 },
+      weightClass: { shoeBuild: "regular", euSize: 41 },
       kgOverride: 2,
     });
 
     expect(line.estimatedWeightKg).toBe(2);
     expect(line.estimatedShippingPHP).toBe(960);
     expect(line.quote).toBe(3902);
+    expect(line.estimatedWeightTyped).toBe(true);
   });
 
   it("a blank (zero) typed kg falls back to the preset", () => {
@@ -160,6 +169,7 @@ describe("quoteLine", () => {
 
     expect(line.estimatedWeightKg).toBe(0.5);
     expect(line.quote).toBe(3182);
+    expect(line.estimatedWeightTyped).toBe(false);
   });
 
   it("a line with no class picked uses the default preset", () => {
@@ -333,16 +343,55 @@ describe("shippingGapTotal", () => {
         { estimatedWeightKg: 0.5, forwarderRatePerKg: 480 }, // not weighed
         { weightKg: 0.8, forwarderRatePerKg: 480 }, // no estimate
       ])
-    ).toBe(150);
+    ).toEqual({ total: 150, count: 3 });
   });
 
-  it("is none when no member has both weights", () => {
+  it("counts none when no member has both weights", () => {
     expect(
       shippingGapTotal([
         { estimatedWeightKg: 0.5, forwarderRatePerKg: 480 },
         { weightKg: 0.8, forwarderRatePerKg: 480 },
       ])
-    ).toBeNull();
-    expect(shippingGapTotal([])).toBeNull();
+    ).toEqual({ total: 0, count: 0 });
+    expect(shippingGapTotal([])).toEqual({ total: 0, count: 0 });
+  });
+});
+
+describe("isShippingEstimated", () => {
+  it("is true for an unweighed Item quoted in the calculator", () => {
+    expect(isShippingEstimated({ estimatedWeightKg: 1.7 })).toBe(true);
+  });
+
+  it("is false once the Item is weighed", () => {
+    expect(isShippingEstimated({ estimatedWeightKg: 1.7, weightKg: 1.9 })).toBe(false);
+  });
+
+  it("is false for an Item with no estimate", () => {
+    expect(isShippingEstimated({})).toBe(false);
+  });
+});
+
+describe("weightClassFor", () => {
+  const all = {
+    shoeBuild: "chunky",
+    euSize: 44,
+    clothingWeight: "heavy",
+    bagSize: "small",
+  } as const;
+
+  it("keeps a shoe's build and EU size", () => {
+    expect(weightClassFor("shoes", all)).toEqual({ shoeBuild: "chunky", euSize: 44 });
+  });
+
+  it("keeps only the Clothing Weight for clothes", () => {
+    expect(weightClassFor("clothes", all)).toEqual({ clothingWeight: "heavy" });
+  });
+
+  it("keeps only the Bag Size for bags", () => {
+    expect(weightClassFor("bags", all)).toEqual({ bagSize: "small" });
+  });
+
+  it("keeps nothing for a category without a class", () => {
+    expect(weightClassFor("watches_accessories", all)).toEqual({});
   });
 });

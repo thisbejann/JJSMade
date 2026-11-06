@@ -20,7 +20,7 @@ import {
   formatDate,
   formatWeight,
 } from "../lib/formatters";
-import { shippingCost, shippingGap } from "../lib/pricing";
+import { isShippingEstimated, shippingCost, shippingGap } from "../lib/pricing";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PencilEdit01Icon, Delete02Icon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../lib/utils";
@@ -106,15 +106,16 @@ export default function OrderDetail() {
     item.sellingPrice && item.sellingPrice > 0
       ? (profit / item.sellingPrice) * 100
       : null;
-  // Until weighed, an Item quoted in the calculator carries Estimated Shipping
-  // in its cost and profit. Once weighed, the actual forwarder fee replaces it.
-  const estimatedShippingPHP =
-    item.weightKg == null && item.estimatedWeightKg != null
+  const estimateShippingPHP =
+    item.estimatedWeightKg != null
       ? shippingCost(item.estimatedWeightKg, item.forwarderRatePerKg)
       : undefined;
+  // Until weighed, an Item quoted in the calculator carries Estimated Shipping
+  // in its cost and profit. Once weighed, the actual forwarder fee replaces it.
+  const estimatedShippingPHP = isShippingEstimated(item) ? estimateShippingPHP : undefined;
   // Once weighed, the estimate is kept to compare against. Positive: I absorbed more.
   const gap = shippingGap(item.estimatedWeightKg, item.weightKg, item.forwarderRatePerKg);
-  const estimateClass = item.shoeBuild ?? item.weightClass;
+  const estimateClass = item.shoeBuild ?? item.clothingWeight ?? item.bagSize;
 
   return (
     <PageContainer>
@@ -327,13 +328,9 @@ export default function OrderDetail() {
                   mono
                 />
               )}
-              {gap != null && item.estimatedWeightKg != null && (
+              {gap != null && (
                 <>
-                  <InfoRow
-                    label="Est. Shipping"
-                    value={formatPHP(shippingCost(item.estimatedWeightKg, item.forwarderRatePerKg))}
-                    mono
-                  />
+                  <InfoRow label="Est. Shipping" value={formatPHP(estimateShippingPHP)} mono />
                   <InfoRow
                     label="Shipping Gap"
                     value={formatSignedPHP(gap)}

@@ -10,7 +10,7 @@ import { Modal } from "../components/ui/Modal";
 import { ItemStatusBadge } from "../components/items/ItemStatusBadge";
 import { GroupStatusBadge } from "../components/items/GroupStatusBadge";
 import { formatPHP, formatSignedPHP, formatPercent, formatDate } from "../lib/formatters";
-import { shippingGap, shippingGapTotal } from "../lib/pricing";
+import { isShippingEstimated, shippingGapTotal } from "../lib/pricing";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowLeft01Icon,
@@ -23,11 +23,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
-
-/** Unweighed, but quoted in the calculator: profit rests on Estimated Shipping. */
-function isShippingEstimated(item: { weightKg?: number; estimatedWeightKg?: number }) {
-  return item.weightKg == null && item.estimatedWeightKg != null;
-}
 
 /** Signed profit: "₱1,670.00" / "−₱900.00", colored green ≥0 / red <0. */
 function ProfitNumber({ value, className }: { value: number; className?: string }) {
@@ -145,10 +140,7 @@ function NegotiatedTotalBlock({ group }: { group: NegotiationGroup }) {
   const isLoss = group.groupProfit < 0;
   const profitEstimated = group.items.some(isShippingEstimated);
   // Only members with both an estimate and a real weight count. Positive: I absorbed more.
-  const gapTotal = shippingGapTotal(group.items);
-  const gapCount = group.items.filter(
-    (i) => shippingGap(i.estimatedWeightKg, i.weightKg, i.forwarderRatePerKg) != null
-  ).length;
+  const gap = shippingGapTotal(group.items);
 
   return (
     <div className="rounded-xl border border-border-default bg-surface overflow-hidden">
@@ -254,18 +246,18 @@ function NegotiatedTotalBlock({ group }: { group: NegotiationGroup }) {
                 Below cost — this bundle loses money.
               </p>
             )}
-            {gapTotal != null && (
+            {gap.count > 0 && (
               <div className="flex items-center justify-between gap-3 text-secondary">
                 <span className="min-w-0 truncate">
-                  Shipping gap ({gapCount} of {itemCount} weighed)
+                  Shipping gap ({gap.count} of {itemCount} weighed)
                 </span>
                 <span
                   className={cn(
                     "shrink-0 whitespace-nowrap font-mono tabular-nums",
-                    gapTotal > 0 ? "text-danger" : gapTotal < 0 ? "text-success" : undefined
+                    gap.total > 0 ? "text-danger" : gap.total < 0 ? "text-success" : undefined
                   )}
                 >
-                  {formatSignedPHP(gapTotal)}
+                  {formatSignedPHP(gap.total)}
                 </span>
               </div>
             )}

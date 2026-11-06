@@ -2,13 +2,12 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { computeDerivedFields } from "./helpers";
 import { normalizeSize, validateItemRules } from "./items";
-
-const categoryValidator = v.union(
-  v.literal("shoes"),
-  v.literal("clothes"),
-  v.literal("watches_accessories"),
-  v.literal("bags")
-);
+import {
+  bagSizeValidator,
+  categoryValidator,
+  clothingWeightValidator,
+  shoeBuildValidator,
+} from "./schema";
 
 const STATUS_FLOW = [
   "ordered",
@@ -244,10 +243,9 @@ export const createWithItems = mutation({
         forwarderBuyCommissionPercent: v.optional(v.number()),
         // The line's quote-time estimate (see the items schema).
         estimatedWeightKg: v.optional(v.number()),
-        shoeBuild: v.optional(v.union(v.literal("light"), v.literal("regular"), v.literal("chunky"))),
-        weightClass: v.optional(
-          v.union(v.literal("light"), v.literal("heavy"), v.literal("small"), v.literal("large"))
-        ),
+        shoeBuild: v.optional(shoeBuildValidator),
+        clothingWeight: v.optional(clothingWeightValidator),
+        bagSize: v.optional(bagSizeValidator),
         estimatedWeightTyped: v.optional(v.boolean()),
       })
     ),
@@ -325,7 +323,8 @@ export const createWithItems = mutation({
         qcServiceFeePHP: derived.qcServiceFeePHP,
         estimatedWeightKg: item.estimatedWeightKg,
         shoeBuild: item.shoeBuild,
-        weightClass: item.weightClass,
+        clothingWeight: item.clothingWeight,
+        bagSize: item.bagSize,
         estimatedWeightTyped: item.estimatedWeightTyped,
         sellingPrice: item.sellingPrice,
         customerId,

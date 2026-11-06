@@ -14,6 +14,11 @@ export function formatSignedPHP(amount: number): string {
   return `${sign}${formatPHP(Math.abs(amount))}`;
 }
 
+/** "₱1,670.00" / "−₱900.00": a minus for losses, no plus. For margins and quotes. */
+export function formatNetPHP(amount: number): string {
+  return `${amount < 0 ? "−" : ""}${formatPHP(Math.abs(amount))}`;
+}
+
 export function formatCNY(amount: number | undefined | null): string {
   if (amount == null) return "—";
   return `¥${amount.toLocaleString("en-US", {
@@ -40,6 +45,11 @@ export function formatRelativeDate(timestamp: number | undefined | null): string
 export function formatWeight(kg: number | undefined | null): string {
   if (kg == null) return "—";
   return `${kg.toFixed(2)} kg`;
+}
+
+/** "1.7" / "0.85": a kg figure, up to two decimals, no unit. For inline estimates. */
+export function formatKgValue(kg: number): string {
+  return kg.toLocaleString("en-PH", { maximumFractionDigits: 2 });
 }
 
 export function formatPercent(value: number | undefined | null): string {

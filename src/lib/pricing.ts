@@ -3,26 +3,46 @@ import {
   FORWARDER_BUY_QC_FEE_PHP,
   type ItemCategory,
 } from "./constants";
+import { shippingCost } from "../../convex/helpers";
+import type { BagSize, ClothingWeight, ShoeBuild } from "../../convex/schema";
 
-// The Quote Calculator's pricing math. Pure: no React, no Convex, so every
-// screen that quotes calls the same function.
+// The Quote Calculator's pricing math. Pure: no React, no Convex functions, so
+// every screen that quotes calls the same function. The shipping rules the
+// backend also needs live in convex/helpers.ts and are re-exported here.
+
+export { isShippingEstimated, shippingCost } from "../../convex/helpers";
+export type { BagSize, ClothingWeight, ShoeBuild };
 
 export type QuoteMode = "regular" | "forwarder";
 
-export type ShoeBuild = "light" | "regular" | "chunky";
-export type ClothingWeight = "light" | "heavy";
-export type BagSize = "small" | "large";
-
-/** The quick class that picks a Weight Preset. Each category reads its own field. */
+/**
+ * The quick class that picks a Weight Preset. Field names match the Item's
+ * stored fields. Each category reads only its own field (see CATEGORY_WEIGHT_CLASS).
+ */
 export interface WeightClass {
-  /** Shoes */
-  build?: ShoeBuild;
-  /** Shoes */
+  shoeBuild?: ShoeBuild;
+  /** Shoes only. Picks the ≤ 42 or 43+ range of the build. */
   euSize?: number;
-  /** Clothes */
-  weight?: ClothingWeight;
-  /** Bags */
-  size?: BagSize;
+  clothingWeight?: ClothingWeight;
+  bagSize?: BagSize;
+}
+
+export type WeightClassField = "shoeBuild" | "clothingWeight" | "bagSize";
+
+/** The one class field each category picks its Weight Preset by. Null: no class picker. */
+export const CATEGORY_WEIGHT_CLASS: Record<ItemCategory, WeightClassField | null> = {
+  shoes: "shoeBuild",
+  clothes: "clothingWeight",
+  bags: "bagSize",
+  watches_accessories: null,
+};
+
+/** Keeps only the class fields the category's Weight Preset reads. */
+export function weightClassFor(category: ItemCategory, choices: WeightClass): WeightClass {
+  const field = CATEGORY_WEIGHT_CLASS[category];
+  if (field === null) return {};
+  if (field === "shoeBuild") return { shoeBuild: choices.shoeBuild, euSize: choices.euSize };
+  return { [field]: choices[field] };
 }
 
 // Weight Presets, kg with full packaging (ADR 0005). Changing one is a code
@@ -41,18 +61,18 @@ const ACCESSORIES_PRESET = 0.5;
  * category carries no Estimated Shipping (Watches, once they exist).
  * A missing class falls back to the heavier-leaning default, never to 0 kg.
  */
-export function weightPreset(category: ItemCategory, cls: WeightClass = {}): number | null {
+export function weightPreset(category: ItemCategory, weightClass: WeightClass = {}): number | null {
   switch (category) {
     case "shoes": {
-      const [upTo42, from43] = SHOE_PRESETS[cls.build ?? "regular"];
+      const [upTo42, from43] = SHOE_PRESETS[weightClass.shoeBuild ?? "regular"];
       // A half size follows its numeric value: 42.5 is 43+. No size leans heavy.
-      return cls.euSize !== undefined && cls.euSize <= 42 ? upTo42 : from43;
+      return weightClass.euSize !== undefined && weightClass.euSize <= 42 ? upTo42 : from43;
     }
     case "clothes":
-      return CLOTHING_PRESETS[cls.weight ?? "light"];
+      return CLOTHING_PRESETS[weightClass.clothingWeight ?? "light"];
     case "bags":
       // Bags default to Large: a missing Bag Size must never under-quote.
-      return BAG_PRESETS[cls.size ?? "large"];
+      return BAG_PRESETS[weightClass.bagSize ?? "large"];
     case "watches_accessories":
       // Until Watches split off (ADR 0004), this category prices as Accessories.
       return ACCESSORIES_PRESET;
@@ -83,6 +103,8 @@ export interface QuoteLine {
   cost: number;
   /** Null when the category carries no Estimated Shipping. */
   estimatedWeightKg: number | null;
+  /** True when a typed kg replaced the Weight Preset. */
+  estimatedWeightTyped: boolean;
   estimatedShippingPHP: number;
   quote: number;
 }
@@ -97,8 +119,9 @@ export function quoteLine(input: QuoteLineInput): QuoteLine {
   const qcFee = isForwarder ? FORWARDER_BUY_QC_FEE_PHP : 0;
   const cost = (priceCNY + localShippingCNY) * rate + commissionCNY * rate + qcFee;
   const preset = weightPreset(category, input.weightClass);
-  const estimatedWeightKg =
-    preset !== null && kgOverride !== undefined && kgOverride > 0 ? kgOverride : preset;
+  // A typed kg only counts where a preset exists to replace.
+  const estimatedWeightTyped = preset !== null && kgOverride !== undefined && kgOverride > 0;
+  const estimatedWeightKg = estimatedWeightTyped ? kgOverride : preset;
   const shipping = (estimatedWeightKg ?? 0) * ratePerKg;
   // The quote rounds from the unrounded cost, as the calculator always has.
   return {
@@ -106,6 +129,7 @@ export function quoteLine(input: QuoteLineInput): QuoteLine {
     qcFee,
     cost: round2(cost),
     estimatedWeightKg,
+    estimatedWeightTyped,
     estimatedShippingPHP: round2(shipping),
     quote: round2(cost + shipping + profitTarget),
   };
@@ -155,11 +179,6 @@ export function bundleTotals(
   };
 }
 
-/** Forwarder Shipping Fee for a weight, in PHP. Estimated or actual, the same formula. */
-export function shippingCost(weightKg: number, ratePerKg: number): number {
-  return round2(weightKg * ratePerKg);
-}
-
 /**
  * Actual minus Estimated Shipping, in PHP. Positive means I absorbed more than
  * the quote expected. Null unless the Item has both an estimate and a real weight.
@@ -173,20 +192,27 @@ export function shippingGap(
   return round2(shippingCost(actualWeightKg, ratePerKg) - shippingCost(estimatedWeightKg, ratePerKg));
 }
 
-/** A Group Order's summed gap across members with both weights. Null when none qualify. */
+/**
+ * A Group Order's summed gap across members with both weights, and how many
+ * members that is. A count of 0 means no member qualifies yet.
+ */
 export function shippingGapTotal(
   members: ReadonlyArray<{
     estimatedWeightKg?: number;
     weightKg?: number;
     forwarderRatePerKg: number;
   }>
-): number | null {
-  let total: number | null = null;
+): { total: number; count: number } {
+  let total = 0;
+  let count = 0;
   for (const m of members) {
     const gap = shippingGap(m.estimatedWeightKg, m.weightKg, m.forwarderRatePerKg);
-    if (gap !== null) total = (total ?? 0) + gap;
+    if (gap !== null) {
+      total += gap;
+      count += 1;
+    }
   }
-  return total === null ? null : round2(total);
+  return { total: round2(total), count };
 }
 
 function round2(value: number) {

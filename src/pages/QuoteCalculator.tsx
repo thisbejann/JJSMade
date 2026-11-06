@@ -16,28 +16,32 @@ import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
 import { useSettings } from "../hooks/useSettings";
-import { CATEGORY_CONFIG, type ItemCategory, FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT } from "../lib/constants";
+import {
+  ALL_CATEGORIES,
+  CATEGORY_CONFIG,
+  type ItemCategory,
+  FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
+} from "../lib/constants";
+import { formatKgValue, formatNetPHP } from "../lib/formatters";
 import {
   bundleTotals,
+  CATEGORY_WEIGHT_CLASS,
   quoteLine,
+  weightClassFor,
   weightPreset,
-  type BagSize,
-  type ClothingWeight,
   type MarginState,
   type QuoteMode,
-  type ShoeBuild,
   type WeightClass,
+  type WeightClassField,
 } from "../lib/pricing";
 import { cn } from "../lib/utils";
-
-type CalcMode = QuoteMode;
 
 type CalcView = "add" | "bundle";
 
 interface BundleItem {
   id: string;
   category: ItemCategory;
-  mode: CalcMode;
+  mode: QuoteMode;
   priceCNY: number;
   // Per-line local CN shipping. Baked into `cost` at add-time, but also stored
   // raw so the Group Review Sheet can seed a real item (which recomputes cost
@@ -52,45 +56,43 @@ interface BundleItem {
   estimatedWeightTyped: boolean;
 }
 
-const CATEGORIES: { value: ItemCategory; label: string }[] = [
-  { value: "shoes", label: CATEGORY_CONFIG.shoes.label },
-  { value: "clothes", label: CATEGORY_CONFIG.clothes.label },
-  { value: "watches_accessories", label: CATEGORY_CONFIG.watches_accessories.label },
-  { value: "bags", label: CATEGORY_CONFIG.bags.label },
-];
+const CATEGORIES = ALL_CATEGORIES.map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
 
-const SHOE_BUILDS: { value: ShoeBuild; label: string }[] = [
-  { value: "light", label: "Light" },
-  { value: "regular", label: "Regular" },
-  { value: "chunky", label: "Chunky" },
-];
+type ClassChoice = Required<Pick<WeightClass, WeightClassField>>;
 
-const CLOTHING_WEIGHTS: { value: ClothingWeight; label: string }[] = [
-  { value: "light", label: "Light" },
-  { value: "heavy", label: "Heavy" },
-];
-
-const BAG_SIZES: { value: BagSize; label: string }[] = [
-  { value: "small", label: "Small" },
-  { value: "large", label: "Large" },
-];
+// The Weight Preset picker for each class field. CATEGORY_WEIGHT_CLASS says
+// which one a category shows.
+const CLASS_PICKERS: {
+  [F in WeightClassField]: { label: string; options: { value: ClassChoice[F]; label: string }[] };
+} = {
+  shoeBuild: {
+    label: "Shoe build",
+    options: [
+      { value: "light", label: "Light" },
+      { value: "regular", label: "Regular" },
+      { value: "chunky", label: "Chunky" },
+    ],
+  },
+  clothingWeight: {
+    label: "Clothing weight",
+    options: [
+      { value: "light", label: "Light" },
+      { value: "heavy", label: "Heavy" },
+    ],
+  },
+  bagSize: {
+    label: "Bag size",
+    options: [
+      { value: "small", label: "Small" },
+      { value: "large", label: "Large" },
+    ],
+  },
+};
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
-function kg(n: number): string {
-  return n.toLocaleString("en-PH", { maximumFractionDigits: 2 });
-}
-
 function estimateLabel(weightKg: number, shippingPHP: number): string {
-  return `est. ${kg(weightKg)} kg · ${peso(shippingPHP)} shipping`;
-}
-
-function peso(n: number): string {
-  const sign = n < 0 ? "−" : "";
-  return `${sign}₱${Math.abs(n).toLocaleString("en-PH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  return `est. ${formatKgValue(weightKg)} kg · ${formatNetPHP(shippingPHP)} shipping`;
 }
 
 export default function QuoteCalculator() {
@@ -100,13 +102,15 @@ export default function QuoteCalculator() {
   // --- Single-item calculator (unchanged behaviour) ---
   const [priceCNY, setPriceCNY] = useState(0);
   const [localShippingCNY, setLocalShippingCNY] = useState(10);
-  const [mode, setMode] = useState<CalcMode>("regular");
+  const [mode, setMode] = useState<QuoteMode>("regular");
   const [category, setCategory] = useState<ItemCategory>("shoes");
-  // Weight Preset class. Each category reads only its own field.
-  const [shoeBuild, setShoeBuild] = useState<ShoeBuild>("regular");
+  // Weight Preset class, one choice per field. Each category reads only its own.
+  const [classChoice, setClassChoice] = useState<ClassChoice>({
+    shoeBuild: "regular",
+    clothingWeight: "light",
+    bagSize: "large",
+  });
   const [euSizeStr, setEuSizeStr] = useState("");
-  const [clothingWeight, setClothingWeight] = useState<ClothingWeight>("light");
-  const [bagSize, setBagSize] = useState<BagSize>("large");
   const [kgStr, setKgStr] = useState("");
 
   // --- Bundle scratchpad (ephemeral) ---
@@ -125,18 +129,10 @@ export default function QuoteCalculator() {
   const ratePerKg = settings.defaultForwarderRate;
   const profitTarget = settings.calculatorProfitTarget;
   const euSize = euSizeStr.trim() === "" ? undefined : Number(euSizeStr);
-  const weightClass: WeightClass =
-    category === "shoes"
-      ? { build: shoeBuild, euSize }
-      : category === "clothes"
-        ? { weight: clothingWeight }
-        : category === "bags"
-          ? { size: bagSize }
-          : {};
+  const classField = CATEGORY_WEIGHT_CLASS[category];
+  const weightClass = weightClassFor(category, { ...classChoice, euSize });
   const preset = weightPreset(category, weightClass);
   const kgOverride = kgStr.trim() === "" ? undefined : Number(kgStr);
-  // Mirrors quoteLine: a typed kg only counts when it replaced a preset.
-  const kgTyped = preset !== null && kgOverride !== undefined && kgOverride > 0;
 
   const line = quoteLine({
     priceCNY,
@@ -149,7 +145,8 @@ export default function QuoteCalculator() {
     ratePerKg,
     profitTarget,
   });
-  const { commissionCNY, qcFee, estimatedWeightKg, estimatedShippingPHP } = line;
+  const { commissionCNY, qcFee, estimatedWeightKg, estimatedWeightTyped, estimatedShippingPHP } =
+    line;
 
   let formulaParts: string[] = [];
   if (priceCNY > 0) {
@@ -161,7 +158,7 @@ export default function QuoteCalculator() {
       );
     }
     if (estimatedWeightKg !== null) {
-      formulaParts.push(`+ shipping: ${kg(estimatedWeightKg)} kg × ${ratePerKg}`);
+      formulaParts.push(`+ shipping: ${formatKgValue(estimatedWeightKg)} kg × ${ratePerKg}`);
     }
     formulaParts.push(`+ profit target: ${profitTarget}`);
   }
@@ -197,7 +194,7 @@ export default function QuoteCalculator() {
         estimatedWeightKg,
         estimatedShippingPHP,
         weightClass,
-        estimatedWeightTyped: kgTyped,
+        estimatedWeightTyped,
       },
     ]);
     // Reset what's specific to this item; keep mode/category/class/shipping.
@@ -341,40 +338,33 @@ export default function QuoteCalculator() {
                   </div>
                 </div>
 
-                {/* Weight Preset class */}
-                {category === "shoes" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_6rem] gap-3 items-end">
+                {/* Weight Preset class. Shoes also take an EU size beside the build. */}
+                {classField !== null && (
+                  <div
+                    className={cn(
+                      classField === "shoeBuild" &&
+                        "grid grid-cols-1 sm:grid-cols-[1fr_6rem] gap-3 items-end"
+                    )}
+                  >
                     <Segmented
-                      label="Shoe build"
-                      options={SHOE_BUILDS}
-                      value={shoeBuild}
-                      onChange={setShoeBuild}
+                      label={CLASS_PICKERS[classField].label}
+                      options={CLASS_PICKERS[classField].options}
+                      value={classChoice[classField]}
+                      onChange={(value) =>
+                        setClassChoice((prev) => ({ ...prev, [classField]: value }))
+                      }
                     />
-                    <Input
-                      label="EU size"
-                      type="number"
-                      value={euSizeStr}
-                      onChange={(e) => setEuSizeStr(e.target.value)}
-                      step="0.5"
-                      placeholder="43"
-                    />
+                    {classField === "shoeBuild" && (
+                      <Input
+                        label="EU size"
+                        type="number"
+                        value={euSizeStr}
+                        onChange={(e) => setEuSizeStr(e.target.value)}
+                        step="0.5"
+                        placeholder="43"
+                      />
+                    )}
                   </div>
-                )}
-                {category === "clothes" && (
-                  <Segmented
-                    label="Clothing weight"
-                    options={CLOTHING_WEIGHTS}
-                    value={clothingWeight}
-                    onChange={setClothingWeight}
-                  />
-                )}
-                {category === "bags" && (
-                  <Segmented
-                    label="Bag size"
-                    options={BAG_SIZES}
-                    value={bagSize}
-                    onChange={setBagSize}
-                  />
                 )}
                 {preset !== null && (
                   <Input
@@ -384,7 +374,7 @@ export default function QuoteCalculator() {
                     onChange={(e) => setKgStr(e.target.value)}
                     step="0.01"
                     suffix="kg"
-                    placeholder={kg(preset)}
+                    placeholder={formatKgValue(preset)}
                   />
                 )}
               </CardContent>
@@ -402,7 +392,7 @@ export default function QuoteCalculator() {
                   <div className="border-t border-border-subtle pt-3">
                     <p className="text-xs text-secondary mb-1">Suggested customer price</p>
                     <p className="font-mono text-2xl font-bold text-accent">
-                      {peso(line.quote)}
+                      {formatNetPHP(line.quote)}
                     </p>
                     {estimatedWeightKg !== null && (
                       <p className="text-[11px] text-tertiary font-mono mt-1">
@@ -488,16 +478,16 @@ export default function QuoteCalculator() {
                   />
                   {discount > 0 && !offerEmpty && (
                     <p className="text-[11px] text-secondary mt-1.5 font-mono">
-                      Discount {peso(discount)} ({discountPct.toFixed(1)}% off)
+                      Discount {formatNetPHP(discount)} ({discountPct.toFixed(1)}% off)
                     </p>
                   )}
                 </div>
 
                 {/* Supporting figures */}
                 <div className="grid grid-cols-3 gap-3 border-t border-border-subtle pt-4">
-                  <Figure label="Bundle quote" value={peso(bundleQuote)} />
-                  <Figure label="Est. shipping" value={peso(estimatedShippingTotal)} muted />
-                  <Figure label="Break-even floor" value={peso(breakEvenFloor)} muted />
+                  <Figure label="Bundle quote" value={formatNetPHP(bundleQuote)} />
+                  <Figure label="Est. shipping" value={formatNetPHP(estimatedShippingTotal)} muted />
+                  <Figure label="Break-even floor" value={formatNetPHP(breakEvenFloor)} muted />
                 </div>
               </CardContent>
             </Card>
@@ -544,7 +534,7 @@ export default function QuoteCalculator() {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="font-mono text-sm text-secondary tabular-nums">
-                            {peso(it.quote)}
+                            {formatNetPHP(it.quote)}
                           </span>
                           <button
                             type="button"
@@ -646,7 +636,7 @@ function MarginSignal({
       </div>
       <p className="text-[11px] text-secondary mt-3">Estimated margin</p>
       <p className={cn("font-mono text-3xl font-bold tabular-nums", meta.text)}>
-        {peso(margin)}
+        {formatNetPHP(margin)}
       </p>
       <p className="text-xs text-secondary mt-1">{sub}</p>
     </motion.div>
