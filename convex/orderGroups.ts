@@ -242,6 +242,13 @@ export const createWithItems = mutation({
         forwarderRatePerKg: v.number(),
         forwarderBuyRateUsed: v.optional(v.number()),
         forwarderBuyCommissionPercent: v.optional(v.number()),
+        // The line's quote-time estimate (see the items schema).
+        estimatedWeightKg: v.optional(v.number()),
+        shoeBuild: v.optional(v.union(v.literal("light"), v.literal("regular"), v.literal("chunky"))),
+        weightClass: v.optional(
+          v.union(v.literal("light"), v.literal("heavy"), v.literal("small"), v.literal("large"))
+        ),
+        estimatedWeightTyped: v.optional(v.boolean()),
       })
     ),
   },
@@ -285,7 +292,8 @@ export const createWithItems = mutation({
         exchangeRateUsed: item.exchangeRateUsed,
         hasLocalShipping,
         localShippingCNY: item.localShippingCNY,
-        weightKg: undefined, // unknown at quote time → forwarder fee unknown → optimistic profit
+        weightKg: undefined, // unknown at quote time, so profit rests on the estimate
+        estimatedWeightKg: item.estimatedWeightKg,
         forwarderRatePerKg: item.forwarderRatePerKg,
         isForwarderBuy,
         forwarderBuyRateUsed,
@@ -315,6 +323,10 @@ export const createWithItems = mutation({
         forwarderBuyCommissionPercent,
         forwarderBuyFeePHP: derived.forwarderBuyFeePHP,
         qcServiceFeePHP: derived.qcServiceFeePHP,
+        estimatedWeightKg: item.estimatedWeightKg,
+        shoeBuild: item.shoeBuild,
+        weightClass: item.weightClass,
+        estimatedWeightTyped: item.estimatedWeightTyped,
         sellingPrice: item.sellingPrice,
         customerId,
         customerName: customer.name,

@@ -4,6 +4,8 @@ export function computeDerivedFields(data: {
   hasLocalShipping: boolean;
   localShippingCNY?: number;
   weightKg?: number;
+  /** The quote-time Weight Preset (or typed kg) carried from the calculator. */
+  estimatedWeightKg?: number;
   forwarderRatePerKg: number;
   isForwarderBuy?: boolean;
   forwarderBuyRateUsed?: number;
@@ -47,6 +49,13 @@ export function computeDerivedFields(data: {
       ? round(data.weightKg * data.forwarderRatePerKg)
       : undefined;
 
+  // Until the forwarder weighs it, profit rests on Estimated Shipping rather
+  // than leaving shipping out. Only cost moves: forwarderFee stays the actual fee.
+  const estimatedShippingPHP =
+    forwarderFee == null && data.estimatedWeightKg != null
+      ? round(data.estimatedWeightKg * data.forwarderRatePerKg)
+      : undefined;
+
   const forwarderBuyFeePHP = isForwarderBuy
     ? round(
         data.priceCNY *
@@ -60,7 +69,7 @@ export function computeDerivedFields(data: {
   const totalCost = round(
     pricePHP +
       (localShippingPHP ?? 0) +
-      (forwarderFee ?? 0) +
+      (forwarderFee ?? estimatedShippingPHP ?? 0) +
       (forwarderBuyFeePHP ?? 0) +
       (qcServiceFeePHP ?? 0)
   );

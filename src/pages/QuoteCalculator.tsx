@@ -46,6 +46,9 @@ interface BundleItem {
   cost: number;
   estimatedWeightKg: number | null;
   estimatedShippingPHP: number;
+  // Carried onto the saved Item by Save as Group Order.
+  weightClass: WeightClass;
+  estimatedWeightTyped: boolean;
 }
 
 const CATEGORIES: { value: ItemCategory; label: string }[] = [
@@ -123,6 +126,8 @@ export default function QuoteCalculator() {
         : {};
   const preset = weightPreset(category, weightClass);
   const kgOverride = kgStr.trim() === "" ? undefined : Number(kgStr);
+  // Mirrors quoteLine: a typed kg only counts when it replaced a preset.
+  const kgTyped = preset !== null && kgOverride !== undefined && kgOverride > 0;
 
   const line = quoteLine({
     priceCNY,
@@ -176,6 +181,8 @@ export default function QuoteCalculator() {
         cost: line.cost,
         estimatedWeightKg,
         estimatedShippingPHP,
+        weightClass,
+        estimatedWeightTyped: kgTyped,
       },
     ]);
     // Reset what's specific to this item; keep mode/category/class/shipping.

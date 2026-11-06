@@ -99,6 +99,13 @@ export default function OrderDetail() {
     item.sellingPrice && item.sellingPrice > 0
       ? (profit / item.sellingPrice) * 100
       : null;
+  // Until weighed, an Item quoted in the calculator carries Estimated Shipping
+  // in its cost and profit. Once weighed, the actual forwarder fee replaces it.
+  const estimatedShippingPHP =
+    item.weightKg == null && item.estimatedWeightKg != null
+      ? Math.round(item.estimatedWeightKg * item.forwarderRatePerKg * 100) / 100
+      : undefined;
+  const estimateClass = item.shoeBuild ?? item.weightClass;
 
   return (
     <PageContainer>
@@ -146,8 +153,13 @@ export default function OrderDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 items-center">
             <div className="space-y-4">
               <div>
-                <p className="text-xs font-medium text-secondary uppercase tracking-wider">
+                <p className="flex items-center gap-2 text-xs font-medium text-secondary uppercase tracking-wider">
                   Profit
+                  {estimatedShippingPHP != null && (
+                    <span className="rounded-full bg-warning-muted px-2 py-0.5 text-[10px] font-semibold text-warning normal-case tracking-normal">
+                      Estimated
+                    </span>
+                  )}
                 </p>
                 <p
                   className={cn(
@@ -160,6 +172,7 @@ export default function OrderDetail() {
                 {margin != null && (
                   <p className="mt-1 text-xs text-tertiary">
                     {margin.toFixed(0)}% margin
+                    {estimatedShippingPHP != null && " · on estimated shipping until weighed"}
                   </p>
                 )}
               </div>
@@ -182,6 +195,7 @@ export default function OrderDetail() {
               pricePHP={item.pricePHP}
               localShippingPHP={item.localShippingPHP}
               forwarderFee={item.forwarderFee}
+              estimatedShippingPHP={estimatedShippingPHP}
               forwarderBuyFeePHP={item.forwarderBuyFeePHP}
               qcServiceFeePHP={item.qcServiceFeePHP}
               totalCost={item.totalCost}
@@ -291,6 +305,19 @@ export default function OrderDetail() {
               <InfoRow label="Tracking No." value={item.trackingNumber} />
               <InfoRow label="Rate" value={`PHP${item.forwarderRatePerKg}/kg`} mono />
               <InfoRow label="Forwarder Fee" value={formatPHP(item.forwarderFee)} mono />
+              {item.estimatedWeightKg != null && (
+                <InfoRow
+                  label="Estimate"
+                  value={`${formatWeight(item.estimatedWeightKg)}${
+                    item.estimatedWeightTyped
+                      ? " · typed"
+                      : estimateClass
+                        ? ` · ${estimateClass[0].toUpperCase()}${estimateClass.slice(1)}`
+                        : ""
+                  }`}
+                  mono
+                />
+              )}
               <InfoRow label="Branded" value={item.isBranded ? "Yes" : "No"} />
             </div>
 

@@ -5,6 +5,8 @@ interface CostBreakdownProps {
   pricePHP?: number;
   localShippingPHP?: number;
   forwarderFee?: number;
+  /** Shown in place of the Forwarder Fee while the Item is unweighed. */
+  estimatedShippingPHP?: number;
   forwarderBuyFeePHP?: number;
   qcServiceFeePHP?: number;
   totalCost?: number;
@@ -27,6 +29,11 @@ export function CostBreakdown(props: CostBreakdownProps) {
       color: "bg-info",
     },
     { label: "Forwarder Fee", value: props.forwarderFee ?? 0, color: "bg-warning" },
+    {
+      label: "Est. Shipping",
+      value: props.estimatedShippingPHP ?? 0,
+      color: "bg-warning/50",
+    },
     {
       label: "Forwarder Buy Fee",
       value: props.forwarderBuyFeePHP ?? 0,

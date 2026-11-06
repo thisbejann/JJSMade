@@ -256,6 +256,7 @@ export const update = mutation({
       hasLocalShipping: merged.hasLocalShipping,
       localShippingCNY: merged.localShippingCNY,
       weightKg: merged.weightKg,
+      estimatedWeightKg: merged.estimatedWeightKg,
       forwarderRatePerKg: merged.forwarderRatePerKg,
       isForwarderBuy,
       forwarderBuyRateUsed,

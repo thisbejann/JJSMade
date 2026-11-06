@@ -67,6 +67,18 @@ export default defineSchema({
     forwarderBuyFeePHP: v.optional(v.number()),
     qcServiceFeePHP: v.optional(v.number()),
 
+    // Quote-time estimate, carried from the calculator by Save as Group Order.
+    // Absent on Items created through ItemForm and on legacy Items.
+    estimatedWeightKg: v.optional(v.number()),
+    shoeBuild: v.optional(v.union(v.literal("light"), v.literal("regular"), v.literal("chunky"))),
+    // The non-shoe class that picked the Weight Preset: Clothing Weight
+    // (light/heavy) or Bag Size (small/large). Category says which.
+    weightClass: v.optional(
+      v.union(v.literal("light"), v.literal("heavy"), v.literal("small"), v.literal("large"))
+    ),
+    // True when the estimate was a typed weight, not a Weight Preset.
+    estimatedWeightTyped: v.optional(v.boolean()),
+
     // Selling & Delivery
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),

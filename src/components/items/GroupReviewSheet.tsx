@@ -20,6 +20,7 @@ import {
   FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
   type ItemCategory,
 } from "../../lib/constants";
+import type { WeightClass } from "../../lib/pricing";
 import { cn } from "../../lib/utils";
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
@@ -33,6 +34,9 @@ export interface BundleLine {
   priceCNY: number;
   localShippingCNY: number;
   quote: number;
+  estimatedWeightKg: number | null;
+  weightClass: WeightClass;
+  estimatedWeightTyped: boolean;
 }
 
 interface GroupReviewSheetProps {
@@ -62,6 +66,17 @@ function rowComplete(line: BundleLine, r: RowFields) {
   if (!r.name.trim() || !r.seller.trim()) return false;
   if (needsSize(line.category) && !r.size.trim()) return false;
   return true;
+}
+
+/** The line's quote-time estimate, in the shape the Item stores it. */
+function lineEstimate(line: BundleLine) {
+  if (line.estimatedWeightKg === null) return {};
+  return {
+    estimatedWeightKg: line.estimatedWeightKg,
+    shoeBuild: line.category === "shoes" ? line.weightClass.build : undefined,
+    weightClass: line.weightClass.weight,
+    estimatedWeightTyped: line.estimatedWeightTyped,
+  };
 }
 
 function peso(n: number): string {
@@ -95,7 +110,14 @@ export function GroupReviewSheet({
   const sellers = useQuery(api.items.getUniqueSellers) ?? [];
   const createWithItems = useMutation(api.orderGroups.createWithItems);
 
-  const [rows, setRows] = useState<Record<string, RowFields>>({});
+  // A shoe's EU size was already entered in the calculator to pick its preset.
+  const [rows, setRows] = useState<Record<string, RowFields>>(() =>
+    Object.fromEntries(
+      lines
+        .filter((l) => l.category === "shoes" && l.weightClass.euSize !== undefined)
+        .map((l) => [l.id, { ...BLANK, size: String(l.weightClass.euSize) }])
+    )
+  );
   const [customerId, setCustomerId] = useState<Id<"customers"> | null>(null);
   const [offerStr, setOfferStr] = useState(() => (defaultOffer > 0 ? String(defaultOffer) : ""));
   const [expandedId, setExpandedId] = useState<string | null>(() => lines[0]?.id ?? null);
@@ -152,6 +174,7 @@ export function GroupReviewSheet({
           forwarderBuyCommissionPercent: isForwarderBuy
             ? FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT
             : undefined,
+          ...lineEstimate(line),
         };
       });
       const offerNum = offerStr.trim() === "" ? undefined : Number(offerStr);

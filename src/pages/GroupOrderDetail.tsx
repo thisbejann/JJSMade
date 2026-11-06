@@ -23,6 +23,11 @@ import {
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
 
+/** Unweighed, but quoted in the calculator: profit rests on Estimated Shipping. */
+function isShippingEstimated(item: { weightKg?: number; estimatedWeightKg?: number }) {
+  return item.weightKg == null && item.estimatedWeightKg != null;
+}
+
 /** Signed profit: "₱1,670.00" / "−₱900.00", colored green ≥0 / red <0. */
 function ProfitNumber({ value, className }: { value: number; className?: string }) {
   return (
@@ -39,7 +44,7 @@ interface NegotiationGroup {
   status: string;
   notes?: string;
   createdAt: number;
-  items: unknown[];
+  items: { weightKg?: number; estimatedWeightKg?: number }[];
   sumOfQuotes: number;
   negotiatedTotal: number | null;
   effectiveTotal: number;
@@ -137,6 +142,7 @@ function NegotiatedTotalBlock({ group }: { group: NegotiationGroup }) {
 
   const itemCount = group.items.length;
   const isLoss = group.groupProfit < 0;
+  const profitEstimated = group.items.some(isShippingEstimated);
 
   return (
     <div className="rounded-xl border border-border-default bg-surface overflow-hidden">
@@ -229,6 +235,11 @@ function NegotiatedTotalBlock({ group }: { group: NegotiationGroup }) {
             <div className="flex items-center justify-between pt-2 mt-1 border-t border-border-subtle">
               <span className="text-secondary">
                 Your profit{!hasPrice ? " (at full price)" : ""}
+                {profitEstimated && (
+                  <span className="ml-2 rounded-full bg-warning-muted px-2 py-0.5 text-[10px] font-semibold text-warning">
+                    Estimated
+                  </span>
+                )}
               </span>
               <ProfitNumber value={group.groupProfit} className="text-base font-semibold" />
             </div>
@@ -375,6 +386,9 @@ export default function GroupOrderDetail() {
                       {item.profit != null ? (
                         <span className={item.profit >= 0 ? "text-success" : "text-danger"}>
                           {formatPHP(item.profit)}
+                          {isShippingEstimated(item) && (
+                            <span className="ml-1 text-[10px] text-warning">est.</span>
+                          )}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
