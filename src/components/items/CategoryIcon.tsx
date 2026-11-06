@@ -1,14 +1,7 @@
 import { HugeiconsIcon } from "@hugeicons/react";
-import { HandBag01Icon, RunningShoesIcon, Shirt01Icon, Watch01Icon } from "@hugeicons/core-free-icons";
 import { CATEGORY_CONFIG, type ItemCategory } from "../../lib/constants";
+import { CATEGORY_ICONS } from "./categoryIcons";
 import { cn } from "../../lib/utils";
-
-const iconMap = {
-  shoes: RunningShoesIcon,
-  clothes: Shirt01Icon,
-  watches_accessories: Watch01Icon,
-  bags: HandBag01Icon,
-} as const;
 
 interface CategoryIconProps {
   category: ItemCategory;
@@ -23,7 +16,7 @@ interface CategoryIconProps {
  */
 export function CategoryIcon({ category, className }: CategoryIconProps) {
   const config = CATEGORY_CONFIG[category];
-  const icon = iconMap[category];
+  const icon = CATEGORY_ICONS[category];
 
   return (
     <span
