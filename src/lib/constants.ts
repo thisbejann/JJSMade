@@ -30,6 +30,7 @@ export const CATEGORY_CONFIG = {
   shoes: { label: "Shoes", icon: "Footprints" },
   clothes: { label: "Clothes", icon: "Shirt" },
   watches_accessories: { label: "Watches & Accessories", icon: "Watch" },
+  bags: { label: "Bags", icon: "HandBag" },
 } as const;
 
 export type ItemCategory = keyof typeof CATEGORY_CONFIG;
@@ -50,9 +51,7 @@ export const DEFAULTS = {
   forwarderRate: 480,
   markupMin: 700,
   markupMax: 850,
-  calculatorMarkupShoes: 850,
-  calculatorMarkupClothes: 750,
-  calculatorMarkupWatchesAccessories: 850,
+  calculatorProfitTarget: 400,
 } as const;
 
 export const FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT = 10;

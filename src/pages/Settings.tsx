@@ -24,6 +24,9 @@ export default function Settings() {
   const [markupMaxOverride, setMarkupMaxOverride] = useState<
     number | undefined
   >(undefined);
+  const [profitTargetOverride, setProfitTargetOverride] = useState<
+    number | undefined
+  >(undefined);
   const [saving, setSaving] = useState(false);
 
   const rate = rateOverride ?? settings.cnyToPhpRate;
@@ -34,6 +37,7 @@ export default function Settings() {
   const forwarderRate = forwarderRateOverride ?? settings.defaultForwarderRate;
   const markupMin = markupMinOverride ?? settings.defaultMarkupMin;
   const markupMax = markupMaxOverride ?? settings.defaultMarkupMax;
+  const profitTarget = profitTargetOverride ?? settings.calculatorProfitTarget;
 
   const handleSave = async () => {
     setSaving(true);
@@ -44,12 +48,14 @@ export default function Settings() {
         defaultForwarderRate: forwarderRate,
         defaultMarkupMin: markupMin,
         defaultMarkupMax: markupMax,
+        calculatorProfitTarget: profitTarget,
       });
       setRateOverride(undefined);
       setForwarderBuyServiceRateOverride(undefined);
       setForwarderRateOverride(undefined);
       setMarkupMinOverride(undefined);
       setMarkupMaxOverride(undefined);
+      setProfitTargetOverride(undefined);
       toast.success("Settings saved");
     } catch {
       toast.error("Failed to save settings");
@@ -146,6 +152,24 @@ export default function Settings() {
             </div>
             <p className="text-xs text-secondary">
               Used for the markup indicator when setting selling prices.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4">
+            <h2 className="font-display font-semibold text-base text-primary">
+              Quote Calculator
+            </h2>
+            <Input
+              label="Profit Target (PHP)"
+              type="number"
+              prefix="PHP"
+              value={profitTarget}
+              onChange={(e) => setProfitTargetOverride(Number(e.target.value))}
+            />
+            <p className="text-xs text-secondary">
+              Added to every quote on top of cost and estimated shipping.
             </p>
           </CardContent>
         </Card>

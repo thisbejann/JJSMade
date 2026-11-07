@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -16,17 +16,32 @@ import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
 import { useSettings } from "../hooks/useSettings";
-import { CATEGORY_CONFIG, type ItemCategory, FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT, FORWARDER_BUY_QC_FEE_PHP } from "../lib/constants";
+import {
+  ALL_CATEGORIES,
+  CATEGORY_CONFIG,
+  type ItemCategory,
+  FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
+} from "../lib/constants";
+import { formatKgValue, formatNetPHP } from "../lib/formatters";
+import {
+  bundleTotals,
+  CATEGORY_WEIGHT_CLASS,
+  quoteLine,
+  weightClassFor,
+  weightPreset,
+  type MarginState,
+  type QuoteMode,
+  type WeightClass,
+  type WeightClassField,
+} from "../lib/pricing";
 import { cn } from "../lib/utils";
-
-type CalcMode = "regular" | "forwarder";
 
 type CalcView = "add" | "bundle";
 
 interface BundleItem {
   id: string;
   category: ItemCategory;
-  mode: CalcMode;
+  mode: QuoteMode;
   priceCNY: number;
   // Per-line local CN shipping. Baked into `cost` at add-time, but also stored
   // raw so the Group Review Sheet can seed a real item (which recomputes cost
@@ -34,22 +49,50 @@ interface BundleItem {
   localShippingCNY: number;
   quote: number;
   cost: number;
+  estimatedWeightKg: number | null;
+  estimatedShippingPHP: number;
+  // Carried onto the saved Item by Save as Group Order.
+  weightClass: WeightClass;
+  estimatedWeightTyped: boolean;
 }
 
-const CATEGORIES: { value: ItemCategory; label: string }[] = [
-  { value: "shoes", label: CATEGORY_CONFIG.shoes.label },
-  { value: "clothes", label: CATEGORY_CONFIG.clothes.label },
-  { value: "watches_accessories", label: CATEGORY_CONFIG.watches_accessories.label },
-];
+const CATEGORIES = ALL_CATEGORIES.map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
+
+type ClassChoice = Required<Pick<WeightClass, WeightClassField>>;
+
+// The Weight Preset picker for each class field. CATEGORY_WEIGHT_CLASS says
+// which one a category shows.
+const CLASS_PICKERS: {
+  [F in WeightClassField]: { label: string; options: { value: ClassChoice[F]; label: string }[] };
+} = {
+  shoeBuild: {
+    label: "Shoe build",
+    options: [
+      { value: "light", label: "Light" },
+      { value: "regular", label: "Regular" },
+      { value: "chunky", label: "Chunky" },
+    ],
+  },
+  clothingWeight: {
+    label: "Clothing weight",
+    options: [
+      { value: "light", label: "Light" },
+      { value: "heavy", label: "Heavy" },
+    ],
+  },
+  bagSize: {
+    label: "Bag size",
+    options: [
+      { value: "small", label: "Small" },
+      { value: "large", label: "Large" },
+    ],
+  },
+};
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
-function peso(n: number): string {
-  const sign = n < 0 ? "−" : "";
-  return `${sign}₱${Math.abs(n).toLocaleString("en-PH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+function estimateLabel(weightKg: number, shippingPHP: number): string {
+  return `est. ${formatKgValue(weightKg)} kg · ${formatNetPHP(shippingPHP)} shipping`;
 }
 
 export default function QuoteCalculator() {
@@ -59,8 +102,16 @@ export default function QuoteCalculator() {
   // --- Single-item calculator (unchanged behaviour) ---
   const [priceCNY, setPriceCNY] = useState(0);
   const [localShippingCNY, setLocalShippingCNY] = useState(10);
-  const [mode, setMode] = useState<CalcMode>("regular");
+  const [mode, setMode] = useState<QuoteMode>("regular");
   const [category, setCategory] = useState<ItemCategory>("shoes");
+  // Weight Preset class, one choice per field. Each category reads only its own.
+  const [classChoice, setClassChoice] = useState<ClassChoice>({
+    shoeBuild: "regular",
+    clothingWeight: "light",
+    bagSize: "large",
+  });
+  const [euSizeStr, setEuSizeStr] = useState("");
+  const [kgStr, setKgStr] = useState("");
 
   // --- Bundle scratchpad (ephemeral) ---
   const [view, setView] = useState<CalcView>("add");
@@ -75,69 +126,58 @@ export default function QuoteCalculator() {
   const rate =
     mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
 
-  const commissionPercent = FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT;
+  const ratePerKg = settings.defaultForwarderRate;
+  const profitTarget = settings.calculatorProfitTarget;
+  const euSize = euSizeStr.trim() === "" ? undefined : Number(euSizeStr);
+  const classField = CATEGORY_WEIGHT_CLASS[category];
+  const weightClass = weightClassFor(category, { ...classChoice, euSize });
+  const preset = weightPreset(category, weightClass);
+  const kgOverride = kgStr.trim() === "" ? undefined : Number(kgStr);
 
-  const markupMap: Record<ItemCategory, number> = {
-    shoes: settings.calculatorMarkupShoes,
-    clothes: settings.calculatorMarkupClothes,
-    watches_accessories: settings.calculatorMarkupWatchesAccessories,
-  };
-  const markup = markupMap[category];
+  const line = quoteLine({
+    priceCNY,
+    localShippingCNY,
+    mode,
+    rate,
+    category,
+    weightClass,
+    kgOverride,
+    ratePerKg,
+    profitTarget,
+  });
+  const { commissionCNY, qcFee, estimatedWeightKg, estimatedWeightTyped, estimatedShippingPHP } =
+    line;
 
-  let baseCost = 0;
-  let commissionCost = 0;
-  let qcFee = 0;
-  let totalCost = 0;
-  let customerQuote = 0;
   let formulaParts: string[] = [];
-
   if (priceCNY > 0) {
-    baseCost = (priceCNY + localShippingCNY) * rate;
-
+    formulaParts = [`(${priceCNY} + ${localShippingCNY}) × ${rate.toFixed(2)}`];
     if (mode === "forwarder") {
-      commissionCost = priceCNY * (commissionPercent / 100) * rate;
-      qcFee = FORWARDER_BUY_QC_FEE_PHP;
+      formulaParts.push(
+        `+ ${FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT}% commission: ${commissionCNY.toFixed(2)} × ${rate.toFixed(2)}`,
+        `+ QC fee: ${qcFee}`
+      );
     }
-
-    totalCost = baseCost + commissionCost + qcFee;
-    customerQuote = Math.round((totalCost + markup) * 100) / 100;
-
-    // Build formula breakdown
-    if (mode === "regular") {
-      formulaParts = [
-        `(${priceCNY} + ${localShippingCNY}) × ${rate.toFixed(2)} + ${markup}`,
-      ];
-    } else {
-      formulaParts = [
-        `(${priceCNY} + ${localShippingCNY}) × ${rate.toFixed(2)}`,
-        `+ ${commissionPercent}% commission: ${(priceCNY * (commissionPercent / 100)).toFixed(2)} × ${rate.toFixed(2)}`,
-        `+ QC fee: ${qcFee}`,
-        `+ markup: ${markup}`,
-      ];
+    if (estimatedWeightKg !== null) {
+      formulaParts.push(`+ shipping: ${formatKgValue(estimatedWeightKg)} kg × ${ratePerKg}`);
     }
+    formulaParts.push(`+ profit target: ${profitTarget}`);
   }
 
   // --- Bundle math ---
-  const bundleQuote = useMemo(
-    () => Math.round(bundle.reduce((sum, it) => sum + it.quote, 0) * 100) / 100,
-    [bundle]
-  );
-  const floor = useMemo(
-    () => Math.round(bundle.reduce((sum, it) => sum + it.cost, 0) * 100) / 100,
-    [bundle]
-  );
+  const { bundleQuote } = bundleTotals(bundle);
 
   const rawOffer = offerTouched ? offerStr : bundleQuote > 0 ? String(bundleQuote) : "";
   const offerEmpty = rawOffer.trim() === "";
   const offer = offerEmpty ? 0 : Number(rawOffer);
 
-  const discount = Math.round((bundleQuote - offer) * 100) / 100;
-  const discountPct = bundleQuote > 0 ? (discount / bundleQuote) * 100 : 0;
-  const margin = Math.round((offer - floor) * 100) / 100;
-
-  type MarginState = "green" | "yellow" | "red";
-  const marginState: MarginState =
-    offer >= bundleQuote ? "green" : offer >= floor ? "yellow" : "red";
+  const {
+    breakEvenFloor,
+    discount,
+    discountPct,
+    estimatedMargin,
+    estimatedShippingTotal,
+    marginState,
+  } = bundleTotals(bundle, offerEmpty ? undefined : offer);
 
   function addToBundle() {
     if (priceCNY <= 0) return;
@@ -149,11 +189,17 @@ export default function QuoteCalculator() {
         mode,
         priceCNY,
         localShippingCNY,
-        quote: customerQuote,
-        cost: Math.round(totalCost * 100) / 100,
+        quote: line.quote,
+        cost: line.cost,
+        estimatedWeightKg,
+        estimatedShippingPHP,
+        weightClass,
+        estimatedWeightTyped,
       },
     ]);
-    setPriceCNY(0); // reset price for the next item; keep mode/category/shipping
+    // Reset what's specific to this item; keep mode/category/class/shipping.
+    setPriceCNY(0);
+    setKgStr("");
   }
 
   function removeFromBundle(id: string) {
@@ -273,7 +319,7 @@ export default function QuoteCalculator() {
                   <label className="block text-xs font-medium text-secondary mb-2">
                     Category
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {CATEGORIES.map((cat) => (
                       <button
                         key={cat.value}
@@ -287,11 +333,50 @@ export default function QuoteCalculator() {
                         )}
                       >
                         {cat.label}
-                        <span className="block opacity-60 mt-0.5">+{markupMap[cat.value]}</span>
                       </button>
                     ))}
                   </div>
                 </div>
+
+                {/* Weight Preset class. Shoes also take an EU size beside the build. */}
+                {classField !== null && (
+                  <div
+                    className={cn(
+                      classField === "shoeBuild" &&
+                        "grid grid-cols-1 sm:grid-cols-[1fr_6rem] gap-3 items-end"
+                    )}
+                  >
+                    <Segmented
+                      label={CLASS_PICKERS[classField].label}
+                      options={CLASS_PICKERS[classField].options}
+                      value={classChoice[classField]}
+                      onChange={(value) =>
+                        setClassChoice((prev) => ({ ...prev, [classField]: value }))
+                      }
+                    />
+                    {classField === "shoeBuild" && (
+                      <Input
+                        label="EU size"
+                        type="number"
+                        value={euSizeStr}
+                        onChange={(e) => setEuSizeStr(e.target.value)}
+                        step="0.5"
+                        placeholder="43"
+                      />
+                    )}
+                  </div>
+                )}
+                {preset !== null && (
+                  <Input
+                    label="Weight (kg), optional"
+                    type="number"
+                    value={kgStr}
+                    onChange={(e) => setKgStr(e.target.value)}
+                    step="0.01"
+                    suffix="kg"
+                    placeholder={formatKgValue(preset)}
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -307,8 +392,13 @@ export default function QuoteCalculator() {
                   <div className="border-t border-border-subtle pt-3">
                     <p className="text-xs text-secondary mb-1">Suggested customer price</p>
                     <p className="font-mono text-2xl font-bold text-accent">
-                      {peso(customerQuote)}
+                      {formatNetPHP(line.quote)}
                     </p>
+                    {estimatedWeightKg !== null && (
+                      <p className="text-[11px] text-tertiary font-mono mt-1">
+                        {estimateLabel(estimatedWeightKg, estimatedShippingPHP)}
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -353,7 +443,7 @@ export default function QuoteCalculator() {
                 {/* Margin signal (hero) */}
                 <MarginSignal
                   state={marginState}
-                  margin={margin}
+                  margin={estimatedMargin}
                   discountPct={discountPct}
                   empty={offerEmpty}
                 />
@@ -388,22 +478,17 @@ export default function QuoteCalculator() {
                   />
                   {discount > 0 && !offerEmpty && (
                     <p className="text-[11px] text-secondary mt-1.5 font-mono">
-                      Discount {peso(discount)} ({discountPct.toFixed(1)}% off)
+                      Discount {formatNetPHP(discount)} ({discountPct.toFixed(1)}% off)
                     </p>
                   )}
                 </div>
 
                 {/* Supporting figures */}
-                <div className="grid grid-cols-2 gap-3 border-t border-border-subtle pt-4">
-                  <Figure label="Bundle quote" value={peso(bundleQuote)} />
-                  <Figure label="Break-even floor" value={peso(floor)} muted />
+                <div className="grid grid-cols-3 gap-3 border-t border-border-subtle pt-4">
+                  <Figure label="Bundle quote" value={formatNetPHP(bundleQuote)} />
+                  <Figure label="Est. shipping" value={formatNetPHP(estimatedShippingTotal)} muted />
+                  <Figure label="Break-even floor" value={formatNetPHP(breakEvenFloor)} muted />
                 </div>
-
-                {/* Persistent caveat */}
-                <p className="flex items-start gap-1.5 text-[11px] text-warning">
-                  <HugeiconsIcon icon={Alert02Icon} size={14} strokeWidth={1.5} className="shrink-0 mt-px" />
-                  <span>Excludes forwarder shipping fee. Optimistic for heavy items.</span>
-                </p>
               </CardContent>
             </Card>
 
@@ -441,10 +526,15 @@ export default function QuoteCalculator() {
                           <p className="text-[11px] text-tertiary font-mono">
                             ¥{it.priceCNY} · {it.mode === "forwarder" ? "Forwarder" : "Regular"}
                           </p>
+                          {it.estimatedWeightKg !== null && (
+                            <p className="text-[11px] text-tertiary font-mono">
+                              {estimateLabel(it.estimatedWeightKg, it.estimatedShippingPHP)}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="font-mono text-sm text-secondary tabular-nums">
-                            {peso(it.quote)}
+                            {formatNetPHP(it.quote)}
                           </span>
                           <button
                             type="button"
@@ -500,9 +590,9 @@ export default function QuoteCalculator() {
 }
 
 const MARGIN_META = {
-  green: { icon: CheckmarkCircle02Icon, text: "text-success", bg: "bg-success-muted", label: "Full margin" },
-  yellow: { icon: Alert02Icon, text: "text-warning", bg: "bg-warning-muted", label: "Discounted, still profitable" },
-  red: { icon: CancelCircleIcon, text: "text-danger", bg: "bg-danger-muted", label: "Below cost" },
+  full: { icon: CheckmarkCircle02Icon, text: "text-success", bg: "bg-success-muted", label: "Full margin" },
+  discounted: { icon: Alert02Icon, text: "text-warning", bg: "bg-warning-muted", label: "Discounted, still profitable" },
+  belowCost: { icon: CancelCircleIcon, text: "text-danger", bg: "bg-danger-muted", label: "Below cost" },
 } as const;
 
 function MarginSignal({
@@ -511,7 +601,7 @@ function MarginSignal({
   discountPct,
   empty,
 }: {
-  state: "green" | "yellow" | "red";
+  state: MarginState;
   margin: number;
   discountPct: number;
   empty: boolean;
@@ -526,9 +616,9 @@ function MarginSignal({
 
   const meta = MARGIN_META[state];
   const sub =
-    state === "green"
+    state === "full"
       ? "At or above your quote price."
-      : state === "yellow"
+      : state === "discounted"
         ? `${discountPct.toFixed(1)}% off, still above cost.`
         : "This offer loses money.";
 
@@ -544,11 +634,51 @@ function MarginSignal({
         <HugeiconsIcon icon={meta.icon} size={16} strokeWidth={1.5} />
         <span className="text-xs font-semibold uppercase tracking-wide">{meta.label}</span>
       </div>
-      <p className={cn("font-mono text-3xl font-bold mt-2 tabular-nums", meta.text)}>
-        {peso(margin)}
+      <p className="text-[11px] text-secondary mt-3">Estimated margin</p>
+      <p className={cn("font-mono text-3xl font-bold tabular-nums", meta.text)}>
+        {formatNetPHP(margin)}
       </p>
       <p className="text-xs text-secondary mt-1">{sub}</p>
     </motion.div>
+  );
+}
+
+function Segmented<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-secondary mb-2">{label}</label>
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+      >
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            aria-pressed={value === opt.value}
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              "px-3 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center",
+              value === opt.value
+                ? "border-accent bg-accent-muted text-accent"
+                : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

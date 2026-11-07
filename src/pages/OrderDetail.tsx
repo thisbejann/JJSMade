@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
 import { Modal } from "../components/ui/Modal";
 import { Skeleton } from "../components/ui/Skeleton";
 import { ItemStatusBadge } from "../components/items/ItemStatusBadge";
@@ -13,7 +14,14 @@ import { CategoryBadge } from "../components/items/CategoryBadge";
 import { StatusStepper } from "../components/items/StatusStepper";
 import { CostBreakdown } from "../components/items/CostBreakdown";
 import { QcPhotoGallery } from "../components/items/QcPhotoGallery";
-import { formatPHP, formatCNY, formatDate, formatWeight } from "../lib/formatters";
+import {
+  formatPHP,
+  formatSignedPHP,
+  formatCNY,
+  formatDate,
+  formatWeight,
+} from "../lib/formatters";
+import { isShippingEstimated, shippingCost, shippingGap } from "../lib/pricing";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PencilEdit01Icon, Delete02Icon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../lib/utils";
@@ -99,6 +107,16 @@ export default function OrderDetail() {
     item.sellingPrice && item.sellingPrice > 0
       ? (profit / item.sellingPrice) * 100
       : null;
+  const estimateShippingPHP =
+    item.estimatedWeightKg != null
+      ? shippingCost(item.estimatedWeightKg, item.forwarderRatePerKg)
+      : undefined;
+  // Until weighed, an Item quoted in the calculator carries Estimated Shipping
+  // in its cost and profit. Once weighed, the actual forwarder fee replaces it.
+  const estimatedShippingPHP = isShippingEstimated(item) ? estimateShippingPHP : undefined;
+  // Once weighed, the estimate is kept to compare against. Positive: I absorbed more.
+  const gap = shippingGap(item.estimatedWeightKg, item.weightKg, item.forwarderRatePerKg);
+  const estimateClass = item.shoeBuild ?? item.clothingWeight ?? item.bagSize;
 
   return (
     <PageContainer>
@@ -146,8 +164,13 @@ export default function OrderDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 items-center">
             <div className="space-y-4">
               <div>
-                <p className="text-xs font-medium text-secondary uppercase tracking-wider">
+                <p className="flex items-center gap-2 text-xs font-medium text-secondary uppercase tracking-wider">
                   Profit
+                  {estimatedShippingPHP != null && (
+                    <Badge variant="warning" className="normal-case tracking-normal">
+                      Estimated
+                    </Badge>
+                  )}
                 </p>
                 <p
                   className={cn(
@@ -160,6 +183,7 @@ export default function OrderDetail() {
                 {margin != null && (
                   <p className="mt-1 text-xs text-tertiary">
                     {margin.toFixed(0)}% margin
+                    {estimatedShippingPHP != null && " · on estimated shipping until weighed"}
                   </p>
                 )}
               </div>
@@ -182,6 +206,7 @@ export default function OrderDetail() {
               pricePHP={item.pricePHP}
               localShippingPHP={item.localShippingPHP}
               forwarderFee={item.forwarderFee}
+              estimatedShippingPHP={estimatedShippingPHP}
               forwarderBuyFeePHP={item.forwarderBuyFeePHP}
               qcServiceFeePHP={item.qcServiceFeePHP}
               totalCost={item.totalCost}
@@ -291,6 +316,30 @@ export default function OrderDetail() {
               <InfoRow label="Tracking No." value={item.trackingNumber} />
               <InfoRow label="Rate" value={`PHP${item.forwarderRatePerKg}/kg`} mono />
               <InfoRow label="Forwarder Fee" value={formatPHP(item.forwarderFee)} mono />
+              {item.estimatedWeightKg != null && (
+                <InfoRow
+                  label="Estimate"
+                  value={`${formatWeight(item.estimatedWeightKg)}${
+                    item.estimatedWeightTyped
+                      ? " · typed"
+                      : estimateClass
+                        ? ` · ${estimateClass[0].toUpperCase()}${estimateClass.slice(1)}`
+                        : ""
+                  }`}
+                  mono
+                />
+              )}
+              {gap != null && (
+                <>
+                  <InfoRow label="Est. Shipping" value={formatPHP(estimateShippingPHP)} mono />
+                  <InfoRow
+                    label="Shipping Gap"
+                    value={formatSignedPHP(gap)}
+                    valueClassName={gap > 0 ? "text-danger" : gap < 0 ? "text-success" : undefined}
+                    mono
+                  />
+                </>
+              )}
               <InfoRow label="Branded" value={item.isBranded ? "Yes" : "No"} />
             </div>
 
@@ -339,11 +388,13 @@ function InfoRow({
   value,
   mono,
   bold,
+  valueClassName,
 }: {
   label: string;
   value?: string | null;
   mono?: boolean;
   bold?: boolean;
+  valueClassName?: string;
 }) {
   return (
     <div className="flex justify-between items-start gap-3 min-w-0">
@@ -354,7 +405,8 @@ function InfoRow({
         className={cn(
           "text-sm text-primary text-right min-w-0 max-w-[60%] break-words [overflow-wrap:anywhere]",
           mono && "font-mono",
-          bold && "font-semibold"
+          bold && "font-semibold",
+          valueClassName
         )}
       >
         {value ?? "--"}
