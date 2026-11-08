@@ -1,4 +1,4 @@
-import { isLegacyCategory } from "../../convex/helpers";
+import { isLegacyCategory, statusFitsRoute } from "../../convex/helpers";
 
 export const STATUS_CONFIG = {
   ordered: { label: "Ordered", color: "info" },
@@ -18,6 +18,11 @@ export const STATUS_FLOW: ItemStatus[] = [
   "arrived_ph_warehouse",
   "delivered_to_customer",
 ];
+
+/** The pipeline for an Item's Sourcing Route. Watches skip the PH warehouse. */
+export function statusFlowFor(category: ItemCategory): ItemStatus[] {
+  return STATUS_FLOW.filter((s) => statusFitsRoute(category, s));
+}
 
 export const QC_STATUS_CONFIG = {
   not_received: { label: "Not Received", color: "tertiary" },
@@ -63,6 +68,10 @@ export const FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT = 10;
 export const FORWARDER_BUY_QC_FEE_PHP = 150;
 
 export const ALL_STATUSES = Object.keys(STATUS_CONFIG) as ItemStatus[];
+
+export function statusChoicesFor(category: ItemCategory): ItemStatus[] {
+  return ALL_STATUSES.filter((s) => statusFitsRoute(category, s));
+}
 export const ALL_QC_STATUSES = Object.keys(QC_STATUS_CONFIG) as QcStatus[];
 export const ALL_CATEGORIES = Object.keys(CATEGORY_CONFIG) as ItemCategory[];
 

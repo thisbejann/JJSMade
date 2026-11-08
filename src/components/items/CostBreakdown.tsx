@@ -9,6 +9,8 @@ interface CostBreakdownProps {
   estimatedShippingPHP?: number;
   forwarderBuyFeePHP?: number;
   qcServiceFeePHP?: number;
+  tdShippingPHP?: number;
+  tdInsurancePHP?: number;
   totalCost?: number;
   sellingPrice?: number;
   profit?: number;
@@ -47,6 +49,8 @@ export function CostBreakdown(props: CostBreakdownProps) {
       value: props.qcServiceFeePHP ?? 0,
       color: "bg-tertiary",
     },
+    { label: "TD Shipping", value: props.tdShippingPHP ?? 0, color: "bg-warning" },
+    { label: "Insurance", value: props.tdInsurancePHP ?? 0, color: "bg-info" },
   ].filter((segment) => segment.value > 0);
 
   if (props.profit != null && props.sellingPrice && props.sellingPrice > 0) {
