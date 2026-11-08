@@ -87,12 +87,10 @@ export function GroupReviewSheet({
     };
   }, []);
 
-  const getRow = (id: string) => rows[id];
-
   // Collapse a complete row and open the next still-incomplete one.
   function advanceFrom(line: BundleLine, row: RowFields) {
     if (line.id !== expandedId || !rowComplete(line, row)) return;
-    const next = lines.find((l) => l.id !== line.id && !rowComplete(l, getRow(l.id)));
+    const next = lines.find((l) => l.id !== line.id && !rowComplete(l, rows[l.id]));
     setExpandedId(next ? next.id : null);
   }
 
@@ -100,12 +98,12 @@ export function GroupReviewSheet({
   // must not: "4" already satisfies "has a size" while the user is mid-way to
   // "42", so they advance on Enter instead (see AccordionRow).
   function setField(line: BundleLine, field: keyof RowFields, value: string, advance = false) {
-    const updated = { ...getRow(line.id), [field]: value };
+    const updated = { ...rows[line.id], [field]: value };
     setRows((prev) => ({ ...prev, [line.id]: updated }));
     if (advance) advanceFrom(line, updated);
   }
 
-  const readyCount = lines.filter((l) => rowComplete(l, getRow(l.id))).length;
+  const readyCount = lines.filter((l) => rowComplete(l, rows[l.id])).length;
   const allRowsReady = readyCount === lines.length;
   const canCreate = allRowsReady && customerId != null && !submitting;
   const remaining = lines.length - readyCount + (customerId == null ? 1 : 0);
@@ -115,7 +113,7 @@ export function GroupReviewSheet({
     setSubmitting(true);
     setError(null);
     try {
-      const items = lines.map((line) => groupItemFromLine(line, getRow(line.id), settings));
+      const items = lines.map((line) => groupItemFromLine(line, rows[line.id], settings));
       const offerNum = offerStr.trim() === "" ? undefined : Number(offerStr);
       const groupId = await createWithItems({
         customerId,
@@ -196,13 +194,13 @@ export function GroupReviewSheet({
                 <AccordionRow
                   key={line.id}
                   line={line}
-                  fields={getRow(line.id)}
-                  complete={rowComplete(line, getRow(line.id))}
+                  fields={rows[line.id]}
+                  complete={rowComplete(line, rows[line.id])}
                   expanded={expandedId === line.id}
                   sellers={sellers}
                   onToggle={() => setExpandedId(expandedId === line.id ? null : line.id)}
                   onField={(field, value, advance) => setField(line, field, value, advance)}
-                  onAdvance={() => advanceFrom(line, getRow(line.id))}
+                  onAdvance={() => advanceFrom(line, rows[line.id])}
                 />
               ))}
             </div>

@@ -3,7 +3,7 @@ import {
   FORWARDER_BUY_QC_FEE_PHP,
   type ItemCategory,
 } from "./constants";
-import { shippingCost, tdRouteCost } from "../../convex/helpers";
+import { isTdRoute, shippingCost, tdRouteCost, type TdRates } from "../../convex/helpers";
 import type { BagSize, ClothingWeight, ShoeBuild } from "../../convex/schema";
 
 // The Quote Calculator's pricing math. Pure: no React, no Convex functions, so
@@ -98,12 +98,6 @@ export interface ChinaQuoteInput {
   /** Forwarder Shipping Fee rate, PHP per kg. */
   ratePerKg: number;
   profitTarget: number;
-}
-
-/** A Trusted Dealer's fixed rates, as stored on its Seller. */
-export interface TdRates {
-  tdShippingCNY: number;
-  tdInsurancePct: number;
 }
 
 /** TD route: no forwarder, so no mode, local shipping or Estimated Shipping. */
@@ -223,7 +217,7 @@ export function bundleTotals(
     discount,
     discountPct: bundleQuote > 0 ? (discount / bundleQuote) * 100 : 0,
     estimatedMargin: round2(offer - breakEvenFloor),
-    marginExact: lines.length > 0 && lines.every((l) => l.category === "watches"),
+    marginExact: lines.length > 0 && lines.every((l) => isTdRoute(l.category)),
     marginState,
   };
 }

@@ -125,6 +125,6 @@ The negotiated bundle price the customer proposes/agrees to — typed into the c
 The sum of item **costs plus [Estimated Shipping]** in a Bundle: the lowest Offer Total before the order is expected to lose money. The calculator surfaces this as the "how low can I go" anchor during negotiation.
 
 ## Estimated Margin
-`Offer Total − Break-even Floor`. The calculator's profit readout. It counts [Estimated Shipping], so it is a real expectation rather than an optimistic one. It only turns final once the forwarder has weighed every China-route line. An all-watch Bundle's margin is already final, since TD-route costs are fully known.
+`Offer Total − Break-even Floor`. The calculator's profit readout. It counts [Estimated Shipping], so it is a real expectation rather than an optimistic one. It only turns final once the forwarder has weighed every China-route line. An all-watch Bundle's margin is already exact, since TD-route costs are fully known.
 
 Formerly the **Pre-shipping Margin**, which left shipping out entirely. That made light items look more profitable than they were and hid losses on heavy ones like Bags and chunky shoes. The weight-aware revision ([ADR 0005](docs/adr/0005-estimated-shipping-in-quote.md)) replaced it.
