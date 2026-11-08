@@ -7,8 +7,11 @@ import { v, type Infer } from "convex/values";
 export const categoryValidator = v.union(
   v.literal("shoes"),
   v.literal("clothes"),
-  v.literal("watches_accessories"),
-  v.literal("bags")
+  v.literal("watches"),
+  v.literal("accessories"),
+  v.literal("bags"),
+  // Legacy: split into Watches and Accessories (ADR 0004). Existing Items keep it.
+  v.literal("watches_accessories")
 );
 export const shoeBuildValidator = v.union(v.literal("light"), v.literal("regular"), v.literal("chunky"));
 export const clothingWeightValidator = v.union(v.literal("light"), v.literal("heavy"));

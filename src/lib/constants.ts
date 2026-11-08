@@ -1,3 +1,5 @@
+import { isLegacyCategory } from "../../convex/helpers";
+
 export const STATUS_CONFIG = {
   ordered: { label: "Ordered", color: "info" },
   qc_sent: { label: "QC Sent", color: "warning" },
@@ -29,8 +31,10 @@ export type QcStatus = keyof typeof QC_STATUS_CONFIG;
 export const CATEGORY_CONFIG = {
   shoes: { label: "Shoes", icon: "Footprints" },
   clothes: { label: "Clothes", icon: "Shirt" },
-  watches_accessories: { label: "Watches & Accessories", icon: "Watch" },
+  watches: { label: "Watches", icon: "Watch" },
+  accessories: { label: "Accessories", icon: "Necklace" },
   bags: { label: "Bags", icon: "HandBag" },
+  watches_accessories: { label: "Watches & Accessories", icon: "Watch" },
 } as const;
 
 export type ItemCategory = keyof typeof CATEGORY_CONFIG;
@@ -60,6 +64,11 @@ export const FORWARDER_BUY_QC_FEE_PHP = 150;
 export const ALL_STATUSES = Object.keys(STATUS_CONFIG) as ItemStatus[];
 export const ALL_QC_STATUSES = Object.keys(QC_STATUS_CONFIG) as QcStatus[];
 export const ALL_CATEGORIES = Object.keys(CATEGORY_CONFIG) as ItemCategory[];
+
+/** What a category picker offers: current categories, plus a legacy one only if the Item already has it. */
+export function categoryChoices(existing?: ItemCategory): ItemCategory[] {
+  return ALL_CATEGORIES.filter((c) => !isLegacyCategory(c) || c === existing);
+}
 
 export const PERSONAL_STATUS_CONFIG = {
   ordered:              { label: "Ordered",          color: "info" },

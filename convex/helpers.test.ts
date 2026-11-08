@@ -43,6 +43,8 @@ describe("categoryHasSize", () => {
   it.each([
     ["shoes", true],
     ["clothes", true],
+    ["watches", false],
+    ["accessories", false],
     ["watches_accessories", false],
     ["bags", false],
   ] as const)("%s takes a size: %s", (category, expected) => {

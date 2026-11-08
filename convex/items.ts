@@ -1,6 +1,6 @@
 import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
-import { categoryHasSize, computeDerivedFields } from "./helpers";
+import { categoryHasSize, computeDerivedFields, isLegacyCategory } from "./helpers";
 import { categoryValidator, type ItemCategory } from "./schema";
 import { deleteUnreferencedQcPhotos } from "./qcPhotoCleanup";
 
@@ -38,11 +38,17 @@ export function normalizeSize(
 
 export function validateItemRules(data: {
   category: ItemCategory;
+  /** The stored category when editing. Absent for a new Item. */
+  existingCategory?: ItemCategory;
   size?: string;
   isForwarderBuy: boolean;
   forwarderBuyRateUsed?: number;
   forwarderBuyCommissionPercent?: number;
 }) {
+  if (isLegacyCategory(data.category) && data.category !== data.existingCategory) {
+    throw new Error("Watches & Accessories is retired. Pick Watches or Accessories");
+  }
+
   if (data.category === "shoes") {
     const parsed = Number(data.size);
     if (!data.size || Number.isNaN(parsed) || parsed <= 0) {
@@ -242,6 +248,7 @@ export const update = mutation({
 
     validateItemRules({
       category: merged.category,
+      existingCategory: existing.category,
       size,
       isForwarderBuy,
       forwarderBuyRateUsed,
