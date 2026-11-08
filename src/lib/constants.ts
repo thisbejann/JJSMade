@@ -1,4 +1,4 @@
-import { isLegacyCategory, statusFitsRoute } from "../../convex/helpers";
+import { isLegacyCategory, isTdRoute, statusFitsRoute } from "../../convex/helpers";
 
 export const STATUS_CONFIG = {
   ordered: { label: "Ordered", color: "info" },
@@ -79,6 +79,11 @@ export const ALL_CATEGORIES = Object.keys(CATEGORY_CONFIG) as ItemCategory[];
 /** What a category picker offers: current categories, plus a legacy one only if the Item already has it. */
 export function categoryChoices(existing?: ItemCategory): ItemCategory[] {
   return ALL_CATEGORIES.filter((c) => !isLegacyCategory(c) || c === existing);
+}
+
+/** Personal Items stay off the TD route, so Watches is offered only to one that already has it. */
+export function personalCategoryChoices(existing?: ItemCategory): ItemCategory[] {
+  return categoryChoices(existing).filter((c) => !isTdRoute(c) || c === existing);
 }
 
 export const PERSONAL_STATUS_CONFIG = {

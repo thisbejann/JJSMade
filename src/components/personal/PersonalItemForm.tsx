@@ -18,7 +18,7 @@ import {
   PERSONAL_STATUS_CONFIG,
   QC_STATUS_CONFIG,
   CATEGORY_CONFIG,
-  categoryChoices,
+  personalCategoryChoices,
   type ItemCategory,
   type PersonalItemStatus,
 } from "../../lib/constants";
@@ -288,7 +288,7 @@ export function PersonalItemForm({ existingItem, onSuccess }: PersonalItemFormPr
           <div>
             <label className="block text-xs font-medium text-secondary mb-2">Category *</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {categoryChoices(existingItem?.category).map((cat) => {
+              {personalCategoryChoices(existingItem?.category).map((cat) => {
                 const icon = CATEGORY_ICONS[cat];
                 return (
                   <button
