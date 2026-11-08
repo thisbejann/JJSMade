@@ -7,6 +7,7 @@ import {
   computeDerivedFields,
   isLegacyCategory,
   isTdRoute,
+  keepsStoredRates,
   type TdRates,
 } from "./helpers";
 import { categoryValidator, itemStatusValidator, type ItemCategory, type ItemStatus } from "./schema";
@@ -79,9 +80,7 @@ export function validateItemRules(data: {
 
 /**
  * The TD rates a watch carries, read on the server so the client can't override them.
- * A watch keeps the rates it was ordered with until its seller changes: then the new
- * TD's current rates are copied in. Keeping them doesn't require the name to still be
- * a TD, so a watch stays editable after its TD is renamed in Sellers.
+ * Unless the watch keeps its stored rates, the TD's current rates are copied in.
  */
 export async function resolveTdRates(
   ctx: QueryCtx,
@@ -90,13 +89,7 @@ export async function resolveTdRates(
 ): Promise<TdRates | undefined> {
   if (!isTdRoute(next.category)) return undefined;
   const seller = next.seller.trim();
-  if (
-    existing &&
-    isTdRoute(existing.category) &&
-    existing.seller.trim() === seller &&
-    existing.tdShippingCNY != null &&
-    existing.tdInsurancePct != null
-  ) {
+  if (keepsStoredRates(existing, seller)) {
     return { tdShippingCNY: existing.tdShippingCNY, tdInsurancePct: existing.tdInsurancePct };
   }
   const matches = await ctx.db
@@ -112,12 +105,28 @@ export async function resolveTdRates(
 
 type WatchTd = TdRates & { insured: boolean };
 
+export function watchTd(rates: TdRates | undefined, insured: boolean | undefined): WatchTd | undefined {
+  return rates && { ...rates, insured: insured ?? true };
+}
+
 /** Off the TD route every field is cleared, so a reclassified Item drops stale rates. */
 export function storedTdFields(td: WatchTd | undefined) {
   return {
     tdShippingCNY: td?.tdShippingCNY,
     tdInsurancePct: td?.tdInsurancePct,
     tdInsured: td?.insured,
+  };
+}
+
+/** A watch has no weight-based cost, so one reclassified from the China route drops its estimate. */
+export function storedEstimateFields(category: ItemCategory) {
+  if (!isTdRoute(category)) return {};
+  return {
+    estimatedWeightKg: undefined,
+    estimatedWeightTyped: undefined,
+    shoeBuild: undefined,
+    clothingWeight: undefined,
+    bagSize: undefined,
   };
 }
 
@@ -175,8 +184,7 @@ export const create = mutation({
       forwarderBuyCommissionPercent,
     });
 
-    const rates = await resolveTdRates(ctx, args);
-    const td = rates && { ...rates, insured: args.tdInsured ?? true };
+    const td = watchTd(await resolveTdRates(ctx, args), args.tdInsured);
 
     const derived = computeDerivedFields({
       category: args.category,
@@ -307,8 +315,7 @@ export const update = mutation({
       forwarderBuyCommissionPercent: normalizedForwarderBuyCommissionPercent,
     });
 
-    const rates = await resolveTdRates(ctx, merged, existing);
-    const td = rates && { ...rates, insured: merged.tdInsured ?? true };
+    const td = watchTd(await resolveTdRates(ctx, merged, existing), merged.tdInsured);
 
     const derived = computeDerivedFields({
       category: merged.category,
@@ -335,6 +342,7 @@ export const update = mutation({
     await ctx.db.patch(id, {
       ...updates,
       ...storedTdFields(td),
+      ...storedEstimateFields(merged.category),
       size,
       trackingNumber,
       isForwarderBuy,

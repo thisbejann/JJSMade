@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { categoryHasSize, computeDerivedFields, shippingCost, tdRouteCost } from "./helpers";
+import {
+  categoryHasSize,
+  computeDerivedFields,
+  keepsStoredRates,
+  shippingCost,
+  tdRouteCost,
+} from "./helpers";
 
 // ¥500 at 8.0 = ₱4,000, sold for ₱5,500, forwarder ₱480/kg.
 const base = {
@@ -143,5 +149,39 @@ describe("computeDerivedFields on the TD route", () => {
     expect(d.tdShippingPHP).toBeUndefined();
     expect(d.tdInsurancePHP).toBeUndefined();
     expect(d.totalCost).toBe(4000);
+  });
+});
+
+describe("keepsStoredRates", () => {
+  const stored = {
+    category: "watches" as const,
+    seller: "Ace TD",
+    tdShippingCNY: 250,
+    tdInsurancePct: 10,
+  };
+
+  it("keeps a watch's rates while its TD stays the same", () => {
+    expect(keepsStoredRates(stored, "Ace TD")).toBe(true);
+  });
+
+  it("ignores spaces around the seller name", () => {
+    expect(keepsStoredRates({ ...stored, seller: " Ace TD" }, "Ace TD ")).toBe(true);
+  });
+
+  it("copies new rates when the TD changes", () => {
+    expect(keepsStoredRates(stored, "Other TD")).toBe(false);
+  });
+
+  it("has nothing to keep for a new Item", () => {
+    expect(keepsStoredRates(undefined, "Ace TD")).toBe(false);
+  });
+
+  it("has nothing to keep for an Item reclassified from the China route", () => {
+    expect(keepsStoredRates({ ...stored, category: "shoes" }, "Ace TD")).toBe(false);
+  });
+
+  it("has nothing to keep when either rate was never stored", () => {
+    expect(keepsStoredRates({ ...stored, tdShippingCNY: undefined }, "Ace TD")).toBe(false);
+    expect(keepsStoredRates({ ...stored, tdInsurancePct: undefined }, "Ace TD")).toBe(false);
   });
 });

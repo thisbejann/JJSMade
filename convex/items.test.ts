@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { normalizeSize, planBagReclassification, validateItemRules } from "./items";
+import { isShippingEstimated } from "./helpers";
+import {
+  normalizeSize,
+  planBagReclassification,
+  storedEstimateFields,
+  validateItemRules,
+  watchTd,
+} from "./items";
 
 describe("Bags size rule", () => {
   it("drops any size typed for a Bag", () => {
@@ -103,5 +110,47 @@ describe("Watches on the TD route", () => {
     expect(() =>
       validateItemRules({ category: "accessories", isForwarderBuy: false, status: "arrived_ph_warehouse" })
     ).not.toThrow();
+  });
+});
+
+describe("an Item's quote-time estimate when it is edited", () => {
+  const quoted = {
+    estimatedWeightKg: 1.2,
+    estimatedWeightTyped: false,
+    shoeBuild: "regular" as const,
+    clothingWeight: "light" as const,
+    bagSize: "large" as const,
+  };
+
+  it("is dropped once the Item is on the TD route", () => {
+    const saved = { ...quoted, ...storedEstimateFields("watches") };
+    expect(saved).toEqual({
+      estimatedWeightKg: undefined,
+      estimatedWeightTyped: undefined,
+      shoeBuild: undefined,
+      clothingWeight: undefined,
+      bagSize: undefined,
+    });
+    expect(isShippingEstimated(saved)).toBe(false);
+  });
+
+  it("stays on the China route, where it is still what profit rests on", () => {
+    const saved = { ...quoted, ...storedEstimateFields("bags") };
+    expect(saved).toEqual(quoted);
+    expect(isShippingEstimated(saved)).toBe(true);
+  });
+});
+
+describe("watchTd", () => {
+  const rates = { tdShippingCNY: 250, tdInsurancePct: 10 };
+
+  it("insures a watch unless it opted out", () => {
+    expect(watchTd(rates, undefined)).toEqual({ ...rates, insured: true });
+    expect(watchTd(rates, true)).toEqual({ ...rates, insured: true });
+    expect(watchTd(rates, false)).toEqual({ ...rates, insured: false });
+  });
+
+  it("is absent off the TD route, where there are no rates", () => {
+    expect(watchTd(undefined, true)).toBeUndefined();
   });
 });

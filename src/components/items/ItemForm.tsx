@@ -35,7 +35,7 @@ import { formatPHP } from "../../lib/formatters";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
-import { categoryHasSize, isTdRoute, statusFitsRoute } from "../../../convex/helpers";
+import { categoryHasSize, isTdRoute, keepsStoredRates, statusFitsRoute } from "../../../convex/helpers";
 import { CATEGORY_ICONS } from "./categoryIcons";
 
 const CLOTHES_SIZES = ["S", "M", "L", "XL"] as const;
@@ -227,16 +227,11 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
   const existingPhotoIds = (existingItem?.qcPhotoIds ?? []).filter((id) => photoIds.includes(id));
 
   const isWatch = isTdRoute(category);
-  // Mirrors the server: a watch keeps its stored rates until its TD changes.
-  const keepsStoredRates =
-    existingItem != null &&
-    isTdRoute(existingItem.category) &&
-    existingItem.seller.trim() === seller.trim() &&
-    existingItem.tdShippingCNY != null &&
-    existingItem.tdInsurancePct != null;
-  const pickedDealer = dealers?.find((td) => td.name === seller.trim());
-  const tdShippingCNY = keepsStoredRates ? existingItem.tdShippingCNY : pickedDealer?.tdShippingCNY;
-  const tdInsurancePct = keepsStoredRates ? existingItem.tdInsurancePct : pickedDealer?.tdInsurancePct;
+  const rateSource = keepsStoredRates(existingItem, seller)
+    ? existingItem
+    : dealers?.find((td) => td.name === seller.trim());
+  const tdShippingCNY = rateSource?.tdShippingCNY;
+  const tdInsurancePct = rateSource?.tdInsurancePct;
   const tdRates = useMemo(
     () =>
       tdShippingCNY != null && tdInsurancePct != null ? { tdShippingCNY, tdInsurancePct } : null,

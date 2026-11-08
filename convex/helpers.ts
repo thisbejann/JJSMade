@@ -56,6 +56,27 @@ export function assertStatusFitsRoute(category: ItemCategory, status: ItemStatus
 /** The rates a watch copies from its Trusted Dealer when it is ordered. */
 export type TdRates = { tdShippingCNY: number; tdInsurancePct: number };
 
+/**
+ * A watch keeps the rates it was ordered with until its seller changes. This doesn't
+ * require the name to still be a TD, so a watch stays editable after its TD is renamed.
+ */
+export function keepsStoredRates<
+  T extends {
+    category: ItemCategory;
+    seller: string;
+    tdShippingCNY?: number;
+    tdInsurancePct?: number;
+  },
+>(existing: T | undefined, seller: string): existing is T & TdRates {
+  return (
+    existing != null &&
+    isTdRoute(existing.category) &&
+    existing.seller.trim() === seller.trim() &&
+    existing.tdShippingCNY != null &&
+    existing.tdInsurancePct != null
+  );
+}
+
 type ChinaRouteInput = {
   priceCNY: number;
   exchangeRateUsed: number;
@@ -97,7 +118,7 @@ export function computeDerivedFields(
   };
 }
 
-/** Forwarder-route cost: price, local CN shipping, forwarder fee and forwarder-buy fees. */
+/** China route cost: price, local CN shipping, forwarder fee and forwarder-buy fees. */
 export function chinaRouteCost(data: ChinaRouteInput) {
   const isForwarderBuy = data.isForwarderBuy ?? false;
   let forwarderBuyRate: number | undefined;
