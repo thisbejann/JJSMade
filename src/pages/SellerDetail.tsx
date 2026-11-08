@@ -8,6 +8,7 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { ItemTable } from "../components/items/ItemTable";
 import { SellerStats } from "../components/sellers/SellerStats";
 import { PLATFORM_CONFIG } from "../lib/constants";
+import { formatTdRates } from "../lib/formatters";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon, Link01Icon } from "@hugeicons/core-free-icons";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -57,7 +58,12 @@ export default function SellerDetail() {
             <h1 className="font-display font-bold text-2xl text-primary">{seller.name}</h1>
             <div className="flex items-center gap-2 mt-2">
               {seller.platform && (
-                <Badge>{PLATFORM_CONFIG[seller.platform as keyof typeof PLATFORM_CONFIG]?.label ?? seller.platform}</Badge>
+                <Badge variant={seller.platform === "td" ? "accent" : "default"}>
+                  {PLATFORM_CONFIG[seller.platform as keyof typeof PLATFORM_CONFIG]?.label ?? seller.platform}
+                </Badge>
+              )}
+              {seller.platform === "td" && (
+                <span className="text-sm tabular-nums text-secondary">{formatTdRates(seller)}</span>
               )}
             </div>
             {seller.contactInfo && <p className="text-sm text-secondary mt-2">{seller.contactInfo}</p>}

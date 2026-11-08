@@ -3,7 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { PencilEdit01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { Card } from "../ui/Card";
 import { Badge } from "../ui/Badge";
-import { formatPHP } from "../../lib/formatters";
+import { formatPHP, formatTdRates } from "../../lib/formatters";
 import { PLATFORM_CONFIG } from "../../lib/constants";
 
 interface SellerCardProps {
@@ -11,6 +11,8 @@ interface SellerCardProps {
     _id: string;
     name: string;
     platform?: string;
+    tdShippingCNY?: number;
+    tdInsurancePct?: number;
     contactInfo?: string;
     storeLink?: string;
     totalItems: number;
@@ -31,9 +33,12 @@ export function SellerCard({ seller, onEdit, onDelete }: SellerCardProps) {
         <div>
           <h3 className="font-display font-semibold text-primary">{seller.name}</h3>
           {seller.platform && (
-            <Badge variant="default" className="mt-1">
+            <Badge variant={seller.platform === "td" ? "accent" : "default"} className="mt-1">
               {PLATFORM_CONFIG[seller.platform as keyof typeof PLATFORM_CONFIG]?.label ?? seller.platform}
             </Badge>
+          )}
+          {seller.platform === "td" && (
+            <p className="mt-1.5 text-xs tabular-nums text-secondary">{formatTdRates(seller)}</p>
           )}
         </div>
         <div className="flex gap-1">

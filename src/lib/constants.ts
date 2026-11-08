@@ -41,6 +41,7 @@ export const PLATFORM_CONFIG = {
   "1688": { label: "1688" },
   yupoo: { label: "Yupoo" },
   direct: { label: "Direct" },
+  td: { label: "Trusted Dealer" },
 } as const;
 
 export type SellerPlatform = keyof typeof PLATFORM_CONFIG;
