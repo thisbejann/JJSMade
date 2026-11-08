@@ -124,3 +124,20 @@ export const getById = query({
     return await ctx.db.get(args.id);
   },
 });
+
+/** Trusted Dealers with their fixed rates, for the TD Picker. */
+export const listTrustedDealers = query({
+  args: {},
+  handler: async (ctx) => {
+    const sellers = await ctx.db.query("sellers").collect();
+    return sellers
+      .filter((s) => s.platform === "td")
+      .map(({ _id, name, tdShippingCNY, tdInsurancePct }) => ({
+        _id,
+        name,
+        tdShippingCNY,
+        tdInsurancePct,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  },
+});
