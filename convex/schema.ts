@@ -7,14 +7,45 @@ import { v, type Infer } from "convex/values";
 export const categoryValidator = v.union(
   v.literal("shoes"),
   v.literal("clothes"),
-  v.literal("watches_accessories"),
-  v.literal("bags")
+  v.literal("watches"),
+  v.literal("accessories"),
+  v.literal("bags"),
+  // Legacy: split into Watches and Accessories (ADR 0004). Existing Items keep it.
+  v.literal("watches_accessories")
 );
 export const shoeBuildValidator = v.union(v.literal("light"), v.literal("regular"), v.literal("chunky"));
 export const clothingWeightValidator = v.union(v.literal("light"), v.literal("heavy"));
 export const bagSizeValidator = v.union(v.literal("small"), v.literal("large"));
+export const sellerPlatformValidator = v.union(
+  v.literal("weidian"),
+  v.literal("taobao"),
+  v.literal("1688"),
+  v.literal("yupoo"),
+  v.literal("direct"),
+  v.literal("td")
+);
+
+export const itemStatusValidator = v.union(
+  // Current statuses
+  v.literal("ordered"),
+  v.literal("qc_sent"),
+  v.literal("item_shipout"),
+  v.literal("arrived_ph_warehouse"),
+  v.literal("delivered_to_customer"),
+  v.literal("refunded"),
+  // Legacy statuses (kept so existing documents remain valid)
+  v.literal("shipped_to_warehouse"),
+  v.literal("at_cn_warehouse"),
+  v.literal("shipped_to_ph"),
+  v.literal("at_ph_warehouse"),
+  v.literal("delivered_to_me"),
+  v.literal("sold"),
+  v.literal("cancelled"),
+  v.literal("returned")
+);
 
 export type ItemCategory = Infer<typeof categoryValidator>;
+export type ItemStatus = Infer<typeof itemStatusValidator>;
 export type ShoeBuild = Infer<typeof shoeBuildValidator>;
 export type ClothingWeight = Infer<typeof clothingWeightValidator>;
 export type BagSize = Infer<typeof bagSizeValidator>;
@@ -90,6 +121,14 @@ export default defineSchema({
     // True when the estimate was a typed weight, not a Weight Preset.
     estimatedWeightTyped: v.optional(v.boolean()),
 
+    // TD route (Watches only). Rates are copied from the Trusted Dealer when
+    // the watch is ordered, so a later rate change leaves this Item alone.
+    tdShippingCNY: v.optional(v.number()),
+    tdInsurancePct: v.optional(v.number()),
+    tdInsured: v.optional(v.boolean()),
+    tdShippingPHP: v.optional(v.number()),
+    tdInsurancePHP: v.optional(v.number()),
+
     // Selling & Delivery
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
@@ -102,24 +141,7 @@ export default defineSchema({
     profit: v.optional(v.number()),
 
     // Status
-    status: v.union(
-      // Current statuses
-      v.literal("ordered"),
-      v.literal("qc_sent"),
-      v.literal("item_shipout"),
-      v.literal("arrived_ph_warehouse"),
-      v.literal("delivered_to_customer"),
-      v.literal("refunded"),
-      // Legacy statuses (kept so existing documents remain valid)
-      v.literal("shipped_to_warehouse"),
-      v.literal("at_cn_warehouse"),
-      v.literal("shipped_to_ph"),
-      v.literal("at_ph_warehouse"),
-      v.literal("delivered_to_me"),
-      v.literal("sold"),
-      v.literal("cancelled"),
-      v.literal("returned")
-    ),
+    status: itemStatusValidator,
 
     // Metadata
     notes: v.optional(v.string()),
@@ -139,15 +161,9 @@ export default defineSchema({
 
   sellers: defineTable({
     name: v.string(),
-    platform: v.optional(
-      v.union(
-        v.literal("weidian"),
-        v.literal("taobao"),
-        v.literal("1688"),
-        v.literal("yupoo"),
-        v.literal("direct")
-      )
-    ),
+    platform: v.optional(sellerPlatformValidator),
+    tdShippingCNY: v.optional(v.number()),
+    tdInsurancePct: v.optional(v.number()),
     contactInfo: v.optional(v.string()),
     storeLink: v.optional(v.string()),
     notes: v.optional(v.string()),
@@ -161,6 +177,7 @@ export default defineSchema({
     defaultMarkupMin: v.number(),
     defaultMarkupMax: v.number(),
     calculatorProfitTarget: v.optional(v.number()),
+    calculatorWatchesProfitTarget: v.optional(v.number()),
     // Retired by the single Profit Target (ADR 0005); kept for old records.
     calculatorMarkupShoes: v.optional(v.number()),
     calculatorMarkupClothes: v.optional(v.number()),

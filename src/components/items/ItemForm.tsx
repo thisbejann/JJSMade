@@ -1,6 +1,7 @@
-import { useState, useCallback, type ReactNode } from "react";
+import { useState, useCallback, useMemo, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import { api } from "../../../convex/_generated/api";
 import { useSettings } from "../../hooks/useSettings";
 import { useComputedCosts } from "../../hooks/useComputedCosts";
@@ -18,12 +19,14 @@ import { MarkupIndicator } from "./MarkupIndicator";
 import { PriceCalculator } from "./PriceCalculator";
 import { QcPhotoGallery } from "./QcPhotoGallery";
 import { CustomerPicker } from "./CustomerPicker";
+import { TdPicker } from "./TdPicker";
 import {
-  ALL_STATUSES,
   ALL_QC_STATUSES,
   STATUS_CONFIG,
   QC_STATUS_CONFIG,
   CATEGORY_CONFIG,
+  categoryChoices,
+  statusChoicesFor,
   type ItemCategory,
 } from "../../lib/constants";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -32,7 +35,7 @@ import { formatPHP } from "../../lib/formatters";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
-import { categoryHasSize } from "../../../convex/helpers";
+import { categoryHasSize, isTdRoute, keepsStoredRates, statusFitsRoute } from "../../../convex/helpers";
 import { CATEGORY_ICONS } from "./categoryIcons";
 
 const CLOTHES_SIZES = ["S", "M", "L", "XL"] as const;
@@ -128,6 +131,7 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
   const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
 
   const sellers = useQuery(api.items.getUniqueSellers) ?? [];
+  const dealers = useQuery(api.sellers.listTrustedDealers);
   const batches = useQuery(api.items.getUniqueBatches) ?? [];
 
   const [name, setName] = useState(existingItem?.name ?? "");
@@ -206,6 +210,7 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
     existingItem?.trackingNumber ?? ""
   );
   const [sellingPrice, setSellingPrice] = useState(existingItem?.sellingPrice ?? 0);
+  const [tdInsured, setTdInsured] = useState(existingItem?.tdInsured ?? true);
   const [customerId, setCustomerId] = useState<Id<"customers"> | null>(
     lockedCustomerId ?? existingItem?.customerId ?? null
   );
@@ -221,7 +226,24 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
   const showShippingSection = SHIPPING_VISIBLE_STATUSES.has(status);
   const existingPhotoIds = (existingItem?.qcPhotoIds ?? []).filter((id) => photoIds.includes(id));
 
+  const isWatch = isTdRoute(category);
+  const rateSource = keepsStoredRates(existingItem, seller)
+    ? existingItem
+    : dealers?.find((td) => td.name === seller.trim());
+  const tdShippingCNY = rateSource?.tdShippingCNY;
+  const tdInsurancePct = rateSource?.tdInsurancePct;
+  const tdRates = useMemo(
+    () =>
+      tdShippingCNY != null && tdInsurancePct != null ? { tdShippingCNY, tdInsurancePct } : null,
+    [tdShippingCNY, tdInsurancePct]
+  );
+  const td = useMemo(
+    () => (isWatch ? (tdRates ? { ...tdRates, insured: tdInsured } : null) : undefined),
+    [isWatch, tdRates, tdInsured]
+  );
+
   const costs = useComputedCosts({
+    td,
     priceCNY,
     exchangeRate,
     hasLocalShipping,
@@ -302,6 +324,11 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
       return;
     }
 
+    if (isWatch && !tdRates) {
+      toast.error("Pick a Trusted Dealer, or create one");
+      return;
+    }
+
     const normalizedSize = validateSize();
     if (normalizedSize === null) return;
 
@@ -325,16 +352,17 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
         batch: batch || undefined,
         priceCNY,
         exchangeRateUsed: exchangeRate,
-        hasLocalShipping,
-        localShippingCNY: hasLocalShipping ? localShippingCNY : undefined,
-        isForwarderBuy,
+        hasLocalShipping: isWatch ? false : hasLocalShipping,
+        localShippingCNY: !isWatch && hasLocalShipping ? localShippingCNY : undefined,
+        isForwarderBuy: isWatch ? false : isForwarderBuy,
         forwarderBuyRateUsed: isForwarderBuy ? forwarderBuyRateUsed : undefined,
         forwarderBuyCommissionPercent: isForwarderBuy
           ? forwarderBuyCommissionPercent
           : undefined,
         qcPhotoIds: photoIds.length > 0 ? photoIds : undefined,
         qcStatus: qcStatus as "not_received" | "pending_review" | "gl" | "rl",
-        weightKg: weightKg > 0 ? weightKg : undefined,
+        weightKg: !isWatch && weightKg > 0 ? weightKg : undefined,
+        tdInsured: isWatch ? tdInsured : undefined,
         trackingNumber: trackingNumber.trim() || undefined,
         isBranded,
         forwarderRatePerKg: forwarderRate,
@@ -355,8 +383,8 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
         toast.success("Item created");
         onSuccess(id);
       }
-    } catch {
-      toast.error("Failed to save item");
+    } catch (err) {
+      toast.error(err instanceof ConvexError ? String(err.data) : "Failed to save item");
     }
     setSubmitting(false);
   };
@@ -367,7 +395,8 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
       className="mx-auto w-full max-w-[1080px] grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 pb-16 lg:pb-0"
     >
       <div>
-        <Card>
+        {/* overflow-visible: Card clips by default, which cut off the TD Picker dropdown. */}
+        <Card className="overflow-visible">
           <CardContent className="space-y-4">
             <h2 className="font-display font-semibold text-base text-primary">
               Item Details
@@ -383,14 +412,18 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
               <label className="block text-xs font-medium text-secondary mb-2">
                 Category *
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {(Object.keys(CATEGORY_CONFIG) as ItemCategory[]).map((cat) => {
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {categoryChoices(existingItem?.category).map((cat) => {
                   const icon = CATEGORY_ICONS[cat];
                   return (
                     <button
                       key={cat}
                       type="button"
                       onClick={() => {
+                        // A China seller can't be a TD and vice versa, so a route change clears it.
+                        if (isTdRoute(cat) !== isWatch) setSeller("");
+                        if (isTdRoute(cat)) setIsForwarderBuy(false);
+                        if (!statusFitsRoute(cat, status)) setStatus("item_shipout");
                         setCategory(cat);
                         setSize((current) => sanitizeSizeForCategory(cat, current));
                       }}
@@ -440,7 +473,7 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
                 label="Status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value as Doc<"items">["status"])}
-                options={ALL_STATUSES.map((itemStatus) => ({
+                options={statusChoicesFor(category).map((itemStatus) => ({
                   value: itemStatus,
                   label: STATUS_CONFIG[itemStatus].label,
                 }))}
@@ -448,13 +481,17 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Combobox
-                label="Seller *"
-                value={seller}
-                onChange={setSeller}
-                options={sellers}
-                placeholder="Search or type seller name"
-              />
+              {isWatch ? (
+                <TdPicker value={seller} onChange={setSeller} rates={tdRates} />
+              ) : (
+                <Combobox
+                  label="Seller *"
+                  value={seller}
+                  onChange={setSeller}
+                  options={sellers}
+                  placeholder="Search or type seller name"
+                />
+              )}
               <Input
                 label="Seller Contact"
                 value={sellerContact}
@@ -497,32 +534,34 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
                 Pricing
               </h2>
 
-              <div>
-                <label className="block text-xs font-medium text-secondary mb-2">
-                  Purchase Method
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {([false, true] as const).map((viaForwarder) => (
-                    <button
-                      key={String(viaForwarder)}
-                      type="button"
-                      onClick={() => setIsForwarderBuy(viaForwarder)}
-                      className={cn(
-                        "px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border",
-                        isForwarderBuy === viaForwarder
-                          ? "border-accent bg-accent-muted text-accent"
-                          : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
-                      )}
-                    >
-                      {viaForwarder ? "Bought by Forwarder" : "Regular Order"}
-                    </button>
-                  ))}
+              {!isWatch && (
+                <div>
+                  <label className="block text-xs font-medium text-secondary mb-2">
+                    Purchase Method
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([false, true] as const).map((viaForwarder) => (
+                      <button
+                        key={String(viaForwarder)}
+                        type="button"
+                        onClick={() => setIsForwarderBuy(viaForwarder)}
+                        className={cn(
+                          "px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border",
+                          isForwarderBuy === viaForwarder
+                            ? "border-accent bg-accent-muted text-accent"
+                            : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
+                        )}
+                      >
+                        {viaForwarder ? "Bought by Forwarder" : "Regular Order"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
-                  label="Price in CNY *"
+                  label={isWatch ? "Watch Price in CNY *" : "Price in CNY *"}
                   type="number"
                   value={priceCNY || ""}
                   onChange={(e) => setPriceCNY(Number(e.target.value))}
@@ -569,48 +608,79 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
               </div>
             </Reveal>
 
-            <div className="pt-4">
-              <Toggle
-                label="Has Local Shipping?"
-                checked={hasLocalShipping}
-                onChange={setHasLocalShipping}
-              />
-            </div>
-
-            <Reveal show={hasLocalShipping}>
-              <div className="grid gap-4 sm:grid-cols-2 pt-4">
-                <Input
-                  label="Local Shipping (CNY, Optional)"
-                  type="number"
-                  value={localShippingCNY || ""}
-                  onChange={(e) => setLocalShippingCNY(Number(e.target.value))}
-                  step="0.01"
-                  prefix="CNY"
-                  placeholder="0 for free shipping"
-                />
-              </div>
-            </Reveal>
-
-            <div className="mt-4 border-t border-border-subtle pt-3">
-              <FeeLine label="Price in PHP" value={costs.pricePHP} accent />
-              <Reveal show={isForwarderBuy}>
-                <div className="space-y-1.5 pt-1.5">
-                  <FeeLine
-                    label={`Forwarder Buy Fee (${forwarderBuyCommissionPercent.toFixed(0)}% of item)`}
-                    value={costs.forwarderBuyFeePHP}
-                  />
-                  <FeeLine label="QC Service Fee" value={costs.qcServiceFeePHP} />
-                </div>
-              </Reveal>
-              <Reveal show={hasLocalShipping && localShippingCNY > 0}>
-                <div className="pt-1.5">
-                  <FeeLine
-                    label="Local Shipping in PHP"
-                    value={costs.localShippingPHP}
+            {isWatch ? (
+              <>
+                <div className="pt-4">
+                  <Toggle
+                    label="Insurance"
+                    description={
+                      tdRates
+                        ? `${tdRates.tdInsurancePct}% of the watch price, against seizure`
+                        : "Pick a TD to see its rate"
+                    }
+                    checked={tdInsured}
+                    onChange={setTdInsured}
                   />
                 </div>
-              </Reveal>
-            </div>
+                <div className="mt-4 space-y-1.5 border-t border-border-subtle pt-3">
+                  <FeeLine label="Watch" value={costs.pricePHP} />
+                  <FeeLine label="TD Shipping" value={costs.tdShippingPHP} />
+                  <FeeLine
+                    label={tdInsured ? `Insurance (${tdRates?.tdInsurancePct ?? 0}%)` : "Insurance (off)"}
+                    value={costs.tdInsurancePHP}
+                  />
+                  <div className="space-y-1.5 border-t border-border-subtle pt-1.5">
+                    <FeeLine label="Total Cost" value={costs.totalCost} accent />
+                    {sellingPrice > 0 && <FeeLine label="Profit" value={costs.profit} />}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="pt-4">
+                  <Toggle
+                    label="Has Local Shipping?"
+                    checked={hasLocalShipping}
+                    onChange={setHasLocalShipping}
+                  />
+                </div>
+
+                <Reveal show={hasLocalShipping}>
+                  <div className="grid gap-4 sm:grid-cols-2 pt-4">
+                    <Input
+                      label="Local Shipping (CNY, Optional)"
+                      type="number"
+                      value={localShippingCNY || ""}
+                      onChange={(e) => setLocalShippingCNY(Number(e.target.value))}
+                      step="0.01"
+                      prefix="CNY"
+                      placeholder="0 for free shipping"
+                    />
+                  </div>
+                </Reveal>
+
+                <div className="mt-4 border-t border-border-subtle pt-3">
+                  <FeeLine label="Price in PHP" value={costs.pricePHP} accent />
+                  <Reveal show={isForwarderBuy}>
+                    <div className="space-y-1.5 pt-1.5">
+                      <FeeLine
+                        label={`Forwarder Buy Fee (${forwarderBuyCommissionPercent.toFixed(0)}% of item)`}
+                        value={costs.forwarderBuyFeePHP}
+                      />
+                      <FeeLine label="QC Service Fee" value={costs.qcServiceFeePHP} />
+                    </div>
+                  </Reveal>
+                  <Reveal show={hasLocalShipping && localShippingCNY > 0}>
+                    <div className="pt-1.5">
+                      <FeeLine
+                        label="Local Shipping in PHP"
+                        value={costs.localShippingPHP}
+                      />
+                    </div>
+                  </Reveal>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -679,40 +749,53 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
           <Card>
             <CardContent className="space-y-4">
               <h2 className="font-display font-semibold text-base text-primary">
-                Shipping and Fees
+                {isWatch ? "Shipping" : "Shipping and Fees"}
               </h2>
-              <Toggle
-                label="Branded / Sensitive Item?"
-                checked={isBranded}
-                onChange={setIsBranded}
-              />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="Forwarder Rate (PHP/kg)"
-                  type="number"
-                  value={forwarderRate || ""}
-                  onChange={(e) => {
-                    setForwarderRateTouched(true);
-                    setForwarderRateInput(Number(e.target.value));
-                  }}
-                  prefix="PHP"
-                />
-                <Input
-                  label="Weight (kg)"
-                  type="number"
-                  value={weightKg || ""}
-                  onChange={(e) => setWeightKg(Number(e.target.value))}
-                  step="0.01"
-                />
-                <Input
-                  label="Tracking Number"
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="Optional"
-                />
-              </div>
-              {weightKg > 0 && (
-                <FeeLine label="Forwarder Fee" value={costs.forwarderFee} />
+              {isWatch ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input
+                    label="Tracking Number"
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
+              ) : (
+                <>
+                  <Toggle
+                    label="Branded / Sensitive Item?"
+                    checked={isBranded}
+                    onChange={setIsBranded}
+                  />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Input
+                      label="Forwarder Rate (PHP/kg)"
+                      type="number"
+                      value={forwarderRate || ""}
+                      onChange={(e) => {
+                        setForwarderRateTouched(true);
+                        setForwarderRateInput(Number(e.target.value));
+                      }}
+                      prefix="PHP"
+                    />
+                    <Input
+                      label="Weight (kg)"
+                      type="number"
+                      value={weightKg || ""}
+                      onChange={(e) => setWeightKg(Number(e.target.value))}
+                      step="0.01"
+                    />
+                    <Input
+                      label="Tracking Number"
+                      value={trackingNumber}
+                      onChange={(e) => setTrackingNumber(e.target.value)}
+                      placeholder="Optional"
+                    />
+                  </div>
+                  {weightKg > 0 && (
+                    <FeeLine label="Forwarder Fee" value={costs.forwarderFee} />
+                  )}
+                </>
               )}
 
             </CardContent>
@@ -741,7 +824,7 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
                 disabled={!!lockedCustomerId}
               />
             </div>
-            {sellingPrice > 0 && (
+            {!isWatch && sellingPrice > 0 && (
               <MarkupIndicator
                 markup={costs.profit}
                 min={settings.defaultMarkupMin}
@@ -770,16 +853,20 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
             forwarderFee={costs.forwarderFee}
             forwarderBuyFeePHP={costs.forwarderBuyFeePHP}
             qcServiceFeePHP={costs.qcServiceFeePHP}
+            tdShippingPHP={costs.tdShippingPHP}
+            tdInsurancePHP={costs.tdInsurancePHP}
             totalCost={costs.totalCost}
             sellingPrice={sellingPrice}
             profit={costs.profit}
             markupPercent={costs.markupPercent}
           />
-          <PriceCalculator
-            cnyToPhpRate={settings.cnyToPhpRate}
-            forwarderBuyServiceRate={settings.forwarderBuyServiceRate ?? 8.6}
-            priceCNY={priceCNY}
-          />
+          {!isWatch && (
+            <PriceCalculator
+              cnyToPhpRate={settings.cnyToPhpRate}
+              forwarderBuyServiceRate={settings.forwarderBuyServiceRate ?? 8.6}
+              priceCNY={priceCNY}
+            />
+          )}
         </div>
       </div>
 

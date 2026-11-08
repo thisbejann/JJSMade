@@ -1,37 +1,78 @@
-import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { query, mutation, type QueryCtx } from "./_generated/server";
+import { ConvexError, v, type Infer } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import { sellerPlatformValidator } from "./schema";
 
 const REALIZED_SALE_STATUSES = new Set(["delivered_to_customer", "sold"]);
 
+type SellerInput = {
+  name: string;
+  platform?: Infer<typeof sellerPlatformValidator>;
+  tdShippingCNY?: number;
+  tdInsurancePct?: number;
+};
+
+function requireRate(value: number | undefined, label: string): number {
+  if (value === undefined) throw new ConvexError(`${label} is required`);
+  if (!Number.isFinite(value) || value < 0) throw new ConvexError(`${label} must be 0 or higher`);
+  return value;
+}
+
+const normalizeName = (name: string) => name.trim().toLowerCase();
+
+export function validateSellerInput(input: SellerInput, otherTdNames: string[]): SellerInput {
+  const name = input.name.trim();
+  const platform = input.platform;
+  if (!name) throw new ConvexError("Seller name is required");
+  if (platform !== "td") {
+    return { name, platform, tdShippingCNY: undefined, tdInsurancePct: undefined };
+  }
+  const tdShippingCNY = requireRate(input.tdShippingCNY, "TD shipping fee");
+  const tdInsurancePct = requireRate(input.tdInsurancePct, "TD insurance %");
+  if (otherTdNames.some((other) => normalizeName(other) === normalizeName(name))) {
+    throw new ConvexError(`A TD named "${name}" already exists`);
+  }
+  return { name, platform, tdShippingCNY, tdInsurancePct };
+}
+
+async function otherTdNames(ctx: QueryCtx, excludeId?: Id<"sellers">) {
+  const sellers = await ctx.db.query("sellers").collect();
+  return sellers.filter((s) => s.platform === "td" && s._id !== excludeId).map((s) => s.name);
+}
+
+const sellerFields = {
+  platform: v.optional(sellerPlatformValidator),
+  tdShippingCNY: v.optional(v.number()),
+  tdInsurancePct: v.optional(v.number()),
+  contactInfo: v.optional(v.string()),
+  storeLink: v.optional(v.string()),
+  notes: v.optional(v.string()),
+};
+
 export const create = mutation({
-  args: {
-    name: v.string(),
-    platform: v.optional(v.union(v.literal("weidian"), v.literal("taobao"), v.literal("1688"), v.literal("yupoo"), v.literal("direct"))),
-    contactInfo: v.optional(v.string()),
-    storeLink: v.optional(v.string()),
-    notes: v.optional(v.string()),
-  },
+  args: { name: v.string(), ...sellerFields },
   handler: async (ctx, args) => {
-    const id = await ctx.db.insert("sellers", {
-      ...args,
-      createdAt: Date.now(),
-    });
-    return id;
+    const seller = validateSellerInput(args, await otherTdNames(ctx));
+    return await ctx.db.insert("sellers", { ...args, ...seller, createdAt: Date.now() });
+  },
+});
+
+export const createTrustedDealer = mutation({
+  args: { name: v.string(), tdShippingCNY: v.number(), tdInsurancePct: v.number() },
+  handler: async (ctx, args) => {
+    const seller = validateSellerInput({ ...args, platform: "td" }, await otherTdNames(ctx));
+    return await ctx.db.insert("sellers", { ...seller, createdAt: Date.now() });
   },
 });
 
 export const update = mutation({
-  args: {
-    id: v.id("sellers"),
-    name: v.optional(v.string()),
-    platform: v.optional(v.union(v.literal("weidian"), v.literal("taobao"), v.literal("1688"), v.literal("yupoo"), v.literal("direct"))),
-    contactInfo: v.optional(v.string()),
-    storeLink: v.optional(v.string()),
-    notes: v.optional(v.string()),
-  },
+  args: { id: v.id("sellers"), name: v.optional(v.string()), ...sellerFields },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
-    await ctx.db.patch(id, updates);
+    const existing = await ctx.db.get(id);
+    if (!existing) throw new ConvexError("Seller not found");
+    const seller = validateSellerInput({ ...existing, ...updates }, await otherTdNames(ctx, id));
+    await ctx.db.patch(id, { ...updates, ...seller });
   },
 });
 
@@ -81,5 +122,22 @@ export const getById = query({
   args: { id: v.id("sellers") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
+  },
+});
+
+/** Trusted Dealers with their fixed rates, for the TD Picker. */
+export const listTrustedDealers = query({
+  args: {},
+  handler: async (ctx) => {
+    const sellers = await ctx.db.query("sellers").collect();
+    return sellers
+      .filter((s) => s.platform === "td")
+      .map(({ _id, name, tdShippingCNY, tdInsurancePct }) => ({
+        _id,
+        name,
+        tdShippingCNY,
+        tdInsurancePct,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   },
 });

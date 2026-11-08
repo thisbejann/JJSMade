@@ -8,7 +8,7 @@ import { Toggle } from "../ui/Toggle";
 import { ImageUpload } from "../ui/ImageUpload";
 import { QcPhotoGallery } from "./QcPhotoGallery";
 import {
-  STATUS_FLOW,
+  statusFlowFor,
   STATUS_CONFIG,
   ALL_QC_STATUSES,
   QC_STATUS_CONFIG,
@@ -54,7 +54,8 @@ export function StatusStepper({ item }: StatusStepperProps) {
   const [forwarderRateDraft, setForwarderRateDraft] = useState(0);
   const [isBrandedDraft, setIsBrandedDraft] = useState(true);
 
-  const currentIndex = STATUS_FLOW.indexOf(item.status as ItemStatus);
+  const flow = statusFlowFor(item.category);
+  const currentIndex = flow.indexOf(item.status as ItemStatus);
   const isTerminal = item.status === "refunded";
 
   const clearNewQcUploads = () => {
@@ -200,7 +201,7 @@ export function StatusStepper({ item }: StatusStepperProps) {
   };
 
   const getStepSummary = (status: ItemStatus): string | null => {
-    const stepIndex = STATUS_FLOW.indexOf(status);
+    const stepIndex = flow.indexOf(status);
     if (stepIndex > currentIndex) return null;
 
     switch (status) {
@@ -221,20 +222,20 @@ export function StatusStepper({ item }: StatusStepperProps) {
   };
 
   const isNextStep = (status: ItemStatus) => {
-    const stepIndex = STATUS_FLOW.indexOf(status);
+    const stepIndex = flow.indexOf(status);
     return stepIndex === currentIndex + 1;
   };
 
   const canExpand = (status: ItemStatus) => {
     if (isTerminal) return false;
-    const stepIndex = STATUS_FLOW.indexOf(status);
+    const stepIndex = flow.indexOf(status);
     // Can expand the next step or the current step (to update data)
     return stepIndex === currentIndex + 1 || (stepIndex === currentIndex && status !== "ordered");
   };
 
   return (
     <div className="space-y-0">
-      {STATUS_FLOW.map((status, index) => {
+      {flow.map((status, index) => {
         const config = STATUS_CONFIG[status];
         const colors = colorMap[config.color];
         const isCompleted = !isTerminal && currentIndex >= 0 && index < currentIndex;
@@ -259,7 +260,7 @@ export function StatusStepper({ item }: StatusStepperProps) {
               >
                 {isCompleted && <HugeiconsIcon icon={CheckmarkCircle01Icon} size={10} strokeWidth={2} className="text-base" />}
               </div>
-              {index < STATUS_FLOW.length - 1 && (
+              {index < flow.length - 1 && (
                 <div
                   className={cn(
                     "w-px flex-1 my-1",
@@ -270,7 +271,7 @@ export function StatusStepper({ item }: StatusStepperProps) {
             </div>
 
             {/* Content */}
-            <div className={cn("pb-4 flex-1 min-w-0", index === STATUS_FLOW.length - 1 && "pb-0")}>
+            <div className={cn("pb-4 flex-1 min-w-0", index === flow.length - 1 && "pb-0")}>
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <span

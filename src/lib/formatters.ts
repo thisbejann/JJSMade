@@ -27,6 +27,11 @@ export function formatCNY(amount: number | undefined | null): string {
   })}`;
 }
 
+/** "¥250 ship · 10% ins": a Trusted Dealer's fixed rates. */
+export function formatTdRates(seller: { tdShippingCNY?: number; tdInsurancePct?: number }): string {
+  return `¥${(seller.tdShippingCNY ?? 0).toLocaleString("en-US")} ship · ${seller.tdInsurancePct ?? 0}% ins`;
+}
+
 export function formatDate(timestamp: number | undefined | null): string {
   if (timestamp == null) return "—";
   return format(new Date(timestamp), "MMM d, yyyy");

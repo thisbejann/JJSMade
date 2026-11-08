@@ -1,7 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { computeDerivedFields } from "./helpers";
-import { normalizeSize, validateItemRules } from "./items";
+import { normalizeSize, resolveTdRates, storedTdFields, validateItemRules, watchTd } from "./items";
 import {
   bagSizeValidator,
   categoryValidator,
@@ -247,6 +247,7 @@ export const createWithItems = mutation({
         clothingWeight: v.optional(clothingWeightValidator),
         bagSize: v.optional(bagSizeValidator),
         estimatedWeightTyped: v.optional(v.boolean()),
+        tdInsured: v.optional(v.boolean()),
       })
     ),
   },
@@ -278,14 +279,18 @@ export const createWithItems = mutation({
       validateItemRules({
         category: item.category,
         size,
+        status: "ordered",
         isForwarderBuy,
         forwarderBuyRateUsed,
         forwarderBuyCommissionPercent,
       });
 
+      const td = watchTd(await resolveTdRates(ctx, item), item.tdInsured);
+
       const hasLocalShipping = item.localShippingCNY != null && item.localShippingCNY > 0;
 
       const derived = computeDerivedFields({
+        category: item.category,
         priceCNY: item.priceCNY,
         exchangeRateUsed: item.exchangeRateUsed,
         hasLocalShipping,
@@ -297,6 +302,7 @@ export const createWithItems = mutation({
         forwarderBuyRateUsed,
         forwarderBuyCommissionPercent,
         sellingPrice: item.sellingPrice,
+        td,
       });
 
       sumOfQuotes += item.sellingPrice;
@@ -321,6 +327,9 @@ export const createWithItems = mutation({
         forwarderBuyCommissionPercent,
         forwarderBuyFeePHP: derived.forwarderBuyFeePHP,
         qcServiceFeePHP: derived.qcServiceFeePHP,
+        ...storedTdFields(td),
+        tdShippingPHP: derived.tdShippingPHP,
+        tdInsurancePHP: derived.tdInsurancePHP,
         estimatedWeightKg: item.estimatedWeightKg,
         shoeBuild: item.shoeBuild,
         clothingWeight: item.clothingWeight,

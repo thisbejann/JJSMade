@@ -23,7 +23,7 @@ QC works the same on both routes: the seller sends QC photos, you GL/RL, and an 
 A vetted rep-watch dealer you buy from directly. A TD is a **Seller** (platform: TD). Each TD has its own [TD Shipping Fee] and [TD Insurance] rate. **A TD's rates are absolute**: an order can't override them, and they change only by editing the TD on its page in Sellers. New watches copy those numbers in when they are ordered, so a rate change affects future watches only. Paid in CNY over Alipay, funded through a PHP→CNY exchanger, at the same CNY→PHP rate as China-route buys.
 
 ## TD Picker
-The seller field on a Watch's order form, and the TD choice in the [Quote Calculator]. Searches only Sellers marked TD. If the typed name matches no TD, it offers "Create TD '[name]'", which asks for that TD's shipping fee and insurance % in the same step, so a new TD can be registered without leaving the order. This works like the [Customer Picker]. In the [Group Review Sheet], a watch line's TD comes prefilled from the calculator.
+The seller field on a Watch's order form, and the TD choice in the [Quote Calculator]. Searches only Sellers marked TD. If the typed name matches no TD, it offers "Create TD '[name]'", which asks for that TD's shipping fee and insurance % in the same step, so a new TD can be registered without leaving the order. This works like the [Customer Picker]. In the [Group Review Sheet], a watch line's TD comes prefilled from the calculator and is locked, because its quote was built on that TD's rates.
 
 ## TD Shipping Fee
 What a [Trusted Dealer] charges to ship an order straight to you. Strictly it is charged once per TD order, but it is **recorded per watch**: every watch carries the full fee, as if each TD order held one watch. Multi-watch orders aren't split. Varies by TD, in CNY.
@@ -125,6 +125,6 @@ The negotiated bundle price the customer proposes/agrees to — typed into the c
 The sum of item **costs plus [Estimated Shipping]** in a Bundle: the lowest Offer Total before the order is expected to lose money. The calculator surfaces this as the "how low can I go" anchor during negotiation.
 
 ## Estimated Margin
-`Offer Total − Break-even Floor`. The calculator's profit readout. It counts [Estimated Shipping], so it is a real expectation rather than an optimistic one. It only turns final once the forwarder has weighed every China-route line. An all-watch Bundle's margin is already final, since TD-route costs are fully known.
+`Offer Total − Break-even Floor`. The calculator's profit readout. It counts [Estimated Shipping], so it is a real expectation rather than an optimistic one. It only turns final once the forwarder has weighed every China-route line. An all-watch Bundle's margin is already exact, since TD-route costs are fully known.
 
 Formerly the **Pre-shipping Margin**, which left shipping out entirely. That made light items look more profitable than they were and hid losses on heavy ones like Bags and chunky shoes. The weight-aware revision ([ADR 0005](docs/adr/0005-estimated-shipping-in-quote.md)) replaced it.
