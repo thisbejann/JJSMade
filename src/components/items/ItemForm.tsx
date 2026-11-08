@@ -24,6 +24,7 @@ import {
   STATUS_CONFIG,
   QC_STATUS_CONFIG,
   CATEGORY_CONFIG,
+  categoryChoices,
   type ItemCategory,
 } from "../../lib/constants";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -383,8 +384,8 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
               <label className="block text-xs font-medium text-secondary mb-2">
                 Category *
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {(Object.keys(CATEGORY_CONFIG) as ItemCategory[]).map((cat) => {
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {categoryChoices(existingItem?.category).map((cat) => {
                   const icon = CATEGORY_ICONS[cat];
                   return (
                     <button

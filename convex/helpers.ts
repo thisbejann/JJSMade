@@ -16,9 +16,16 @@ export function isShippingEstimated<T extends { weightKg?: number; estimatedWeig
   return item.weightKg == null && item.estimatedWeightKg != null;
 }
 
-/** Watches & Accessories and Bags carry no size. */
+/** Categories existing Items may keep but new Items can't pick. */
+const LEGACY_CATEGORIES: ReadonlySet<ItemCategory> = new Set(["watches_accessories"]);
+
+export function isLegacyCategory(category: ItemCategory): boolean {
+  return LEGACY_CATEGORIES.has(category);
+}
+
+/** Only Shoes (EU) and Clothes (S/M/L/XL) carry a size. */
 export function categoryHasSize(category: ItemCategory): boolean {
-  return category !== "watches_accessories" && category !== "bags";
+  return category === "shoes" || category === "clothes";
 }
 
 export function computeDerivedFields(data: {
