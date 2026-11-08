@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -17,7 +17,9 @@ import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Toggle } from "../components/ui/Toggle";
 import { api } from "../../convex/_generated/api";
+import { isTdRoute } from "../../convex/helpers";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
+import { TdPicker } from "../components/items/TdPicker";
 import { useSettings } from "../hooks/useSettings";
 import {
   categoryChoices,
@@ -25,7 +27,7 @@ import {
   type ItemCategory,
   FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
 } from "../lib/constants";
-import { formatKgValue, formatNetPHP, formatTdRates } from "../lib/formatters";
+import { formatKgValue, formatNetPHP } from "../lib/formatters";
 import {
   bundleTotals,
   CATEGORY_WEIGHT_CLASS,
@@ -35,7 +37,6 @@ import {
   type MarginState,
   type QuoteLine,
   type QuoteMode,
-  type TdRates,
   type WeightClass,
   type WeightClassField,
 } from "../lib/pricing";
@@ -63,8 +64,6 @@ interface BundleItem {
   // the Item as its seller. Null on China-route lines.
   td: { name: string; insured: boolean } | null;
 }
-
-type TrustedDealer = TdRates & { name: string };
 
 const CATEGORIES = categoryChoices().map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
 
@@ -122,16 +121,18 @@ export default function QuoteCalculator() {
   });
   const [euSizeStr, setEuSizeStr] = useState("");
   const [kgStr, setKgStr] = useState("");
-  const [tdName, setTdName] = useState<string | null>(null);
+  const [tdName, setTdName] = useState("");
   const [insured, setInsured] = useState(true);
 
-  const sellers = useQuery(api.sellers.list, {});
-  const trustedDealers: TrustedDealer[] = (sellers ?? []).flatMap((s) =>
-    s.platform === "td"
-      ? [{ name: s.name, tdShippingCNY: s.tdShippingCNY ?? 0, tdInsurancePct: s.tdInsurancePct ?? 0 }]
-      : []
-  );
-  const td = trustedDealers.find((d) => d.name === tdName) ?? null;
+  const dealer = useQuery(api.sellers.listTrustedDealers)?.find((d) => d.name === tdName);
+  const td =
+    dealer?.tdShippingCNY != null && dealer.tdInsurancePct != null
+      ? {
+          name: dealer.name,
+          tdShippingCNY: dealer.tdShippingCNY,
+          tdInsurancePct: dealer.tdInsurancePct,
+        }
+      : null;
 
   // --- Bundle scratchpad (ephemeral) ---
   const [view, setView] = useState<CalcView>("add");
@@ -143,7 +144,7 @@ export default function QuoteCalculator() {
   // turns the negotiated Bundle into a real group + items in one mutation.
   const [showSheet, setShowSheet] = useState(false);
 
-  const isWatch = category === "watches";
+  const isWatch = isTdRoute(category);
   // Watches are paid to the TD directly, at the regular CNY→PHP rate.
   const rate =
     isWatch || mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
@@ -244,6 +245,7 @@ export default function QuoteCalculator() {
     // Reset what's specific to this item; keep mode/category/class/shipping.
     setPriceCNY(0);
     setKgStr("");
+    setInsured(true);
   }
 
   function removeFromBundle(id: string) {
@@ -309,7 +311,8 @@ export default function QuoteCalculator() {
 
         {view === "add" ? (
           <div className="space-y-6">
-            <Card>
+            {/* overflow-visible: Card clips by default, which cut off the TD Picker dropdown. */}
+            <Card className="overflow-visible">
               <CardContent className="space-y-5">
                 <Input
                   label="Item Price (CNY)"
@@ -415,12 +418,7 @@ export default function QuoteCalculator() {
                 )}
                 {isWatch && (
                   <>
-                    <TdChoice
-                      dealers={trustedDealers}
-                      loading={sellers === undefined}
-                      selected={td}
-                      onSelect={setTdName}
-                    />
+                    <TdPicker label="Trusted Dealer" value={tdName} onChange={setTdName} rates={td} />
                     <Toggle
                       label="TD insurance"
                       description={
@@ -734,89 +732,6 @@ function MarginSignal({
       </p>
       <p className="text-xs text-secondary mt-1">{sub}</p>
     </motion.div>
-  );
-}
-
-const TD_MATCH_LIMIT = 6;
-
-function TdChoice({
-  dealers,
-  loading,
-  selected,
-  onSelect,
-}: {
-  dealers: TrustedDealer[];
-  loading: boolean;
-  selected: TrustedDealer | null;
-  onSelect: (name: string | null) => void;
-}) {
-  const [query, setQuery] = useState("");
-
-  if (selected) {
-    return (
-      <div>
-        <label className="block text-xs font-medium text-secondary mb-2">Trusted Dealer</label>
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-accent bg-accent-muted px-3 py-2.5">
-          <div className="min-w-0">
-            <p className="text-sm text-primary truncate">{selected.name}</p>
-            <p className="text-[11px] text-secondary font-mono tabular-nums">
-              {formatTdRates(selected)}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => onSelect(null)}
-            className="text-[11px] text-tertiary hover:text-accent transition-colors cursor-pointer"
-          >
-            Change
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const q = query.trim().toLowerCase();
-  const matches = dealers.filter((d) => d.name.toLowerCase().includes(q)).slice(0, TD_MATCH_LIMIT);
-
-  return (
-    <div className="space-y-2">
-      <Input
-        label="Trusted Dealer"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search TDs"
-      />
-      {loading ? null : dealers.length === 0 ? (
-        <p className="text-[11px] text-tertiary">
-          No Trusted Dealers yet. Add one in{" "}
-          <Link to="/sellers" className="text-secondary hover:text-accent">
-            Sellers
-          </Link>
-          .
-        </p>
-      ) : matches.length === 0 ? (
-        <p className="text-[11px] text-tertiary">No TD matches “{query.trim()}”.</p>
-      ) : (
-        <div className="rounded-lg border border-border-default divide-y divide-border-subtle">
-          {matches.map((d) => (
-            <button
-              key={d.name}
-              type="button"
-              onClick={() => {
-                setQuery("");
-                onSelect(d.name);
-              }}
-              className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-hover transition-colors cursor-pointer"
-            >
-              <span className="text-sm text-primary truncate">{d.name}</span>
-              <span className="text-[11px] text-tertiary font-mono tabular-nums shrink-0">
-                {formatTdRates(d)}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
 
