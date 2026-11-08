@@ -278,6 +278,7 @@ export const createWithItems = mutation({
       validateItemRules({
         category: item.category,
         size,
+        status: "ordered",
         isForwarderBuy,
         forwarderBuyRateUsed,
         forwarderBuyCommissionPercent,
@@ -286,6 +287,7 @@ export const createWithItems = mutation({
       const hasLocalShipping = item.localShippingCNY != null && item.localShippingCNY > 0;
 
       const derived = computeDerivedFields({
+        category: item.category,
         priceCNY: item.priceCNY,
         exchangeRateUsed: item.exchangeRateUsed,
         hasLocalShipping,

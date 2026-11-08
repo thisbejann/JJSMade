@@ -25,7 +25,27 @@ export const sellerPlatformValidator = v.union(
   v.literal("td")
 );
 
+export const itemStatusValidator = v.union(
+  // Current statuses
+  v.literal("ordered"),
+  v.literal("qc_sent"),
+  v.literal("item_shipout"),
+  v.literal("arrived_ph_warehouse"),
+  v.literal("delivered_to_customer"),
+  v.literal("refunded"),
+  // Legacy statuses (kept so existing documents remain valid)
+  v.literal("shipped_to_warehouse"),
+  v.literal("at_cn_warehouse"),
+  v.literal("shipped_to_ph"),
+  v.literal("at_ph_warehouse"),
+  v.literal("delivered_to_me"),
+  v.literal("sold"),
+  v.literal("cancelled"),
+  v.literal("returned")
+);
+
 export type ItemCategory = Infer<typeof categoryValidator>;
+export type ItemStatus = Infer<typeof itemStatusValidator>;
 export type ShoeBuild = Infer<typeof shoeBuildValidator>;
 export type ClothingWeight = Infer<typeof clothingWeightValidator>;
 export type BagSize = Infer<typeof bagSizeValidator>;
@@ -101,6 +121,14 @@ export default defineSchema({
     // True when the estimate was a typed weight, not a Weight Preset.
     estimatedWeightTyped: v.optional(v.boolean()),
 
+    // TD route (Watches only). Rates are copied from the Trusted Dealer when
+    // the watch is ordered, so a later rate change leaves this Item alone.
+    tdShippingCNY: v.optional(v.number()),
+    tdInsurancePct: v.optional(v.number()),
+    tdInsured: v.optional(v.boolean()),
+    tdShippingPHP: v.optional(v.number()),
+    tdInsurancePHP: v.optional(v.number()),
+
     // Selling & Delivery
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
@@ -113,24 +141,7 @@ export default defineSchema({
     profit: v.optional(v.number()),
 
     // Status
-    status: v.union(
-      // Current statuses
-      v.literal("ordered"),
-      v.literal("qc_sent"),
-      v.literal("item_shipout"),
-      v.literal("arrived_ph_warehouse"),
-      v.literal("delivered_to_customer"),
-      v.literal("refunded"),
-      // Legacy statuses (kept so existing documents remain valid)
-      v.literal("shipped_to_warehouse"),
-      v.literal("at_cn_warehouse"),
-      v.literal("shipped_to_ph"),
-      v.literal("at_ph_warehouse"),
-      v.literal("delivered_to_me"),
-      v.literal("sold"),
-      v.literal("cancelled"),
-      v.literal("returned")
-    ),
+    status: itemStatusValidator,
 
     // Metadata
     notes: v.optional(v.string()),

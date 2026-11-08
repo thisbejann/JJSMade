@@ -1,4 +1,5 @@
-import type { ItemCategory } from "./schema";
+import { ConvexError } from "convex/values";
+import type { ItemCategory, ItemStatus } from "./schema";
 
 // Pure rules shared by the Convex functions and the frontend. They live here,
 // not in src/, because Convex bundles only what is inside convex/ in local and
@@ -28,7 +29,34 @@ export function categoryHasSize(category: ItemCategory): boolean {
   return category === "shoes" || category === "clothes";
 }
 
-export function computeDerivedFields(data: {
+/** Category alone decides the Sourcing Route (ADR 0004): Watches go through a Trusted Dealer. */
+export function isTdRoute(category: ItemCategory): boolean {
+  return category === "watches";
+}
+
+/** China-route steps, current and legacy. A TD ships straight to the owner, so a watch never reaches them. */
+const WAREHOUSE_STATUSES: ReadonlySet<ItemStatus> = new Set([
+  "arrived_ph_warehouse",
+  "shipped_to_warehouse",
+  "at_cn_warehouse",
+  "shipped_to_ph",
+  "at_ph_warehouse",
+]);
+
+export function statusFitsRoute(category: ItemCategory, status: ItemStatus): boolean {
+  return !(isTdRoute(category) && WAREHOUSE_STATUSES.has(status));
+}
+
+export function assertStatusFitsRoute(category: ItemCategory, status: ItemStatus) {
+  if (!statusFitsRoute(category, status)) {
+    throw new ConvexError("Watches skip the warehouse: a TD ships straight to you");
+  }
+}
+
+/** The rates a watch copies from its Trusted Dealer when it is ordered. */
+export type TdRates = { tdShippingCNY: number; tdInsurancePct: number };
+
+type ChinaRouteInput = {
   priceCNY: number;
   exchangeRateUsed: number;
   hasLocalShipping: boolean;
@@ -41,7 +69,36 @@ export function computeDerivedFields(data: {
   forwarderBuyRateUsed?: number;
   forwarderBuyCommissionPercent?: number;
   sellingPrice?: number;
-}) {
+};
+
+/** An Item's stored cost fields. Fields of the other Sourcing Route come back empty. */
+export function computeDerivedFields(
+  data: ChinaRouteInput & {
+    category: ItemCategory;
+    /** Required on the TD route, ignored on the China route. */
+    td?: TdRates & { insured: boolean };
+  }
+) {
+  if (!isTdRoute(data.category)) {
+    return { ...chinaRouteCost(data), tdShippingPHP: undefined, tdInsurancePHP: undefined };
+  }
+  if (!data.td) throw new Error("A watch needs its Trusted Dealer's rates");
+  const cost = tdRouteCost({ priceCNY: data.priceCNY, rate: data.exchangeRateUsed, ...data.td });
+  return {
+    pricePHP: cost.pricePHP,
+    localShippingPHP: undefined,
+    forwarderFee: undefined,
+    forwarderBuyFeePHP: undefined,
+    qcServiceFeePHP: undefined,
+    tdShippingPHP: cost.tdShippingPHP,
+    tdInsurancePHP: cost.tdInsurancePHP,
+    totalCost: cost.totalCost,
+    profit: profitOf(data.sellingPrice, cost.totalCost),
+  };
+}
+
+/** Forwarder-route cost: price, local CN shipping, forwarder fee and forwarder-buy fees. */
+export function chinaRouteCost(data: ChinaRouteInput) {
   const isForwarderBuy = data.isForwarderBuy ?? false;
   let forwarderBuyRate: number | undefined;
   let forwarderBuyCommissionPercent: number | undefined;
@@ -103,9 +160,6 @@ export function computeDerivedFields(data: {
       (qcServiceFeePHP ?? 0)
   );
 
-  const profit =
-    data.sellingPrice != null ? round(data.sellingPrice - totalCost) : undefined;
-
   return {
     pricePHP,
     localShippingPHP,
@@ -113,8 +167,12 @@ export function computeDerivedFields(data: {
     forwarderBuyFeePHP,
     qcServiceFeePHP,
     totalCost,
-    profit,
+    profit: profitOf(data.sellingPrice, totalCost),
   };
+}
+
+function profitOf(sellingPrice: number | undefined, totalCost: number) {
+  return sellingPrice != null ? round(sellingPrice - totalCost) : undefined;
 }
 
 /** A watch's cost on the TD route: price + TD Shipping Fee + TD Insurance (% of price only). */

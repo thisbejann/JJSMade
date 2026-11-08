@@ -8,7 +8,7 @@ describe("Bags size rule", () => {
 
   it("accepts a Bag saved without a size", () => {
     expect(() =>
-      validateItemRules({ category: "bags", size: undefined, isForwarderBuy: false })
+      validateItemRules({ category: "bags", size: undefined, isForwarderBuy: false, status: "ordered" })
     ).not.toThrow();
   });
 });
@@ -33,7 +33,7 @@ describe("planBagReclassification", () => {
 });
 
 describe("legacy Watches & Accessories", () => {
-  const base = { size: undefined, isForwarderBuy: false };
+  const base = { size: undefined, isForwarderBuy: false, status: "ordered" as const };
 
   it("can't be picked for a new Item", () => {
     expect(() => validateItemRules({ ...base, category: "watches_accessories" })).toThrow(
@@ -63,5 +63,45 @@ describe("legacy Watches & Accessories", () => {
         validateItemRules({ ...base, category, existingCategory: "watches_accessories" })
       ).not.toThrow();
     }
+  });
+});
+
+describe("Watches on the TD route", () => {
+  const watch = { category: "watches" as const, size: undefined, isForwarderBuy: false, status: "ordered" as const };
+
+  it("saves without a size", () => {
+    expect(() => validateItemRules(watch)).not.toThrow();
+    expect(normalizeSize("watches", "42mm")).toBeUndefined();
+  });
+
+  it("can't be bought by the forwarder", () => {
+    expect(() =>
+      validateItemRules({
+        ...watch,
+        isForwarderBuy: true,
+        forwarderBuyRateUsed: 8.6,
+        forwarderBuyCommissionPercent: 10,
+      })
+    ).toThrow("A watch can't be bought by the forwarder");
+  });
+
+  it.each(["arrived_ph_warehouse", "at_ph_warehouse", "at_cn_warehouse", "shipped_to_warehouse", "shipped_to_ph"] as const)(
+    "can't be put in the warehouse status %s",
+    (status) => {
+      expect(() => validateItemRules({ ...watch, status })).toThrow("Watches skip the warehouse");
+    }
+  );
+
+  it.each(["ordered", "qc_sent", "item_shipout", "delivered_to_customer", "refunded", "cancelled"] as const)(
+    "follows the TD status flow through %s",
+    (status) => {
+      expect(() => validateItemRules({ ...watch, status })).not.toThrow();
+    }
+  );
+
+  it("leaves China-route Items free to reach the PH warehouse", () => {
+    expect(() =>
+      validateItemRules({ category: "accessories", isForwarderBuy: false, status: "arrived_ph_warehouse" })
+    ).not.toThrow();
   });
 });

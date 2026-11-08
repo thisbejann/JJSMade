@@ -1,29 +1,19 @@
-import { query, mutation, internalMutation } from "./_generated/server";
-import { v } from "convex/values";
-import { categoryHasSize, computeDerivedFields, isLegacyCategory } from "./helpers";
-import { categoryValidator, type ItemCategory } from "./schema";
+import { query, mutation, internalMutation, type QueryCtx } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { ConvexError, v } from "convex/values";
+import {
+  assertStatusFitsRoute,
+  categoryHasSize,
+  computeDerivedFields,
+  isLegacyCategory,
+  isTdRoute,
+  type TdRates,
+} from "./helpers";
+import { categoryValidator, itemStatusValidator, type ItemCategory, type ItemStatus } from "./schema";
 import { deleteUnreferencedQcPhotos } from "./qcPhotoCleanup";
 
 const CLOTHES_SIZES = new Set(["S", "M", "L", "XL"]);
 
-const statusValidator = v.union(
-  // Current statuses
-  v.literal("ordered"),
-  v.literal("qc_sent"),
-  v.literal("item_shipout"),
-  v.literal("arrived_ph_warehouse"),
-  v.literal("delivered_to_customer"),
-  v.literal("refunded"),
-  // Legacy statuses (kept so existing documents remain valid)
-  v.literal("shipped_to_warehouse"),
-  v.literal("at_cn_warehouse"),
-  v.literal("shipped_to_ph"),
-  v.literal("at_ph_warehouse"),
-  v.literal("delivered_to_me"),
-  v.literal("sold"),
-  v.literal("cancelled"),
-  v.literal("returned")
-);
 
 export function normalizeSize(
   category: ItemCategory,
@@ -41,6 +31,7 @@ export function validateItemRules(data: {
   /** The stored category when editing. Absent for a new Item. */
   existingCategory?: ItemCategory;
   size?: string;
+  status: ItemStatus;
   isForwarderBuy: boolean;
   forwarderBuyRateUsed?: number;
   forwarderBuyCommissionPercent?: number;
@@ -62,7 +53,12 @@ export function validateItemRules(data: {
     }
   }
 
+  assertStatusFitsRoute(data.category, data.status);
+
   if (data.isForwarderBuy) {
+    if (isTdRoute(data.category)) {
+      throw new ConvexError("A watch can't be bought by the forwarder. Pay the TD directly");
+    }
     if (
       data.forwarderBuyRateUsed == null ||
       Number.isNaN(data.forwarderBuyRateUsed) ||
@@ -79,6 +75,50 @@ export function validateItemRules(data: {
       throw new Error("Forwarder buy commission percent must be 0 or higher");
     }
   }
+}
+
+/**
+ * The TD rates a watch carries, read on the server so the client can't override them.
+ * A watch keeps the rates it was ordered with until its seller changes: then the new
+ * TD's current rates are copied in. Keeping them doesn't require the name to still be
+ * a TD, so a watch stays editable after its TD is renamed in Sellers.
+ */
+export async function resolveTdRates(
+  ctx: QueryCtx,
+  next: { category: ItemCategory; seller: string },
+  existing?: Doc<"items">
+): Promise<TdRates | undefined> {
+  if (!isTdRoute(next.category)) return undefined;
+  const seller = next.seller.trim();
+  if (
+    existing &&
+    isTdRoute(existing.category) &&
+    existing.seller.trim() === seller &&
+    existing.tdShippingCNY != null &&
+    existing.tdInsurancePct != null
+  ) {
+    return { tdShippingCNY: existing.tdShippingCNY, tdInsurancePct: existing.tdInsurancePct };
+  }
+  const matches = await ctx.db
+    .query("sellers")
+    .withIndex("by_name", (q) => q.eq("name", seller))
+    .collect();
+  const td = matches.find((s) => s.platform === "td");
+  if (!td || td.tdShippingCNY == null || td.tdInsurancePct == null) {
+    throw new ConvexError(`"${seller}" isn't a Trusted Dealer. Pick a TD or create one`);
+  }
+  return { tdShippingCNY: td.tdShippingCNY, tdInsurancePct: td.tdInsurancePct };
+}
+
+type WatchTd = TdRates & { insured: boolean };
+
+/** Off the TD route every field is cleared, so a reclassified Item drops stale rates. */
+function storedTdFields(td: WatchTd | undefined) {
+  return {
+    tdShippingCNY: td?.tdShippingCNY,
+    tdInsurancePct: td?.tdInsurancePct,
+    tdInsured: td?.insured,
+  };
 }
 
 // ── Mutations ──
@@ -105,12 +145,13 @@ export const create = mutation({
     isForwarderBuy: v.optional(v.boolean()),
     forwarderBuyRateUsed: v.optional(v.number()),
     forwarderBuyCommissionPercent: v.optional(v.number()),
+    tdInsured: v.optional(v.boolean()),
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
     customerName: v.optional(v.string()),
     customerId: v.optional(v.id("customers")),
     orderGroupId: v.optional(v.id("orderGroups")),
-    status: statusValidator,
+    status: itemStatusValidator,
     notes: v.optional(v.string()),
     orderDate: v.number(),
   },
@@ -128,12 +169,17 @@ export const create = mutation({
     validateItemRules({
       category: args.category,
       size,
+      status: args.status,
       isForwarderBuy,
       forwarderBuyRateUsed,
       forwarderBuyCommissionPercent,
     });
 
+    const rates = await resolveTdRates(ctx, args);
+    const td = rates && { ...rates, insured: args.tdInsured ?? true };
+
     const derived = computeDerivedFields({
+      category: args.category,
       priceCNY: args.priceCNY,
       exchangeRateUsed: args.exchangeRateUsed,
       hasLocalShipping: args.hasLocalShipping,
@@ -144,11 +190,13 @@ export const create = mutation({
       forwarderBuyRateUsed,
       forwarderBuyCommissionPercent,
       sellingPrice: args.sellingPrice,
+      td,
     });
 
     const now = Date.now();
     const id = await ctx.db.insert("items", {
       ...args,
+      ...storedTdFields(td),
       size,
       trackingNumber,
       isForwarderBuy,
@@ -159,6 +207,8 @@ export const create = mutation({
       forwarderFee: derived.forwarderFee,
       forwarderBuyFeePHP: derived.forwarderBuyFeePHP,
       qcServiceFeePHP: derived.qcServiceFeePHP,
+      tdShippingPHP: derived.tdShippingPHP,
+      tdInsurancePHP: derived.tdInsurancePHP,
       totalCost: derived.totalCost,
       profit: derived.profit,
       soldDate: args.status === "delivered_to_customer" ? now : undefined,
@@ -192,12 +242,13 @@ export const update = mutation({
     isForwarderBuy: v.optional(v.boolean()),
     forwarderBuyRateUsed: v.optional(v.number()),
     forwarderBuyCommissionPercent: v.optional(v.number()),
+    tdInsured: v.optional(v.boolean()),
     sellingPrice: v.optional(v.number()),
     lalamoveFee: v.optional(v.number()),
     customerName: v.optional(v.string()),
     customerId: v.optional(v.id("customers")),
     orderGroupId: v.optional(v.id("orderGroups")),
-    status: v.optional(statusValidator),
+    status: v.optional(itemStatusValidator),
     notes: v.optional(v.string()),
     orderDate: v.optional(v.number()),
   },
@@ -250,12 +301,17 @@ export const update = mutation({
       category: merged.category,
       existingCategory: existing.category,
       size,
+      status: merged.status,
       isForwarderBuy,
       forwarderBuyRateUsed,
       forwarderBuyCommissionPercent: normalizedForwarderBuyCommissionPercent,
     });
 
+    const rates = await resolveTdRates(ctx, merged, existing);
+    const td = rates && { ...rates, insured: merged.tdInsured ?? true };
+
     const derived = computeDerivedFields({
+      category: merged.category,
       priceCNY: merged.priceCNY,
       exchangeRateUsed: merged.exchangeRateUsed,
       hasLocalShipping: merged.hasLocalShipping,
@@ -267,6 +323,7 @@ export const update = mutation({
       forwarderBuyRateUsed,
       forwarderBuyCommissionPercent: normalizedForwarderBuyCommissionPercent,
       sellingPrice: merged.sellingPrice,
+      td,
     });
 
     const now = Date.now();
@@ -277,6 +334,7 @@ export const update = mutation({
 
     await ctx.db.patch(id, {
       ...updates,
+      ...storedTdFields(td),
       size,
       trackingNumber,
       isForwarderBuy,
@@ -287,6 +345,8 @@ export const update = mutation({
       forwarderFee: derived.forwarderFee,
       forwarderBuyFeePHP: derived.forwarderBuyFeePHP,
       qcServiceFeePHP: derived.qcServiceFeePHP,
+      tdShippingPHP: derived.tdShippingPHP,
+      tdInsurancePHP: derived.tdInsurancePHP,
       totalCost: derived.totalCost,
       profit: derived.profit,
       soldDate,
@@ -300,11 +360,12 @@ export const update = mutation({
 export const updateStatus = mutation({
   args: {
     id: v.id("items"),
-    status: statusValidator,
+    status: itemStatusValidator,
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db.get(args.id);
     if (!existing) throw new Error("Item not found");
+    assertStatusFitsRoute(existing.category, args.status);
 
     const now = Date.now();
     const soldDate =
@@ -348,13 +409,14 @@ export const remove = mutation({
 export const bulkUpdateStatus = mutation({
   args: {
     ids: v.array(v.id("items")),
-    status: statusValidator,
+    status: itemStatusValidator,
   },
   handler: async (ctx, args) => {
     const now = Date.now();
     for (const id of args.ids) {
       const existing = await ctx.db.get(id);
       if (!existing) continue;
+      assertStatusFitsRoute(existing.category, args.status);
       const soldDate =
         args.status === "delivered_to_customer" && existing.status !== "delivered_to_customer" ? now : existing.soldDate;
       await ctx.db.patch(id, { status: args.status, soldDate, updatedAt: now });

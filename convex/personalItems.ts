@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { categoryHasSize, computeDerivedFields } from "./helpers";
+import { categoryHasSize, chinaRouteCost } from "./helpers";
 import { categoryValidator, type ItemCategory } from "./schema";
 import { deleteUnreferencedQcPhotos } from "./qcPhotoCleanup";
 
@@ -110,7 +110,7 @@ export const create = mutation({
       forwarderBuyCommissionPercent,
     });
 
-    const derived = computeDerivedFields({
+    const derived = chinaRouteCost({
       priceCNY: args.priceCNY,
       exchangeRateUsed: args.exchangeRateUsed,
       hasLocalShipping: args.hasLocalShipping,
@@ -221,7 +221,7 @@ export const update = mutation({
       forwarderBuyCommissionPercent: normalizedForwarderBuyCommissionPercent,
     });
 
-    const derived = computeDerivedFields({
+    const derived = chinaRouteCost({
       priceCNY: merged.priceCNY,
       exchangeRateUsed: merged.exchangeRateUsed,
       hasLocalShipping: merged.hasLocalShipping,
