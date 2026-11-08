@@ -3,6 +3,7 @@ import { categoryHasSize, computeDerivedFields, shippingCost, tdRouteCost } from
 
 // ¥500 at 8.0 = ₱4,000, sold for ₱5,500, forwarder ₱480/kg.
 const base = {
+  category: "shoes" as const,
   priceCNY: 500,
   exchangeRateUsed: 8,
   hasLocalShipping: false,
@@ -78,5 +79,69 @@ describe("tdRouteCost", () => {
       tdInsurancePHP: 323.72,
       totalCost: 2913.46,
     });
+  });
+});
+
+describe("computeDerivedFields on the TD route", () => {
+  // ¥2,800 watch at 8.0 from a TD charging ¥250 shipping and 10% insurance, sold for ₱30,000.
+  const watch = {
+    category: "watches" as const,
+    priceCNY: 2800,
+    exchangeRateUsed: 8,
+    hasLocalShipping: false,
+    forwarderRatePerKg: 480,
+    sellingPrice: 30000,
+    td: { tdShippingCNY: 250, tdInsurancePct: 10, insured: true },
+  };
+
+  it("costs an insured watch as price + full TD shipping + insurance on the price only", () => {
+    const d = computeDerivedFields(watch);
+    expect(d.pricePHP).toBe(22400);
+    expect(d.tdShippingPHP).toBe(2000);
+    expect(d.tdInsurancePHP).toBe(2240);
+    expect(d.totalCost).toBe(26640);
+    expect(d.profit).toBe(3360);
+  });
+
+  it("drops insurance from cost when the watch isn't insured", () => {
+    const d = computeDerivedFields({ ...watch, td: { ...watch.td, insured: false } });
+    expect(d.tdInsurancePHP).toBe(0);
+    expect(d.totalCost).toBe(24400);
+    expect(d.profit).toBe(5600);
+  });
+
+  it("charges no forwarder, local shipping, forwarder-buy or QC fees even when those inputs are passed", () => {
+    const d = computeDerivedFields({
+      ...watch,
+      hasLocalShipping: true,
+      localShippingCNY: 20,
+      weightKg: 0.8,
+      estimatedWeightKg: 1,
+      isForwarderBuy: true,
+      forwarderBuyRateUsed: 8.6,
+      forwarderBuyCommissionPercent: 10,
+    });
+    expect(d).toMatchObject({
+      localShippingPHP: undefined,
+      forwarderFee: undefined,
+      forwarderBuyFeePHP: undefined,
+      qcServiceFeePHP: undefined,
+      totalCost: 26640,
+    });
+  });
+
+  it("leaves profit empty without a selling price", () => {
+    expect(computeDerivedFields({ ...watch, sellingPrice: undefined }).profit).toBeUndefined();
+  });
+
+  it("refuses to cost a watch without its Trusted Dealer's rates", () => {
+    expect(() => computeDerivedFields({ ...watch, td: undefined })).toThrow("Trusted Dealer");
+  });
+
+  it("keeps China-route Items off the TD fields", () => {
+    const d = computeDerivedFields({ ...base, category: "accessories", td: watch.td });
+    expect(d.tdShippingPHP).toBeUndefined();
+    expect(d.tdInsurancePHP).toBeUndefined();
+    expect(d.totalCost).toBe(4000);
   });
 });
