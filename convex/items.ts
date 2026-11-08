@@ -113,7 +113,7 @@ export async function resolveTdRates(
 type WatchTd = TdRates & { insured: boolean };
 
 /** Off the TD route every field is cleared, so a reclassified Item drops stale rates. */
-function storedTdFields(td: WatchTd | undefined) {
+export function storedTdFields(td: WatchTd | undefined) {
   return {
     tdShippingCNY: td?.tdShippingCNY,
     tdInsurancePct: td?.tdInsurancePct,
