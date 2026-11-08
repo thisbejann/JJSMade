@@ -117,6 +117,24 @@ export function computeDerivedFields(data: {
   };
 }
 
+/** A watch's cost on the TD route: price + TD Shipping Fee + TD Insurance (% of price only). */
+export function tdRouteCost(data: {
+  priceCNY: number;
+  rate: number;
+  tdShippingCNY: number;
+  tdInsurancePct: number;
+  insured: boolean;
+}) {
+  const pricePHP = round(data.priceCNY * data.rate);
+  const tdShippingPHP = round(data.tdShippingCNY * data.rate);
+  const tdInsurancePHP = data.insured
+    ? round(data.priceCNY * (data.tdInsurancePct / 100) * data.rate)
+    : 0;
+  // Summed from the rounded parts so the total matches the breakdown shown.
+  const totalCost = round(pricePHP + tdShippingPHP + tdInsurancePHP);
+  return { pricePHP, tdShippingPHP, tdInsurancePHP, totalCost };
+}
+
 function round(n: number): number {
   return Math.round(n * 100) / 100;
 }
