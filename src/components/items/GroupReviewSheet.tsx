@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import { AnimatePresence, motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -7,6 +8,7 @@ import {
   ArrowRight01Icon,
   ArrowDown01Icon,
   CheckmarkCircle02Icon,
+  LockIcon,
 } from "@hugeicons/core-free-icons";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -14,31 +16,20 @@ import { Button } from "../ui/Button";
 import { Combobox } from "../ui/Combobox";
 import { CustomerPicker } from "./CustomerPicker";
 import { useSettings } from "../../hooks/useSettings";
-import {
-  CATEGORY_CONFIG,
-  FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
-  type ItemCategory,
-} from "../../lib/constants";
+import { CATEGORY_CONFIG } from "../../lib/constants";
 import { categoryHasSize } from "../../../convex/helpers";
 import { formatPHP } from "../../lib/formatters";
-import { weightClassFor, type WeightClass } from "../../lib/pricing";
+import {
+  groupItemFromLine,
+  initialRow,
+  rowComplete,
+  type BundleLine,
+  type RowFields,
+} from "../../lib/groupReviewLine";
 import { cn } from "../../lib/utils";
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 const CLOTHES_SIZES = ["S", "M", "L", "XL"] as const;
-
-/** One negotiated Bundle line handed in from the calculator. */
-export interface BundleLine {
-  id: string;
-  category: ItemCategory;
-  mode: "regular" | "forwarder";
-  priceCNY: number;
-  localShippingCNY: number;
-  quote: number;
-  estimatedWeightKg: number | null;
-  weightClass: WeightClass;
-  estimatedWeightTyped: boolean;
-}
 
 interface GroupReviewSheetProps {
   onClose: () => void;
@@ -49,34 +40,6 @@ interface GroupReviewSheetProps {
   defaultOffer: number;
   /** Called with the new group id after a successful create. */
   onCreated: (groupId: Id<"orderGroups">) => void;
-}
-
-interface RowFields {
-  name: string;
-  seller: string;
-  size: string;
-}
-
-const BLANK: RowFields = { name: "", seller: "", size: "" };
-
-function rowComplete(line: BundleLine, r: RowFields) {
-  if (!r.name.trim() || !r.seller.trim()) return false;
-  if (categoryHasSize(line.category) && !r.size.trim()) return false;
-  return true;
-}
-
-/** The line's quote-time estimate, in the shape the Item stores it. */
-function lineEstimate(line: BundleLine) {
-  if (line.estimatedWeightKg === null) return {};
-  // Class field names match the Item's, and only the category's own one is set.
-  const { shoeBuild, clothingWeight, bagSize } = weightClassFor(line.category, line.weightClass);
-  return {
-    estimatedWeightKg: line.estimatedWeightKg,
-    shoeBuild,
-    clothingWeight,
-    bagSize,
-    estimatedWeightTyped: line.estimatedWeightTyped,
-  };
 }
 
 /**
@@ -106,13 +69,8 @@ export function GroupReviewSheet({
   const sellers = useQuery(api.items.getUniqueSellers) ?? [];
   const createWithItems = useMutation(api.orderGroups.createWithItems);
 
-  // A shoe's EU size was already entered in the calculator to pick its preset.
   const [rows, setRows] = useState<Record<string, RowFields>>(() =>
-    Object.fromEntries(
-      lines
-        .filter((l) => l.category === "shoes" && l.weightClass.euSize !== undefined)
-        .map((l) => [l.id, { ...BLANK, size: String(l.weightClass.euSize) }])
-    )
+    Object.fromEntries(lines.map((l) => [l.id, initialRow(l)]))
   );
   const [customerId, setCustomerId] = useState<Id<"customers"> | null>(null);
   const [offerStr, setOfferStr] = useState(() => (defaultOffer > 0 ? String(defaultOffer) : ""));
@@ -129,12 +87,12 @@ export function GroupReviewSheet({
     };
   }, []);
 
-  const getRow = (id: string) => rows[id] ?? BLANK;
+  const getRow = (id: string) => rows[id];
 
   // Collapse a complete row and open the next still-incomplete one.
   function advanceFrom(line: BundleLine, row: RowFields) {
     if (line.id !== expandedId || !rowComplete(line, row)) return;
-    const next = lines.find((l) => l.id !== line.id && !rowComplete(l, rows[l.id] ?? BLANK));
+    const next = lines.find((l) => l.id !== line.id && !rowComplete(l, getRow(l.id)));
     setExpandedId(next ? next.id : null);
   }
 
@@ -157,27 +115,7 @@ export function GroupReviewSheet({
     setSubmitting(true);
     setError(null);
     try {
-      const items = lines.map((line) => {
-        const r = getRow(line.id);
-        const isForwarderBuy = line.mode === "forwarder";
-        return {
-          name: r.name.trim(),
-          category: line.category,
-          size: categoryHasSize(line.category) ? r.size.trim() : undefined,
-          seller: r.seller.trim(),
-          priceCNY: line.priceCNY,
-          localShippingCNY: line.localShippingCNY,
-          sellingPrice: line.quote,
-          isForwarderBuy,
-          exchangeRateUsed: settings.cnyToPhpRate,
-          forwarderRatePerKg: settings.defaultForwarderRate,
-          forwarderBuyRateUsed: isForwarderBuy ? settings.forwarderBuyServiceRate : undefined,
-          forwarderBuyCommissionPercent: isForwarderBuy
-            ? FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT
-            : undefined,
-          ...lineEstimate(line),
-        };
-      });
+      const items = lines.map((line) => groupItemFromLine(line, getRow(line.id), settings));
       const offerNum = offerStr.trim() === "" ? undefined : Number(offerStr);
       const groupId = await createWithItems({
         customerId,
@@ -186,7 +124,7 @@ export function GroupReviewSheet({
       });
       onCreated(groupId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not create the group.");
+      setError(e instanceof ConvexError ? String(e.data) : "Could not create the group.");
       setSubmitting(false);
     }
   }
@@ -348,7 +286,9 @@ function AccordionRow({
 
   const summary = complete
     ? `${fields.seller}${fields.size ? ` · ${fields.size}` : ""}`
-    : `Tap to add name · seller${categoryHasSize(line.category) ? " · size" : ""}`;
+    : line.td
+      ? `Tap to add name · ${line.td.name}`
+      : `Tap to add name · seller${categoryHasSize(line.category) ? " · size" : ""}`;
 
   return (
     <div ref={ref} className={cn("rounded-2xl ring-1 ring-white/5", escapeClip ? "overflow-visible" : "overflow-hidden")}>
@@ -416,7 +356,9 @@ function AccordionRow({
                 className="h-9 w-full rounded-3xl border border-transparent bg-white/[0.06] px-3 text-sm text-primary placeholder:text-tertiary outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/30"
               />
 
-              {line.category === "shoes" ? (
+              {line.td ? (
+                <LockedTd name={line.td.name} insured={line.td.insured} />
+              ) : line.category === "shoes" ? (
                 <div className="grid grid-cols-[1fr_5rem] gap-2 items-end">
                   <Combobox
                     value={fields.seller}
@@ -469,6 +411,19 @@ function AccordionRow({
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/** A watch's quote was built on this TD's rates, so changing it means re-quoting in the calculator. */
+function LockedTd({ name, insured }: { name: string; insured: boolean }) {
+  return (
+    <div className="flex h-9 items-center gap-2 rounded-3xl bg-white/[0.03] px-3 text-sm">
+      <HugeiconsIcon icon={LockIcon} size={12} className="shrink-0 text-tertiary" />
+      <span className="min-w-0 truncate text-primary">{name}</span>
+      <span className="ml-auto shrink-0 text-[11px] text-tertiary">
+        {insured ? "Insured" : "No insurance"}
+      </span>
     </div>
   );
 }
