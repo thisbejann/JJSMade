@@ -62,7 +62,15 @@ describe("weightPreset", () => {
     expect(weightPreset("bags")).toBe(3.5);
   });
 
-  it("Watches & Accessories uses the Accessories preset until Watches split off", () => {
+  it("Accessories is 0.5 kg", () => {
+    expect(weightPreset("accessories")).toBe(0.5);
+  });
+
+  it("Watches have no preset: the TD route has no weight-based cost", () => {
+    expect(weightPreset("watches")).toBeNull();
+  });
+
+  it("legacy Watches & Accessories keeps the Accessories preset", () => {
     expect(weightPreset("watches_accessories")).toBe(0.5);
   });
 });
@@ -193,7 +201,7 @@ describe("quoteLine", () => {
       localShippingCNY: 10,
       mode: "regular",
       rate: 8.2,
-      category: "watches_accessories",
+      category: "accessories",
       ratePerKg: 500,
       profitTarget: 600,
     });
@@ -210,12 +218,29 @@ describe("quoteLine", () => {
       localShippingCNY: 10,
       mode: "regular",
       rate: 8.13,
-      category: "watches_accessories",
+      category: "accessories",
     });
 
     // 133.45 × 8.13 = 1084.9485; + 240 shipping + 400
     expect(line.cost).toBe(1084.95);
     expect(line.quote).toBe(1724.95);
+  });
+
+  it("Watches quote cost + Profit Target with zero Estimated Shipping, even with a typed kg", () => {
+    const line = quoteLine({
+      ...BASE,
+      priceCNY: 2000,
+      localShippingCNY: 0,
+      mode: "regular",
+      rate: 8,
+      category: "watches",
+      kgOverride: 1,
+    });
+
+    expect(line.estimatedWeightKg).toBeNull();
+    expect(line.estimatedWeightTyped).toBe(false);
+    expect(line.estimatedShippingPHP).toBe(0);
+    expect(line.quote).toBe(16400);
   });
 });
 
@@ -391,7 +416,10 @@ describe("weightClassFor", () => {
     expect(weightClassFor("bags", all)).toEqual({ bagSize: "small" });
   });
 
-  it("keeps nothing for a category without a class", () => {
-    expect(weightClassFor("watches_accessories", all)).toEqual({});
-  });
+  it.each(["watches", "accessories", "watches_accessories"] as const)(
+    "keeps nothing for %s, which has no class",
+    (category) => {
+      expect(weightClassFor(category, all)).toEqual({});
+    }
+  );
 });

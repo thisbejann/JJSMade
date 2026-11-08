@@ -17,7 +17,7 @@ import { Button } from "../components/ui/Button";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
 import { useSettings } from "../hooks/useSettings";
 import {
-  ALL_CATEGORIES,
+  categoryChoices,
   CATEGORY_CONFIG,
   type ItemCategory,
   FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
@@ -56,7 +56,7 @@ interface BundleItem {
   estimatedWeightTyped: boolean;
 }
 
-const CATEGORIES = ALL_CATEGORIES.map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
+const CATEGORIES = categoryChoices().map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
 
 type ClassChoice = Required<Pick<WeightClass, WeightClassField>>;
 
@@ -319,7 +319,7 @@ export default function QuoteCalculator() {
                   <label className="block text-xs font-medium text-secondary mb-2">
                     Category
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {CATEGORIES.map((cat) => (
                       <button
                         key={cat.value}

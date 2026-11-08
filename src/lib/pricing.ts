@@ -34,6 +34,8 @@ export const CATEGORY_WEIGHT_CLASS: Record<ItemCategory, WeightClassField | null
   shoes: "shoeBuild",
   clothes: "clothingWeight",
   bags: "bagSize",
+  watches: null,
+  accessories: null,
   watches_accessories: null,
 };
 
@@ -58,7 +60,7 @@ const ACCESSORIES_PRESET = 0.5;
 
 /**
  * The typical shipped weight for a China-route line, in kg. Null means the
- * category carries no Estimated Shipping (Watches, once they exist).
+ * category carries no Estimated Shipping: Watches ride the TD route.
  * A missing class falls back to the heavier-leaning default, never to 0 kg.
  */
 export function weightPreset(category: ItemCategory, weightClass: WeightClass = {}): number | null {
@@ -73,9 +75,11 @@ export function weightPreset(category: ItemCategory, weightClass: WeightClass = 
     case "bags":
       // Bags default to Large: a missing Bag Size must never under-quote.
       return BAG_PRESETS[weightClass.bagSize ?? "large"];
+    case "accessories":
     case "watches_accessories":
-      // Until Watches split off (ADR 0004), this category prices as Accessories.
       return ACCESSORIES_PRESET;
+    case "watches":
+      return null;
   }
 }
 
