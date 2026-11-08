@@ -226,29 +226,76 @@ describe("quoteLine", () => {
     expect(line.quote).toBe(1724.95);
   });
 
-  it("Watches quote cost + Profit Target with zero Estimated Shipping, even with a typed kg", () => {
+});
+
+const TD = { tdShippingCNY: 250, tdInsurancePct: 10 };
+
+describe("quoteLine for a watch", () => {
+  it("quotes price + TD shipping + insurance + the Watches Profit Target, with no Estimated Shipping", () => {
     const line = quoteLine({
-      ...BASE,
-      priceCNY: 2000,
-      localShippingCNY: 0,
-      mode: "regular",
-      rate: 8,
       category: "watches",
-      kgOverride: 1,
+      priceCNY: 2000,
+      rate: 8,
+      td: TD,
+      insured: true,
+      watchesProfitTarget: 1500,
     });
 
+    // 2000 × 8 = 16000; 250 × 8 = 2000 shipping; 10% of 2000 × 8 = 1600 insurance
+    expect(line.tdCost).toEqual({ pricePHP: 16000, tdShippingPHP: 2000, tdInsurancePHP: 1600 });
+    expect(line.cost).toBe(19600);
     expect(line.estimatedWeightKg).toBeNull();
-    expect(line.estimatedWeightTyped).toBe(false);
     expect(line.estimatedShippingPHP).toBe(0);
-    expect(line.quote).toBe(16400);
+    expect(line.quote).toBe(21100);
+  });
+
+  it("drops the insurance from cost and quote when insurance is off", () => {
+    const line = quoteLine({
+      category: "watches",
+      priceCNY: 2000,
+      rate: 8,
+      td: TD,
+      insured: false,
+      watchesProfitTarget: 1500,
+    });
+
+    expect(line.tdCost?.tdInsurancePHP).toBe(0);
+    expect(line.cost).toBe(18000);
+    expect(line.quote).toBe(19500);
+  });
+
+  it("uses the Watches Profit Target from Settings", () => {
+    const line = quoteLine({
+      category: "watches",
+      priceCNY: 2000,
+      rate: 8,
+      td: TD,
+      insured: true,
+      watchesProfitTarget: 2000,
+    });
+
+    expect(line.quote).toBe(21600);
+  });
+
+  it("a China-route line has no TD cost breakdown", () => {
+    const line = quoteLine({
+      ...BASE,
+      priceCNY: 300,
+      localShippingCNY: 10,
+      mode: "regular",
+      rate: 8.2,
+      category: "accessories",
+    });
+
+    expect(line.tdCost).toBeNull();
   });
 });
 
 // Each line is cost + Estimated Shipping + the ₱400 Profit Target.
 const LINES = [
-  { quote: 3392, cost: 2542, estimatedShippingPHP: 450 },
-  { quote: 1934.95, cost: 1084.95, estimatedShippingPHP: 450 },
-  { quote: 3824, cost: 3074, estimatedShippingPHP: 350 },
+  { category: "shoes" as const, quote: 3392, cost: 2542, estimatedShippingPHP: 450 },
+  { category: "shoes" as const, quote: 1934.95, cost: 1084.95, estimatedShippingPHP: 450 },
+  { category: "shoes" as const, quote: 3824, cost: 3074, estimatedShippingPHP: 350 },
 ];
 
 describe("bundleTotals", () => {
@@ -262,8 +309,8 @@ describe("bundleTotals", () => {
 
   it("totals Estimated Shipping as the plain sum of its lines", () => {
     const totals = bundleTotals([
-      { quote: 1000, cost: 500, estimatedShippingPHP: 100.01 },
-      { quote: 1000, cost: 500, estimatedShippingPHP: 0.02 },
+      { category: "shoes", quote: 1000, cost: 500, estimatedShippingPHP: 100.01 },
+      { category: "shoes", quote: 1000, cost: 500, estimatedShippingPHP: 0.02 },
     ]);
 
     expect(totals.estimatedShippingTotal).toBe(100.03);
@@ -313,8 +360,8 @@ describe("bundleTotals", () => {
   it("an all-watch Bundle carries no shipping, so its floor is the cost alone", () => {
     const totals = bundleTotals(
       [
-        { quote: 5400, cost: 5000, estimatedShippingPHP: 0 },
-        { quote: 3400, cost: 3000, estimatedShippingPHP: 0 },
+        { category: "watches", quote: 5400, cost: 5000, estimatedShippingPHP: 0 },
+        { category: "watches", quote: 3400, cost: 3000, estimatedShippingPHP: 0 },
       ],
       8500
     );
@@ -322,6 +369,24 @@ describe("bundleTotals", () => {
     expect(totals.breakEvenFloor).toBe(8000);
     expect(totals.estimatedShippingTotal).toBe(0);
     expect(totals.estimatedMargin).toBe(500);
+  });
+
+  it("an all-watch Bundle's margin is exact: TD-route costs are fully known", () => {
+    const totals = bundleTotals([
+      { category: "watches", quote: 21100, cost: 19600, estimatedShippingPHP: 0 },
+      { category: "watches", quote: 19500, cost: 18000, estimatedShippingPHP: 0 },
+    ]);
+
+    expect(totals.marginExact).toBe(true);
+  });
+
+  it("a Bundle with any China-route line keeps an estimated margin", () => {
+    const totals = bundleTotals([
+      { category: "watches", quote: 21100, cost: 19600, estimatedShippingPHP: 0 },
+      { category: "shoes", quote: 3758, cost: 2542, estimatedShippingPHP: 816 },
+    ]);
+
+    expect(totals.marginExact).toBe(false);
   });
 
   it("an empty Bundle has zero totals and no discount percentage", () => {

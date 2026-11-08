@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -14,6 +15,8 @@ import { PageContainer } from "../components/layout/PageContainer";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
+import { Toggle } from "../components/ui/Toggle";
+import { api } from "../../convex/_generated/api";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
 import { useSettings } from "../hooks/useSettings";
 import {
@@ -22,7 +25,7 @@ import {
   type ItemCategory,
   FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
 } from "../lib/constants";
-import { formatKgValue, formatNetPHP } from "../lib/formatters";
+import { formatKgValue, formatNetPHP, formatTdRates } from "../lib/formatters";
 import {
   bundleTotals,
   CATEGORY_WEIGHT_CLASS,
@@ -30,7 +33,9 @@ import {
   weightClassFor,
   weightPreset,
   type MarginState,
+  type QuoteLine,
   type QuoteMode,
+  type TdRates,
   type WeightClass,
   type WeightClassField,
 } from "../lib/pricing";
@@ -54,7 +59,12 @@ interface BundleItem {
   // Carried onto the saved Item by Save as Group Order.
   weightClass: WeightClass;
   estimatedWeightTyped: boolean;
+  // A watch line's Trusted Dealer. Save as Group Order carries the name onto
+  // the Item as its seller. Null on China-route lines.
+  td: { name: string; insured: boolean } | null;
 }
+
+type TrustedDealer = TdRates & { name: string };
 
 const CATEGORIES = categoryChoices().map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
 
@@ -112,6 +122,16 @@ export default function QuoteCalculator() {
   });
   const [euSizeStr, setEuSizeStr] = useState("");
   const [kgStr, setKgStr] = useState("");
+  const [tdName, setTdName] = useState<string | null>(null);
+  const [insured, setInsured] = useState(true);
+
+  const sellers = useQuery(api.sellers.list, {});
+  const trustedDealers: TrustedDealer[] = (sellers ?? []).flatMap((s) =>
+    s.platform === "td"
+      ? [{ name: s.name, tdShippingCNY: s.tdShippingCNY ?? 0, tdInsurancePct: s.tdInsurancePct ?? 0 }]
+      : []
+  );
+  const td = trustedDealers.find((d) => d.name === tdName) ?? null;
 
   // --- Bundle scratchpad (ephemeral) ---
   const [view, setView] = useState<CalcView>("add");
@@ -123,8 +143,10 @@ export default function QuoteCalculator() {
   // turns the negotiated Bundle into a real group + items in one mutation.
   const [showSheet, setShowSheet] = useState(false);
 
+  const isWatch = category === "watches";
+  // Watches are paid to the TD directly, at the regular CNY→PHP rate.
   const rate =
-    mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
+    isWatch || mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
 
   const ratePerKg = settings.defaultForwarderRate;
   const profitTarget = settings.calculatorProfitTarget;
@@ -134,22 +156,41 @@ export default function QuoteCalculator() {
   const preset = weightPreset(category, weightClass);
   const kgOverride = kgStr.trim() === "" ? undefined : Number(kgStr);
 
-  const line = quoteLine({
-    priceCNY,
-    localShippingCNY,
-    mode,
-    rate,
-    category,
-    weightClass,
-    kgOverride,
-    ratePerKg,
-    profitTarget,
-  });
-  const { commissionCNY, qcFee, estimatedWeightKg, estimatedWeightTyped, estimatedShippingPHP } =
-    line;
+  const line: QuoteLine | null =
+    category === "watches"
+      ? td && quoteLine({
+          category,
+          priceCNY,
+          rate,
+          td,
+          insured,
+          watchesProfitTarget: settings.calculatorWatchesProfitTarget,
+        })
+      : quoteLine({
+          priceCNY,
+          localShippingCNY,
+          mode,
+          rate,
+          category,
+          weightClass,
+          kgOverride,
+          ratePerKg,
+          profitTarget,
+        });
 
   let formulaParts: string[] = [];
-  if (priceCNY > 0) {
+  if (line?.tdCost && td && priceCNY > 0) {
+    const { pricePHP, tdShippingPHP, tdInsurancePHP } = line.tdCost;
+    formulaParts = [
+      `${priceCNY} × ${rate.toFixed(2)} = ${formatNetPHP(pricePHP)}`,
+      `+ TD shipping: ${td.tdShippingCNY} × ${rate.toFixed(2)} = ${formatNetPHP(tdShippingPHP)}`,
+      insured
+        ? `+ insurance: ${td.tdInsurancePct}% of price = ${formatNetPHP(tdInsurancePHP)}`
+        : "+ insurance: off",
+      `+ watches profit target: ${settings.calculatorWatchesProfitTarget}`,
+    ];
+  } else if (line && priceCNY > 0) {
+    const { commissionCNY, qcFee, estimatedWeightKg } = line;
     formulaParts = [`(${priceCNY} + ${localShippingCNY}) × ${rate.toFixed(2)}`];
     if (mode === "forwarder") {
       formulaParts.push(
@@ -176,25 +217,28 @@ export default function QuoteCalculator() {
     discountPct,
     estimatedMargin,
     estimatedShippingTotal,
+    marginExact,
     marginState,
   } = bundleTotals(bundle, offerEmpty ? undefined : offer);
 
   function addToBundle() {
-    if (priceCNY <= 0) return;
+    if (priceCNY <= 0 || !line) return;
     setBundle((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
         category,
-        mode,
+        // The TD route has no forwarder mode or local CN shipping.
+        mode: isWatch ? "regular" : mode,
         priceCNY,
-        localShippingCNY,
+        localShippingCNY: isWatch ? 0 : localShippingCNY,
         quote: line.quote,
         cost: line.cost,
-        estimatedWeightKg,
-        estimatedShippingPHP,
+        estimatedWeightKg: line.estimatedWeightKg,
+        estimatedShippingPHP: line.estimatedShippingPHP,
         weightClass,
-        estimatedWeightTyped,
+        estimatedWeightTyped: line.estimatedWeightTyped,
+        td: isWatch && td ? { name: td.name, insured } : null,
       },
     ]);
     // Reset what's specific to this item; keep mode/category/class/shipping.
@@ -277,42 +321,45 @@ export default function QuoteCalculator() {
                   placeholder="0.00"
                 />
 
-                <Input
-                  label="Local Shipping (CNY)"
-                  type="number"
-                  value={localShippingCNY || ""}
-                  onChange={(e) => setLocalShippingCNY(Number(e.target.value))}
-                  step="0.01"
-                  prefix="¥"
-                  placeholder="10"
-                />
+                {!isWatch && (
+                  <>
+                    <Input
+                      label="Local Shipping (CNY)"
+                      type="number"
+                      value={localShippingCNY || ""}
+                      onChange={(e) => setLocalShippingCNY(Number(e.target.value))}
+                      step="0.01"
+                      prefix="¥"
+                      placeholder="10"
+                    />
 
-                {/* Mode */}
-                <div>
-                  <label className="block text-xs font-medium text-secondary mb-2">
-                    Mode
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["regular", "forwarder"] as const).map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => setMode(m)}
-                        className={cn(
-                          "px-3 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border",
-                          mode === m
-                            ? "border-accent bg-accent-muted text-accent"
-                            : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
-                        )}
-                      >
-                        {m === "regular" ? "Regular Order" : "Bought by Forwarder"}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-tertiary mt-1.5">
-                    Rate: PHP{rate.toFixed(2)}/CNY1
-                  </p>
-                </div>
+                    <div>
+                      <label className="block text-xs font-medium text-secondary mb-2">
+                        Mode
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(["regular", "forwarder"] as const).map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setMode(m)}
+                            className={cn(
+                              "px-3 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border",
+                              mode === m
+                                ? "border-accent bg-accent-muted text-accent"
+                                : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
+                            )}
+                          >
+                            {m === "regular" ? "Regular Order" : "Bought by Forwarder"}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-tertiary mt-1.5">
+                        Rate: PHP{rate.toFixed(2)}/CNY1
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 {/* Category */}
                 <div>
@@ -366,6 +413,26 @@ export default function QuoteCalculator() {
                     )}
                   </div>
                 )}
+                {isWatch && (
+                  <>
+                    <TdChoice
+                      dealers={trustedDealers}
+                      loading={sellers === undefined}
+                      selected={td}
+                      onSelect={setTdName}
+                    />
+                    <Toggle
+                      label="TD insurance"
+                      description={
+                        td
+                          ? `${td.tdInsurancePct}% of the watch price`
+                          : "A % of the watch price, set by the TD"
+                      }
+                      checked={insured}
+                      onChange={setInsured}
+                    />
+                  </>
+                )}
                 {preset !== null && (
                   <Input
                     label="Weight (kg), optional"
@@ -381,7 +448,7 @@ export default function QuoteCalculator() {
             </Card>
 
             {/* Result */}
-            {priceCNY > 0 ? (
+            {line && priceCNY > 0 ? (
               <Card>
                 <CardContent className="space-y-3">
                   <div className="space-y-1">
@@ -394,9 +461,14 @@ export default function QuoteCalculator() {
                     <p className="font-mono text-2xl font-bold text-accent">
                       {formatNetPHP(line.quote)}
                     </p>
-                    {estimatedWeightKg !== null && (
+                    {line.estimatedWeightKg !== null && (
                       <p className="text-[11px] text-tertiary font-mono mt-1">
-                        {estimateLabel(estimatedWeightKg, estimatedShippingPHP)}
+                        {estimateLabel(line.estimatedWeightKg, line.estimatedShippingPHP)}
+                      </p>
+                    )}
+                    {line.tdCost && (
+                      <p className="text-[11px] text-tertiary font-mono mt-1">
+                        {formatNetPHP(line.cost)} TD-route cost · no estimated shipping
                       </p>
                     )}
                   </div>
@@ -406,7 +478,9 @@ export default function QuoteCalculator() {
               <Card>
                 <CardContent>
                   <p className="text-sm text-tertiary text-center py-4">
-                    Enter a CNY price to see the suggested selling price.
+                    {isWatch && !td
+                      ? "Pick a Trusted Dealer to quote this watch."
+                      : "Enter a CNY price to see the suggested selling price."}
                   </p>
                 </CardContent>
               </Card>
@@ -416,7 +490,7 @@ export default function QuoteCalculator() {
               type="button"
               size="lg"
               className="w-full"
-              disabled={priceCNY <= 0}
+              disabled={priceCNY <= 0 || !line}
               onClick={addToBundle}
             >
               <HugeiconsIcon icon={PlusSignIcon} size={18} strokeWidth={2} />
@@ -444,6 +518,7 @@ export default function QuoteCalculator() {
                 <MarginSignal
                   state={marginState}
                   margin={estimatedMargin}
+                  exact={marginExact}
                   discountPct={discountPct}
                   empty={offerEmpty}
                 />
@@ -484,9 +559,16 @@ export default function QuoteCalculator() {
                 </div>
 
                 {/* Supporting figures */}
-                <div className="grid grid-cols-3 gap-3 border-t border-border-subtle pt-4">
+                <div
+                  className={cn(
+                    "grid gap-3 border-t border-border-subtle pt-4",
+                    marginExact ? "grid-cols-2" : "grid-cols-3"
+                  )}
+                >
                   <Figure label="Bundle quote" value={formatNetPHP(bundleQuote)} />
-                  <Figure label="Est. shipping" value={formatNetPHP(estimatedShippingTotal)} muted />
+                  {!marginExact && (
+                    <Figure label="Est. shipping" value={formatNetPHP(estimatedShippingTotal)} muted />
+                  )}
                   <Figure label="Break-even floor" value={formatNetPHP(breakEvenFloor)} muted />
                 </div>
               </CardContent>
@@ -523,8 +605,13 @@ export default function QuoteCalculator() {
                           <p className="text-sm text-primary truncate">
                             {CATEGORY_CONFIG[it.category].label}
                           </p>
-                          <p className="text-[11px] text-tertiary font-mono">
-                            ¥{it.priceCNY} · {it.mode === "forwarder" ? "Forwarder" : "Regular"}
+                          <p className="text-[11px] text-tertiary font-mono truncate">
+                            ¥{it.priceCNY} ·{" "}
+                            {it.td
+                              ? `${it.td.name} · ${it.td.insured ? "insured" : "no insurance"}`
+                              : it.mode === "forwarder"
+                                ? "Forwarder"
+                                : "Regular"}
                           </p>
                           {it.estimatedWeightKg !== null && (
                             <p className="text-[11px] text-tertiary font-mono">
@@ -598,11 +685,13 @@ const MARGIN_META = {
 function MarginSignal({
   state,
   margin,
+  exact,
   discountPct,
   empty,
 }: {
   state: MarginState;
   margin: number;
+  exact: boolean;
   discountPct: number;
   empty: boolean;
 }) {
@@ -634,12 +723,100 @@ function MarginSignal({
         <HugeiconsIcon icon={meta.icon} size={16} strokeWidth={1.5} />
         <span className="text-xs font-semibold uppercase tracking-wide">{meta.label}</span>
       </div>
-      <p className="text-[11px] text-secondary mt-3">Estimated margin</p>
+      <p className="text-[11px] text-secondary mt-3">
+        {exact ? "Exact margin" : "Estimated margin"}
+        <span className="text-tertiary">
+          {exact ? " · all TD-route costs known" : " · rests on estimated shipping"}
+        </span>
+      </p>
       <p className={cn("font-mono text-3xl font-bold tabular-nums", meta.text)}>
         {formatNetPHP(margin)}
       </p>
       <p className="text-xs text-secondary mt-1">{sub}</p>
     </motion.div>
+  );
+}
+
+const TD_MATCH_LIMIT = 6;
+
+function TdChoice({
+  dealers,
+  loading,
+  selected,
+  onSelect,
+}: {
+  dealers: TrustedDealer[];
+  loading: boolean;
+  selected: TrustedDealer | null;
+  onSelect: (name: string | null) => void;
+}) {
+  const [query, setQuery] = useState("");
+
+  if (selected) {
+    return (
+      <div>
+        <label className="block text-xs font-medium text-secondary mb-2">Trusted Dealer</label>
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-accent bg-accent-muted px-3 py-2.5">
+          <div className="min-w-0">
+            <p className="text-sm text-primary truncate">{selected.name}</p>
+            <p className="text-[11px] text-secondary font-mono tabular-nums">
+              {formatTdRates(selected)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onSelect(null)}
+            className="text-[11px] text-tertiary hover:text-accent transition-colors cursor-pointer"
+          >
+            Change
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const q = query.trim().toLowerCase();
+  const matches = dealers.filter((d) => d.name.toLowerCase().includes(q)).slice(0, TD_MATCH_LIMIT);
+
+  return (
+    <div className="space-y-2">
+      <Input
+        label="Trusted Dealer"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search TDs"
+      />
+      {loading ? null : dealers.length === 0 ? (
+        <p className="text-[11px] text-tertiary">
+          No Trusted Dealers yet. Add one in{" "}
+          <Link to="/sellers" className="text-secondary hover:text-accent">
+            Sellers
+          </Link>
+          .
+        </p>
+      ) : matches.length === 0 ? (
+        <p className="text-[11px] text-tertiary">No TD matches “{query.trim()}”.</p>
+      ) : (
+        <div className="rounded-lg border border-border-default divide-y divide-border-subtle">
+          {matches.map((d) => (
+            <button
+              key={d.name}
+              type="button"
+              onClick={() => {
+                setQuery("");
+                onSelect(d.name);
+              }}
+              className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-hover transition-colors cursor-pointer"
+            >
+              <span className="text-sm text-primary truncate">{d.name}</span>
+              <span className="text-[11px] text-tertiary font-mono tabular-nums shrink-0">
+                {formatTdRates(d)}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

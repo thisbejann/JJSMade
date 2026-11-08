@@ -3,7 +3,7 @@ import {
   FORWARDER_BUY_QC_FEE_PHP,
   type ItemCategory,
 } from "./constants";
-import { shippingCost } from "../../convex/helpers";
+import { shippingCost, tdRouteCost } from "../../convex/helpers";
 import type { BagSize, ClothingWeight, ShoeBuild } from "../../convex/schema";
 
 // The Quote Calculator's pricing math. Pure: no React, no Convex functions, so
@@ -83,13 +83,15 @@ export function weightPreset(category: ItemCategory, weightClass: WeightClass = 
   }
 }
 
-export interface QuoteLineInput {
+export type QuoteLineInput = ChinaQuoteInput | WatchQuoteInput;
+
+export interface ChinaQuoteInput {
+  category: Exclude<ItemCategory, "watches">;
   priceCNY: number;
   localShippingCNY: number;
   mode: QuoteMode;
   /** CNY → PHP rate for the chosen mode. */
   rate: number;
-  category: ItemCategory;
   weightClass?: WeightClass;
   /** A typed weight in kg. Replaces the Weight Preset when above zero. */
   kgOverride?: number;
@@ -98,22 +100,41 @@ export interface QuoteLineInput {
   profitTarget: number;
 }
 
+/** A Trusted Dealer's fixed rates, as stored on its Seller. */
+export interface TdRates {
+  tdShippingCNY: number;
+  tdInsurancePct: number;
+}
+
+/** TD route: no forwarder, so no mode, local shipping or Estimated Shipping. */
+export interface WatchQuoteInput {
+  category: "watches";
+  priceCNY: number;
+  rate: number;
+  td: TdRates;
+  insured: boolean;
+  watchesProfitTarget: number;
+}
+
 export interface QuoteLine {
-  /** Commission on the item price, in CNY. Zero in regular mode. */
+  /** Commission on the item price, in CNY. Zero in regular mode and for watches. */
   commissionCNY: number;
-  /** Zero in regular mode. */
+  /** Zero in regular mode and for watches. */
   qcFee: number;
-  /** What the item costs before shipping to PH. */
+  /** What the item costs before shipping to PH. For a watch, its full TD-route cost. */
   cost: number;
   /** Null when the category carries no Estimated Shipping. */
   estimatedWeightKg: number | null;
   /** True when a typed kg replaced the Weight Preset. */
   estimatedWeightTyped: boolean;
   estimatedShippingPHP: number;
+  /** A watch's cost breakdown. Null on the China route. */
+  tdCost: { pricePHP: number; tdShippingPHP: number; tdInsurancePHP: number } | null;
   quote: number;
 }
 
 export function quoteLine(input: QuoteLineInput): QuoteLine {
+  if (input.category === "watches") return quoteWatch(input);
   const { priceCNY, localShippingCNY, mode, rate, category, kgOverride, ratePerKg, profitTarget } =
     input;
   const isForwarder = mode === "forwarder";
@@ -135,7 +156,23 @@ export function quoteLine(input: QuoteLineInput): QuoteLine {
     estimatedWeightKg,
     estimatedWeightTyped,
     estimatedShippingPHP: round2(shipping),
+    tdCost: null,
     quote: round2(cost + shipping + profitTarget),
+  };
+}
+
+function quoteWatch(input: WatchQuoteInput): QuoteLine {
+  const { priceCNY, rate, insured } = input;
+  const { totalCost, ...tdCost } = tdRouteCost({ ...input.td, priceCNY, rate, insured });
+  return {
+    commissionCNY: 0,
+    qcFee: 0,
+    cost: totalCost,
+    estimatedWeightKg: null,
+    estimatedWeightTyped: false,
+    estimatedShippingPHP: 0,
+    tdCost,
+    quote: round2(totalCost + input.watchesProfitTarget),
   };
 }
 
@@ -152,6 +189,11 @@ export interface BundleTotals {
   discountPct: number;
   /** Offer Total − Break-even Floor. */
   estimatedMargin: number;
+  /**
+   * True when every line is a watch: TD-route costs are fully known, so the
+   * margin is final. Any China-route line rests on Estimated Shipping.
+   */
+  marginExact: boolean;
   marginState: MarginState;
 }
 
@@ -159,7 +201,9 @@ export interface BundleTotals {
 export type MarginState = "full" | "discounted" | "belowCost";
 
 export function bundleTotals(
-  lines: ReadonlyArray<Pick<QuoteLine, "quote" | "cost" | "estimatedShippingPHP">>,
+  lines: ReadonlyArray<
+    Pick<QuoteLine, "quote" | "cost" | "estimatedShippingPHP"> & { category: ItemCategory }
+  >,
   offerTotal?: number
 ): BundleTotals {
   const bundleQuote = round2(lines.reduce((sum, l) => sum + l.quote, 0));
@@ -179,6 +223,7 @@ export function bundleTotals(
     discount,
     discountPct: bundleQuote > 0 ? (discount / bundleQuote) * 100 : 0,
     estimatedMargin: round2(offer - breakEvenFloor),
+    marginExact: lines.length > 0 && lines.every((l) => l.category === "watches"),
     marginState,
   };
 }

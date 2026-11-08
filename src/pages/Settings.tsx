@@ -27,6 +27,9 @@ export default function Settings() {
   const [profitTargetOverride, setProfitTargetOverride] = useState<
     number | undefined
   >(undefined);
+  const [watchesProfitTargetOverride, setWatchesProfitTargetOverride] = useState<
+    number | undefined
+  >(undefined);
   const [saving, setSaving] = useState(false);
 
   const rate = rateOverride ?? settings.cnyToPhpRate;
@@ -38,6 +41,8 @@ export default function Settings() {
   const markupMin = markupMinOverride ?? settings.defaultMarkupMin;
   const markupMax = markupMaxOverride ?? settings.defaultMarkupMax;
   const profitTarget = profitTargetOverride ?? settings.calculatorProfitTarget;
+  const watchesProfitTarget =
+    watchesProfitTargetOverride ?? settings.calculatorWatchesProfitTarget;
 
   const handleSave = async () => {
     setSaving(true);
@@ -49,6 +54,7 @@ export default function Settings() {
         defaultMarkupMin: markupMin,
         defaultMarkupMax: markupMax,
         calculatorProfitTarget: profitTarget,
+        calculatorWatchesProfitTarget: watchesProfitTarget,
       });
       setRateOverride(undefined);
       setForwarderBuyServiceRateOverride(undefined);
@@ -56,6 +62,7 @@ export default function Settings() {
       setMarkupMinOverride(undefined);
       setMarkupMaxOverride(undefined);
       setProfitTargetOverride(undefined);
+      setWatchesProfitTargetOverride(undefined);
       toast.success("Settings saved");
     } catch {
       toast.error("Failed to save settings");
@@ -161,15 +168,25 @@ export default function Settings() {
             <h2 className="font-display font-semibold text-base text-primary">
               Quote Calculator
             </h2>
-            <Input
-              label="Profit Target (PHP)"
-              type="number"
-              prefix="PHP"
-              value={profitTarget}
-              onChange={(e) => setProfitTargetOverride(Number(e.target.value))}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Profit Target (PHP)"
+                type="number"
+                prefix="PHP"
+                value={profitTarget}
+                onChange={(e) => setProfitTargetOverride(Number(e.target.value))}
+              />
+              <Input
+                label="Watches Profit Target (PHP)"
+                type="number"
+                prefix="PHP"
+                value={watchesProfitTarget}
+                onChange={(e) => setWatchesProfitTargetOverride(Number(e.target.value))}
+              />
+            </div>
             <p className="text-xs text-secondary">
-              Added to every quote on top of cost and estimated shipping.
+              The Profit Target is added to every China-route quote on top of cost and
+              estimated shipping. Watches use their own target on top of the TD-route cost.
             </p>
           </CardContent>
         </Card>
