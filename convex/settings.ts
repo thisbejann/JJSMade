@@ -14,9 +14,13 @@ export const initialize = mutation({
   handler: async (ctx) => {
     const existing = await ctx.db.query("settings").first();
     if (existing) {
-      if (existing.calculatorProfitTarget === undefined) {
+      if (
+        existing.calculatorProfitTarget === undefined ||
+        existing.calculatorWatchesProfitTarget === undefined
+      ) {
         await ctx.db.patch(existing._id, {
-          calculatorProfitTarget: 400,
+          calculatorProfitTarget: existing.calculatorProfitTarget ?? 400,
+          calculatorWatchesProfitTarget: existing.calculatorWatchesProfitTarget ?? 1500,
           updatedAt: Date.now(),
         });
       }
@@ -30,6 +34,7 @@ export const initialize = mutation({
       defaultMarkupMin: 700,
       defaultMarkupMax: 850,
       calculatorProfitTarget: 400,
+      calculatorWatchesProfitTarget: 1500,
       updatedAt: Date.now(),
     });
     return id;
@@ -44,6 +49,7 @@ export const update = mutation({
     defaultMarkupMin: v.optional(v.number()),
     defaultMarkupMax: v.optional(v.number()),
     calculatorProfitTarget: v.optional(v.number()),
+    calculatorWatchesProfitTarget: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const settings = await ctx.db.query("settings").first();
@@ -59,6 +65,9 @@ export const update = mutation({
     if (args.defaultMarkupMax !== undefined) updates.defaultMarkupMax = args.defaultMarkupMax;
     if (args.calculatorProfitTarget !== undefined) {
       updates.calculatorProfitTarget = args.calculatorProfitTarget;
+    }
+    if (args.calculatorWatchesProfitTarget !== undefined) {
+      updates.calculatorWatchesProfitTarget = args.calculatorWatchesProfitTarget;
     }
 
     await ctx.db.patch(settings._id, updates);
