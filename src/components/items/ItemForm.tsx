@@ -829,7 +829,7 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
                 disabled={!!lockedCustomerId}
               />
             </div>
-            {sellingPrice > 0 && (
+            {!isWatch && sellingPrice > 0 && (
               <MarkupIndicator
                 markup={costs.profit}
                 min={settings.defaultMarkupMin}
