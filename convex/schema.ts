@@ -13,6 +13,14 @@ export const categoryValidator = v.union(
 export const shoeBuildValidator = v.union(v.literal("light"), v.literal("regular"), v.literal("chunky"));
 export const clothingWeightValidator = v.union(v.literal("light"), v.literal("heavy"));
 export const bagSizeValidator = v.union(v.literal("small"), v.literal("large"));
+export const sellerPlatformValidator = v.union(
+  v.literal("weidian"),
+  v.literal("taobao"),
+  v.literal("1688"),
+  v.literal("yupoo"),
+  v.literal("direct"),
+  v.literal("td")
+);
 
 export type ItemCategory = Infer<typeof categoryValidator>;
 export type ShoeBuild = Infer<typeof shoeBuildValidator>;
@@ -139,15 +147,9 @@ export default defineSchema({
 
   sellers: defineTable({
     name: v.string(),
-    platform: v.optional(
-      v.union(
-        v.literal("weidian"),
-        v.literal("taobao"),
-        v.literal("1688"),
-        v.literal("yupoo"),
-        v.literal("direct")
-      )
-    ),
+    platform: v.optional(sellerPlatformValidator),
+    tdShippingCNY: v.optional(v.number()),
+    tdInsurancePct: v.optional(v.number()),
     contactInfo: v.optional(v.string()),
     storeLink: v.optional(v.string()),
     notes: v.optional(v.string()),
