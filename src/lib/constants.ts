@@ -62,6 +62,7 @@ export const DEFAULTS = {
   markupMin: 700,
   markupMax: 850,
   calculatorProfitTarget: 400,
+  calculatorWatchesProfitTarget: 1500,
 } as const;
 
 export const FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT = 10;

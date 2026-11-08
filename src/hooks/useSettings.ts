@@ -10,6 +10,7 @@ export interface AppSettings {
   defaultMarkupMin: number;
   defaultMarkupMax: number;
   calculatorProfitTarget: number;
+  calculatorWatchesProfitTarget: number;
   updatedAt: number;
 }
 
@@ -21,7 +22,9 @@ export function useSettings() {
   useEffect(() => {
     if (
       settings === null ||
-      (settings !== undefined && settings.calculatorProfitTarget === undefined)
+      (settings !== undefined &&
+        (settings.calculatorProfitTarget === undefined ||
+          settings.calculatorWatchesProfitTarget === undefined))
     ) {
       initialize();
     }
@@ -34,6 +37,7 @@ export function useSettings() {
     defaultMarkupMin: DEFAULTS.markupMin,
     defaultMarkupMax: DEFAULTS.markupMax,
     calculatorProfitTarget: DEFAULTS.calculatorProfitTarget,
+    calculatorWatchesProfitTarget: DEFAULTS.calculatorWatchesProfitTarget,
     updatedAt: 0,
   };
 
@@ -49,6 +53,9 @@ export function useSettings() {
           defaultMarkupMax: settings.defaultMarkupMax,
           calculatorProfitTarget:
             settings.calculatorProfitTarget ?? DEFAULTS.calculatorProfitTarget,
+          calculatorWatchesProfitTarget:
+            settings.calculatorWatchesProfitTarget ??
+            DEFAULTS.calculatorWatchesProfitTarget,
           updatedAt: settings.updatedAt,
         }
       : fallbackSettings,
