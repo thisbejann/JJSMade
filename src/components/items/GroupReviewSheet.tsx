@@ -3,7 +3,6 @@ import { useMutation, useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Alert02Icon,
   Cancel01Icon,
   ArrowRight01Icon,
   ArrowDown01Icon,
@@ -20,6 +19,9 @@ import {
   FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
   type ItemCategory,
 } from "../../lib/constants";
+import { categoryHasSize } from "../../../convex/helpers";
+import { formatPHP } from "../../lib/formatters";
+import { weightClassFor, type WeightClass } from "../../lib/pricing";
 import { cn } from "../../lib/utils";
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
@@ -33,6 +35,9 @@ export interface BundleLine {
   priceCNY: number;
   localShippingCNY: number;
   quote: number;
+  estimatedWeightKg: number | null;
+  weightClass: WeightClass;
+  estimatedWeightTyped: boolean;
 }
 
 interface GroupReviewSheetProps {
@@ -54,18 +59,24 @@ interface RowFields {
 
 const BLANK: RowFields = { name: "", seller: "", size: "" };
 
-function needsSize(c: ItemCategory) {
-  return c === "shoes" || c === "clothes";
-}
-
 function rowComplete(line: BundleLine, r: RowFields) {
   if (!r.name.trim() || !r.seller.trim()) return false;
-  if (needsSize(line.category) && !r.size.trim()) return false;
+  if (categoryHasSize(line.category) && !r.size.trim()) return false;
   return true;
 }
 
-function peso(n: number): string {
-  return `₱${n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** The line's quote-time estimate, in the shape the Item stores it. */
+function lineEstimate(line: BundleLine) {
+  if (line.estimatedWeightKg === null) return {};
+  // Class field names match the Item's, and only the category's own one is set.
+  const { shoeBuild, clothingWeight, bagSize } = weightClassFor(line.category, line.weightClass);
+  return {
+    estimatedWeightKg: line.estimatedWeightKg,
+    shoeBuild,
+    clothingWeight,
+    bagSize,
+    estimatedWeightTyped: line.estimatedWeightTyped,
+  };
 }
 
 /**
@@ -95,7 +106,14 @@ export function GroupReviewSheet({
   const sellers = useQuery(api.items.getUniqueSellers) ?? [];
   const createWithItems = useMutation(api.orderGroups.createWithItems);
 
-  const [rows, setRows] = useState<Record<string, RowFields>>({});
+  // A shoe's EU size was already entered in the calculator to pick its preset.
+  const [rows, setRows] = useState<Record<string, RowFields>>(() =>
+    Object.fromEntries(
+      lines
+        .filter((l) => l.category === "shoes" && l.weightClass.euSize !== undefined)
+        .map((l) => [l.id, { ...BLANK, size: String(l.weightClass.euSize) }])
+    )
+  );
   const [customerId, setCustomerId] = useState<Id<"customers"> | null>(null);
   const [offerStr, setOfferStr] = useState(() => (defaultOffer > 0 ? String(defaultOffer) : ""));
   const [expandedId, setExpandedId] = useState<string | null>(() => lines[0]?.id ?? null);
@@ -140,7 +158,7 @@ export function GroupReviewSheet({
         return {
           name: r.name.trim(),
           category: line.category,
-          size: needsSize(line.category) ? r.size.trim() : undefined,
+          size: categoryHasSize(line.category) ? r.size.trim() : undefined,
           seller: r.seller.trim(),
           priceCNY: line.priceCNY,
           localShippingCNY: line.localShippingCNY,
@@ -152,6 +170,7 @@ export function GroupReviewSheet({
           forwarderBuyCommissionPercent: isForwarderBuy
             ? FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT
             : undefined,
+          ...lineEstimate(line),
         };
       });
       const offerNum = offerStr.trim() === "" ? undefined : Number(offerStr);
@@ -244,7 +263,7 @@ export function GroupReviewSheet({
               ))}
             </div>
 
-            {/* Footer — negotiated total, caveat, create */}
+            {/* Footer — negotiated total, create */}
             <div className="px-5 pt-3 pb-5 border-t border-border-subtle space-y-3 shrink-0">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -257,15 +276,11 @@ export function GroupReviewSheet({
                     step="0.01"
                     inputMode="decimal"
                     className="w-36 h-9 rounded-2xl border border-transparent bg-white/[0.06] px-3 text-base font-mono text-primary tabular-nums outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/30"
-                    placeholder={peso(bundleQuote)}
+                    placeholder={formatPHP(bundleQuote)}
                     value={offerStr}
                     onChange={(e) => setOfferStr(e.target.value)}
                   />
                 </div>
-                <p className="flex items-center gap-1 text-[11px] text-warning text-right max-w-[9rem]">
-                  <HugeiconsIcon icon={Alert02Icon} size={13} strokeWidth={1.5} className="shrink-0" />
-                  <span>excl. forwarder shipping</span>
-                </p>
               </div>
 
               {error && <p className="text-[11px] text-danger">{error}</p>}
@@ -325,7 +340,7 @@ function AccordionRow({
 
   const summary = complete
     ? `${fields.seller}${fields.size ? ` · ${fields.size}` : ""}`
-    : `Tap to add name · seller${needsSize(line.category) ? " · size" : ""}`;
+    : `Tap to add name · seller${categoryHasSize(line.category) ? " · size" : ""}`;
 
   return (
     <div ref={ref} className={cn("rounded-2xl ring-1 ring-white/5", escapeClip ? "overflow-visible" : "overflow-hidden")}>
@@ -353,7 +368,7 @@ function AccordionRow({
           </p>
           <p className="text-[11px] text-tertiary truncate">{summary}</p>
         </div>
-        <span className="font-mono text-sm text-secondary tabular-nums shrink-0">{peso(line.quote)}</span>
+        <span className="font-mono text-sm text-secondary tabular-nums shrink-0">{formatPHP(line.quote)}</span>
         <motion.span
           animate={{ rotate: expanded ? 180 : 0 }}
           transition={{ duration: 0.2 }}

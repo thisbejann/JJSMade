@@ -2,12 +2,12 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { computeDerivedFields } from "./helpers";
 import { normalizeSize, validateItemRules } from "./items";
-
-const categoryValidator = v.union(
-  v.literal("shoes"),
-  v.literal("clothes"),
-  v.literal("watches_accessories")
-);
+import {
+  bagSizeValidator,
+  categoryValidator,
+  clothingWeightValidator,
+  shoeBuildValidator,
+} from "./schema";
 
 const STATUS_FLOW = [
   "ordered",
@@ -241,6 +241,12 @@ export const createWithItems = mutation({
         forwarderRatePerKg: v.number(),
         forwarderBuyRateUsed: v.optional(v.number()),
         forwarderBuyCommissionPercent: v.optional(v.number()),
+        // The line's quote-time estimate (see the items schema).
+        estimatedWeightKg: v.optional(v.number()),
+        shoeBuild: v.optional(shoeBuildValidator),
+        clothingWeight: v.optional(clothingWeightValidator),
+        bagSize: v.optional(bagSizeValidator),
+        estimatedWeightTyped: v.optional(v.boolean()),
       })
     ),
   },
@@ -284,7 +290,8 @@ export const createWithItems = mutation({
         exchangeRateUsed: item.exchangeRateUsed,
         hasLocalShipping,
         localShippingCNY: item.localShippingCNY,
-        weightKg: undefined, // unknown at quote time → forwarder fee unknown → optimistic profit
+        weightKg: undefined, // unknown at quote time, so profit rests on the estimate
+        estimatedWeightKg: item.estimatedWeightKg,
         forwarderRatePerKg: item.forwarderRatePerKg,
         isForwarderBuy,
         forwarderBuyRateUsed,
@@ -314,6 +321,11 @@ export const createWithItems = mutation({
         forwarderBuyCommissionPercent,
         forwarderBuyFeePHP: derived.forwarderBuyFeePHP,
         qcServiceFeePHP: derived.qcServiceFeePHP,
+        estimatedWeightKg: item.estimatedWeightKg,
+        shoeBuild: item.shoeBuild,
+        clothingWeight: item.clothingWeight,
+        bagSize: item.bagSize,
+        estimatedWeightTyped: item.estimatedWeightTyped,
         sellingPrice: item.sellingPrice,
         customerId,
         customerName: customer.name,

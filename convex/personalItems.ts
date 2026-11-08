@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { computeDerivedFields } from "./helpers";
+import { categoryHasSize, computeDerivedFields } from "./helpers";
+import { categoryValidator, type ItemCategory } from "./schema";
 import { deleteUnreferencedQcPhotos } from "./qcPhotoCleanup";
 
 const CLOTHES_SIZES = new Set(["S", "M", "L", "XL"]);
@@ -15,18 +16,18 @@ const personalStatusValidator = v.union(
 );
 
 function normalizeSize(
-  category: "shoes" | "clothes" | "watches_accessories",
+  category: ItemCategory,
   size?: string
 ) {
   const trimmed = size?.trim();
   if (!trimmed) return undefined;
   if (category === "clothes") return trimmed.toUpperCase();
-  if (category === "watches_accessories") return undefined;
+  if (!categoryHasSize(category)) return undefined;
   return trimmed;
 }
 
 function validateItemRules(data: {
-  category: "shoes" | "clothes" | "watches_accessories";
+  category: ItemCategory;
   size?: string;
   isForwarderBuy: boolean;
   forwarderBuyRateUsed?: number;
@@ -69,7 +70,7 @@ function validateItemRules(data: {
 export const create = mutation({
   args: {
     name: v.string(),
-    category: v.union(v.literal("shoes"), v.literal("clothes"), v.literal("watches_accessories")),
+    category: categoryValidator,
     imageUrl: v.optional(v.string()),
     size: v.optional(v.string()),
     seller: v.string(),
@@ -146,7 +147,7 @@ export const update = mutation({
   args: {
     id: v.id("personalItems"),
     name: v.optional(v.string()),
-    category: v.optional(v.union(v.literal("shoes"), v.literal("clothes"), v.literal("watches_accessories"))),
+    category: v.optional(categoryValidator),
     imageUrl: v.optional(v.string()),
     size: v.optional(v.string()),
     seller: v.optional(v.string()),

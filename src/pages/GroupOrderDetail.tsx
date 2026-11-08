@@ -6,10 +6,12 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
 import { Modal } from "../components/ui/Modal";
 import { ItemStatusBadge } from "../components/items/ItemStatusBadge";
 import { GroupStatusBadge } from "../components/items/GroupStatusBadge";
-import { formatPHP, formatPercent, formatDate } from "../lib/formatters";
+import { formatPHP, formatSignedPHP, formatPercent, formatDate } from "../lib/formatters";
+import { isShippingEstimated, shippingGapTotal } from "../lib/pricing";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowLeft01Icon,
@@ -39,7 +41,7 @@ interface NegotiationGroup {
   status: string;
   notes?: string;
   createdAt: number;
-  items: unknown[];
+  items: { weightKg?: number; estimatedWeightKg?: number; forwarderRatePerKg: number }[];
   sumOfQuotes: number;
   negotiatedTotal: number | null;
   effectiveTotal: number;
@@ -137,6 +139,9 @@ function NegotiatedTotalBlock({ group }: { group: NegotiationGroup }) {
 
   const itemCount = group.items.length;
   const isLoss = group.groupProfit < 0;
+  const profitEstimated = group.items.some(isShippingEstimated);
+  // Only members with both an estimate and a real weight count. Positive: I absorbed more.
+  const gap = shippingGapTotal(group.items);
 
   return (
     <div className="rounded-xl border border-border-default bg-surface overflow-hidden">
@@ -229,6 +234,11 @@ function NegotiatedTotalBlock({ group }: { group: NegotiationGroup }) {
             <div className="flex items-center justify-between pt-2 mt-1 border-t border-border-subtle">
               <span className="text-secondary">
                 Your profit{!hasPrice ? " (at full price)" : ""}
+                {profitEstimated && (
+                  <Badge variant="warning" className="ml-2">
+                    Estimated
+                  </Badge>
+                )}
               </span>
               <ProfitNumber value={group.groupProfit} className="text-base font-semibold" />
             </div>
@@ -236,6 +246,21 @@ function NegotiatedTotalBlock({ group }: { group: NegotiationGroup }) {
               <p className="text-right text-xs text-danger">
                 Below cost — this bundle loses money.
               </p>
+            )}
+            {gap.count > 0 && (
+              <div className="flex items-center justify-between gap-3 text-secondary">
+                <span className="min-w-0 truncate">
+                  Shipping gap ({gap.count} of {itemCount} weighed)
+                </span>
+                <span
+                  className={cn(
+                    "shrink-0 whitespace-nowrap font-mono tabular-nums",
+                    gap.total > 0 ? "text-danger" : gap.total < 0 ? "text-success" : undefined
+                  )}
+                >
+                  {formatSignedPHP(gap.total)}
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -375,6 +400,9 @@ export default function GroupOrderDetail() {
                       {item.profit != null ? (
                         <span className={item.profit >= 0 ? "text-success" : "text-danger"}>
                           {formatPHP(item.profit)}
+                          {isShippingEstimated(item) && (
+                            <span className="ml-1 text-[11px] text-warning">est.</span>
+                          )}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>

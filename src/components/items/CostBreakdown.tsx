@@ -5,6 +5,8 @@ interface CostBreakdownProps {
   pricePHP?: number;
   localShippingPHP?: number;
   forwarderFee?: number;
+  /** Shown in place of the Forwarder Fee while the Item is unweighed. */
+  estimatedShippingPHP?: number;
   forwarderBuyFeePHP?: number;
   qcServiceFeePHP?: number;
   totalCost?: number;
@@ -27,6 +29,14 @@ export function CostBreakdown(props: CostBreakdownProps) {
       color: "bg-info",
     },
     { label: "Forwarder Fee", value: props.forwarderFee ?? 0, color: "bg-warning" },
+    {
+      // Neutral and hatched: an estimate, not a fee yet. Semantic colours are
+      // reserved for status signals (DESIGN.md).
+      label: "Est. Shipping",
+      value: props.estimatedShippingPHP ?? 0,
+      color:
+        "bg-[repeating-linear-gradient(135deg,var(--color-secondary)_0_2px,transparent_2px_4px)]",
+    },
     {
       label: "Forwarder Buy Fee",
       value: props.forwarderBuyFeePHP ?? 0,
