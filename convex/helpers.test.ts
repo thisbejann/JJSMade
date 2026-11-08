@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { categoryHasSize, computeDerivedFields, shippingCost } from "./helpers";
+import { categoryHasSize, computeDerivedFields, shippingCost, tdRouteCost } from "./helpers";
 
 // ¥500 at 8.0 = ₱4,000, sold for ₱5,500, forwarder ₱480/kg.
 const base = {
@@ -49,5 +49,34 @@ describe("categoryHasSize", () => {
     ["bags", false],
   ] as const)("%s takes a size: %s", (category, expected) => {
     expect(categoryHasSize(category)).toBe(expected);
+  });
+});
+
+describe("tdRouteCost", () => {
+  // ¥2,800 watch from a TD charging ¥250 shipping and 10% insurance, at 8.0.
+  const watch = { priceCNY: 2800, rate: 8, tdShippingCNY: 250, tdInsurancePct: 10 };
+
+  it("adds TD shipping and insurance on the watch price only", () => {
+    expect(tdRouteCost({ ...watch, insured: true })).toEqual({
+      pricePHP: 22400,
+      tdShippingPHP: 2000,
+      tdInsurancePHP: 2240,
+      totalCost: 26640,
+    });
+  });
+
+  it("drops insurance when the watch is not insured", () => {
+    const cost = tdRouteCost({ ...watch, insured: false });
+    expect(cost.tdInsurancePHP).toBe(0);
+    expect(cost.totalCost).toBe(24400);
+  });
+
+  it("rounds each part to centavos", () => {
+    expect(tdRouteCost({ priceCNY: 333, rate: 7.777, tdShippingCNY: 0, tdInsurancePct: 12.5, insured: true })).toEqual({
+      pricePHP: 2589.74,
+      tdShippingPHP: 0,
+      tdInsurancePHP: 323.72,
+      totalCost: 2913.46,
+    });
   });
 });
