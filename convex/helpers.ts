@@ -30,7 +30,7 @@ export function categoryHasSize(category: ItemCategory): boolean {
 }
 
 /** Category alone decides the Sourcing Route (ADR 0004): Watches go through a Trusted Dealer. */
-export function isTdRoute(category: ItemCategory): boolean {
+export function isTdRoute(category: ItemCategory): category is "watches" {
   return category === "watches";
 }
 
