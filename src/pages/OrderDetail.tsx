@@ -22,6 +22,7 @@ import {
   formatWeight,
 } from "../lib/formatters";
 import { isShippingEstimated, shippingCost, shippingGap } from "../lib/pricing";
+import { isTdRoute } from "../../convex/helpers";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PencilEdit01Icon, Delete02Icon, ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "../lib/utils";
@@ -124,6 +125,7 @@ export default function OrderDetail() {
   // Once weighed, the estimate is kept to compare against. Positive: I absorbed more.
   const gap = shippingGap(item.estimatedWeightKg, item.weightKg, item.forwarderRatePerKg);
   const estimateClass = item.shoeBuild ?? item.clothingWeight ?? item.bagSize;
+  const isWatch = isTdRoute(item.category);
 
   return (
     <PageContainer>
@@ -216,6 +218,8 @@ export default function OrderDetail() {
               estimatedShippingPHP={estimatedShippingPHP}
               forwarderBuyFeePHP={item.forwarderBuyFeePHP}
               qcServiceFeePHP={item.qcServiceFeePHP}
+              tdShippingPHP={item.tdShippingPHP}
+              tdInsurancePHP={item.tdInsurancePHP}
               totalCost={item.totalCost}
               sellingPrice={item.sellingPrice}
               profit={item.profit}
@@ -261,7 +265,7 @@ export default function OrderDetail() {
               <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
                 Source
               </h3>
-              <InfoRow label="Seller" value={item.seller} />
+              <InfoRow label={isWatch ? "Trusted Dealer" : "Seller"} value={item.seller} />
               <InfoRow label="Contact" value={item.sellerContact} />
               <InfoRow label="Batch" value={item.batch} />
               <InfoRow label="Size" value={item.size} />
@@ -281,6 +285,24 @@ export default function OrderDetail() {
                 />
               )}
               <InfoRow label="Price (PHP)" value={formatPHP(item.pricePHP)} mono />
+              {isWatch && (
+                <>
+                  <InfoRow
+                    label="TD Shipping"
+                    value={`${formatCNY(item.tdShippingCNY)} · ${formatPHP(item.tdShippingPHP)}`}
+                    mono
+                  />
+                  <InfoRow
+                    label="Insurance"
+                    value={
+                      item.tdInsured
+                        ? `${item.tdInsurancePct ?? 0}% · ${formatPHP(item.tdInsurancePHP)}`
+                        : "Off"
+                    }
+                    mono
+                  />
+                </>
+              )}
               {item.localShippingPHP != null && item.localShippingPHP > 0 && (
                 <InfoRow
                   label="Local Shipping"
@@ -319,10 +341,16 @@ export default function OrderDetail() {
               <h3 className="text-xs font-medium text-secondary uppercase tracking-wider">
                 Shipping
               </h3>
-              <InfoRow label="Weight" value={formatWeight(item.weightKg)} mono />
-              <InfoRow label="Tracking No." value={item.trackingNumber} />
-              <InfoRow label="Rate" value={`PHP${item.forwarderRatePerKg}/kg`} mono />
-              <InfoRow label="Forwarder Fee" value={formatPHP(item.forwarderFee)} mono />
+              {isWatch ? (
+                <InfoRow label="Tracking No." value={item.trackingNumber} />
+              ) : (
+                <>
+                  <InfoRow label="Weight" value={formatWeight(item.weightKg)} mono />
+                  <InfoRow label="Tracking No." value={item.trackingNumber} />
+                  <InfoRow label="Rate" value={`PHP${item.forwarderRatePerKg}/kg`} mono />
+                  <InfoRow label="Forwarder Fee" value={formatPHP(item.forwarderFee)} mono />
+                </>
+              )}
               {item.estimatedWeightKg != null && (
                 <InfoRow
                   label="Estimate"
@@ -347,7 +375,7 @@ export default function OrderDetail() {
                   />
                 </>
               )}
-              <InfoRow label="Branded" value={item.isBranded ? "Yes" : "No"} />
+              {!isWatch && <InfoRow label="Branded" value={item.isBranded ? "Yes" : "No"} />}
             </div>
 
             <div className="space-y-3">

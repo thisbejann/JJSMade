@@ -6,17 +6,16 @@ import {
   ALL_CATEGORIES,
   CATEGORY_CONFIG,
   FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
-  type ItemCategory,
 } from "../../lib/constants";
 import { formatKgValue, formatNetPHP } from "../../lib/formatters";
-import { CATEGORY_WEIGHT_CLASS, quoteLine, weightClassFor, type QuoteMode } from "../../lib/pricing";
+import { CATEGORY_WEIGHT_CLASS, quoteLine, weightClassFor, type ChinaQuoteInput, type QuoteMode } from "../../lib/pricing";
 import { Segmented } from "../ui/Segmented";
 import { CLASS_PICKERS, DEFAULT_CLASS_CHOICE, type ClassChoice } from "../../lib/weightClassPickers";
 
 interface PriceCalculatorProps {
   /** The form's values. The calculator follows them until you pick something else here. */
   priceCNY?: number;
-  category: ItemCategory;
+  category: ChinaCategory;
   isForwarderBuy: boolean;
   /** The form's EU size (Shoes only), used when the calculator's EU size is empty. */
   euSize?: string;
@@ -25,7 +24,12 @@ interface PriceCalculatorProps {
 // Local CN shipping the quote assumes, same default as the Quote Calculator.
 const QUOTE_LOCAL_SHIPPING_CNY = 10;
 
-const CATEGORIES = ALL_CATEGORIES.map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
+// China route only: a watch is quoted from its Trusted Dealer, so the item form hides this calculator for Watches.
+type ChinaCategory = ChinaQuoteInput["category"];
+const CATEGORIES = ALL_CATEGORIES.filter((c): c is ChinaCategory => c !== "watches").map((value) => ({
+  value,
+  label: CATEGORY_CONFIG[value].label,
+}));
 const MODES: { value: QuoteMode; label: string }[] = [
   { value: "regular", label: "Regular Order" },
   { value: "forwarder", label: "Bought by Forwarder" },
@@ -42,7 +46,7 @@ export function PriceCalculator({
   // Null / 0 means "not overridden": follow the form.
   const [calcPriceCNY, setCalcPriceCNY] = useState(0);
   const [modeOverride, setModeOverride] = useState<QuoteMode | null>(null);
-  const [categoryOverride, setCategoryOverride] = useState<ItemCategory | null>(null);
+  const [categoryOverride, setCategoryOverride] = useState<ChinaCategory | null>(null);
   const [classChoice, setClassChoice] = useState<ClassChoice>(DEFAULT_CLASS_CHOICE);
   const [euSizeStr, setEuSizeStr] = useState("");
 

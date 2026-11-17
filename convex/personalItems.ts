@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
-import { categoryHasSize, computeDerivedFields } from "./helpers";
+import { ConvexError, v } from "convex/values";
+import { categoryHasSize, chinaRouteCost, isTdRoute } from "./helpers";
 import { categoryValidator, type ItemCategory } from "./schema";
 import { deleteUnreferencedQcPhotos } from "./qcPhotoCleanup";
 
@@ -26,13 +26,18 @@ function normalizeSize(
   return trimmed;
 }
 
-function validateItemRules(data: {
+export function validateItemRules(data: {
   category: ItemCategory;
   size?: string;
   isForwarderBuy: boolean;
   forwarderBuyRateUsed?: number;
   forwarderBuyCommissionPercent?: number;
 }) {
+  // Personal Items are always costed on the China route, which has no TD rates.
+  if (isTdRoute(data.category)) {
+    throw new ConvexError("Watches can't be Personal Items");
+  }
+
   if (data.category === "shoes") {
     const parsed = Number(data.size);
     if (!data.size || Number.isNaN(parsed) || parsed <= 0) {
@@ -110,7 +115,7 @@ export const create = mutation({
       forwarderBuyCommissionPercent,
     });
 
-    const derived = computeDerivedFields({
+    const derived = chinaRouteCost({
       priceCNY: args.priceCNY,
       exchangeRateUsed: args.exchangeRateUsed,
       hasLocalShipping: args.hasLocalShipping,
@@ -221,7 +226,7 @@ export const update = mutation({
       forwarderBuyCommissionPercent: normalizedForwarderBuyCommissionPercent,
     });
 
-    const derived = computeDerivedFields({
+    const derived = chinaRouteCost({
       priceCNY: merged.priceCNY,
       exchangeRateUsed: merged.exchangeRateUsed,
       hasLocalShipping: merged.hasLocalShipping,

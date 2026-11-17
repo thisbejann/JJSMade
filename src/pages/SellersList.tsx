@@ -7,12 +7,13 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Modal } from "../components/ui/Modal";
 import { SellerCard } from "../components/sellers/SellerCard";
-import { SellerForm } from "../components/sellers/SellerForm";
+import { SellerForm, type SellerFormData } from "../components/sellers/SellerForm";
 import { useDebounce } from "../hooks/useDebounce";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, UserGroupIcon, Search01Icon } from "@hugeicons/core-free-icons";
 
 import { toast } from "sonner";
+import { ConvexError } from "convex/values";
 import type { Id } from "../../convex/_generated/dataModel";
 
 export default function SellersList() {
@@ -27,24 +28,24 @@ export default function SellersList() {
   const [editingSeller, setEditingSeller] = useState<(typeof sellers extends (infer T)[] | undefined ? T : never) | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  const handleCreate = async (data: { name: string; platform?: string; contactInfo?: string; storeLink?: string; notes?: string }) => {
+  const handleCreate = async (data: SellerFormData) => {
     try {
-      await createSeller(data as Parameters<typeof createSeller>[0]);
+      await createSeller(data);
       toast.success("Seller added");
       setFormOpen(false);
-    } catch {
-      toast.error("Failed to add seller");
+    } catch (err) {
+      toast.error(err instanceof ConvexError ? String(err.data) : "Failed to add seller");
     }
   };
 
-  const handleUpdate = async (data: { name: string; platform?: string; contactInfo?: string; storeLink?: string; notes?: string }) => {
+  const handleUpdate = async (data: SellerFormData) => {
     if (!editingSeller) return;
     try {
-      await updateSeller({ id: editingSeller._id as Id<"sellers">, ...data } as Parameters<typeof updateSeller>[0]);
+      await updateSeller({ id: editingSeller._id, ...data });
       toast.success("Seller updated");
       setEditingSeller(null);
-    } catch {
-      toast.error("Failed to update seller");
+    } catch (err) {
+      toast.error(err instanceof ConvexError ? String(err.data) : "Failed to update seller");
     }
   };
 
@@ -89,6 +90,7 @@ export default function SellersList() {
       </div>
 
       <SellerForm
+        key={editingSeller?._id ?? (formOpen ? "new" : "closed")}
         open={formOpen || !!editingSeller}
         onClose={() => { setFormOpen(false); setEditingSeller(null); }}
         onSubmit={editingSeller ? handleUpdate : handleCreate}

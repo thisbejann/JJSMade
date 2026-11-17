@@ -1,3 +1,5 @@
+import { isLegacyCategory, isTdRoute, statusFitsRoute } from "../../convex/helpers";
+
 export const STATUS_CONFIG = {
   ordered: { label: "Ordered", color: "info" },
   qc_sent: { label: "QC Sent", color: "warning" },
@@ -17,6 +19,11 @@ export const STATUS_FLOW: ItemStatus[] = [
   "delivered_to_customer",
 ];
 
+/** The pipeline for an Item's Sourcing Route. Watches skip the PH warehouse. */
+export function statusFlowFor(category: ItemCategory): ItemStatus[] {
+  return STATUS_FLOW.filter((s) => statusFitsRoute(category, s));
+}
+
 export const QC_STATUS_CONFIG = {
   not_received: { label: "Not Received", color: "tertiary" },
   pending_review: { label: "Pending Review", color: "warning" },
@@ -29,8 +36,10 @@ export type QcStatus = keyof typeof QC_STATUS_CONFIG;
 export const CATEGORY_CONFIG = {
   shoes: { label: "Shoes", icon: "Footprints" },
   clothes: { label: "Clothes", icon: "Shirt" },
-  watches_accessories: { label: "Watches & Accessories", icon: "Watch" },
+  watches: { label: "Watches", icon: "Watch" },
+  accessories: { label: "Accessories", icon: "Necklace" },
   bags: { label: "Bags", icon: "HandBag" },
+  watches_accessories: { label: "Watches & Accessories", icon: "Watch" },
 } as const;
 
 export type ItemCategory = keyof typeof CATEGORY_CONFIG;
@@ -41,6 +50,7 @@ export const PLATFORM_CONFIG = {
   "1688": { label: "1688" },
   yupoo: { label: "Yupoo" },
   direct: { label: "Direct" },
+  td: { label: "Trusted Dealer" },
 } as const;
 
 export type SellerPlatform = keyof typeof PLATFORM_CONFIG;
@@ -52,14 +62,29 @@ export const DEFAULTS = {
   markupMin: 700,
   markupMax: 850,
   calculatorProfitTarget: 400,
+  calculatorWatchesProfitTarget: 1500,
 } as const;
 
 export const FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT = 10;
 export const FORWARDER_BUY_QC_FEE_PHP = 150;
 
 export const ALL_STATUSES = Object.keys(STATUS_CONFIG) as ItemStatus[];
+
+export function statusChoicesFor(category: ItemCategory): ItemStatus[] {
+  return ALL_STATUSES.filter((s) => statusFitsRoute(category, s));
+}
 export const ALL_QC_STATUSES = Object.keys(QC_STATUS_CONFIG) as QcStatus[];
 export const ALL_CATEGORIES = Object.keys(CATEGORY_CONFIG) as ItemCategory[];
+
+/** What a category picker offers: current categories, plus a legacy one only if the Item already has it. */
+export function categoryChoices(existing?: ItemCategory): ItemCategory[] {
+  return ALL_CATEGORIES.filter((c) => !isLegacyCategory(c) || c === existing);
+}
+
+/** Personal Items stay off the TD route, so Watches is offered only to one that already has it. */
+export function personalCategoryChoices(existing?: ItemCategory): ItemCategory[] {
+  return categoryChoices(existing).filter((c) => !isTdRoute(c) || c === existing);
+}
 
 export const PERSONAL_STATUS_CONFIG = {
   ordered:              { label: "Ordered",          color: "info" },

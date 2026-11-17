@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -14,12 +15,16 @@ import { PageContainer } from "../components/layout/PageContainer";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
+import { Toggle } from "../components/ui/Toggle";
+import { api } from "../../convex/_generated/api";
+import { isTdRoute } from "../../convex/helpers";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
 import { Segmented } from "../components/ui/Segmented";
 import { CLASS_PICKERS, DEFAULT_CLASS_CHOICE, type ClassChoice } from "../lib/weightClassPickers";
+import { TdPicker } from "../components/items/TdPicker";
 import { useSettings } from "../hooks/useSettings";
 import {
-  ALL_CATEGORIES,
+  categoryChoices,
   CATEGORY_CONFIG,
   type ItemCategory,
   FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
@@ -32,6 +37,7 @@ import {
   weightClassFor,
   weightPreset,
   type MarginState,
+  type QuoteLine,
   type QuoteMode,
   type WeightClass,
 } from "../lib/pricing";
@@ -55,9 +61,13 @@ interface BundleItem {
   // Carried onto the saved Item by Save as Group Order.
   weightClass: WeightClass;
   estimatedWeightTyped: boolean;
+  // A watch line's Trusted Dealer and the rates it was quoted with. Save as
+  // Group Order carries the name onto the Item as its seller, and the rates so
+  // its cost matches its quote. Null on China-route lines.
+  td: { name: string; insured: boolean; tdShippingCNY: number; tdInsurancePct: number } | null;
 }
 
-const CATEGORIES = ALL_CATEGORIES.map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
+const CATEGORIES = categoryChoices().map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
@@ -78,6 +88,18 @@ export default function QuoteCalculator() {
   const [classChoice, setClassChoice] = useState<ClassChoice>(DEFAULT_CLASS_CHOICE);
   const [euSizeStr, setEuSizeStr] = useState("");
   const [kgStr, setKgStr] = useState("");
+  const [tdName, setTdName] = useState("");
+  const [insured, setInsured] = useState(true);
+
+  const dealer = useQuery(api.sellers.listTrustedDealers)?.find((d) => d.name === tdName);
+  const td =
+    dealer?.tdShippingCNY != null && dealer.tdInsurancePct != null
+      ? {
+          name: dealer.name,
+          tdShippingCNY: dealer.tdShippingCNY,
+          tdInsurancePct: dealer.tdInsurancePct,
+        }
+      : null;
 
   // --- Bundle scratchpad (ephemeral) ---
   const [view, setView] = useState<CalcView>("add");
@@ -89,8 +111,10 @@ export default function QuoteCalculator() {
   // turns the negotiated Bundle into a real group + items in one mutation.
   const [showSheet, setShowSheet] = useState(false);
 
+  const isWatch = isTdRoute(category);
+  // Watches are paid to the TD directly, at the regular CNY→PHP rate.
   const rate =
-    mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
+    isWatch || mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
 
   const ratePerKg = settings.defaultForwarderRate;
   const profitTarget = settings.calculatorProfitTarget;
@@ -100,22 +124,41 @@ export default function QuoteCalculator() {
   const preset = weightPreset(category, weightClass);
   const kgOverride = kgStr.trim() === "" ? undefined : Number(kgStr);
 
-  const line = quoteLine({
-    priceCNY,
-    localShippingCNY,
-    mode,
-    rate,
-    category,
-    weightClass,
-    kgOverride,
-    ratePerKg,
-    profitTarget,
-  });
-  const { commissionCNY, qcFee, estimatedWeightKg, estimatedWeightTyped, estimatedShippingPHP } =
-    line;
+  const line: QuoteLine | null =
+    category === "watches"
+      ? td && quoteLine({
+          category,
+          priceCNY,
+          rate,
+          td,
+          insured,
+          watchesProfitTarget: settings.calculatorWatchesProfitTarget,
+        })
+      : quoteLine({
+          priceCNY,
+          localShippingCNY,
+          mode,
+          rate,
+          category,
+          weightClass,
+          kgOverride,
+          ratePerKg,
+          profitTarget,
+        });
 
   let formulaParts: string[] = [];
-  if (priceCNY > 0) {
+  if (line?.tdCost && td && priceCNY > 0) {
+    const { pricePHP, tdShippingPHP, tdInsurancePHP } = line.tdCost;
+    formulaParts = [
+      `${priceCNY} × ${rate.toFixed(2)} = ${formatNetPHP(pricePHP)}`,
+      `+ TD shipping: ${td.tdShippingCNY} × ${rate.toFixed(2)} = ${formatNetPHP(tdShippingPHP)}`,
+      insured
+        ? `+ insurance: ${td.tdInsurancePct}% of price = ${formatNetPHP(tdInsurancePHP)}`
+        : "+ insurance: off",
+      `+ watches profit target: ${settings.calculatorWatchesProfitTarget}`,
+    ];
+  } else if (line && priceCNY > 0) {
+    const { commissionCNY, qcFee, estimatedWeightKg } = line;
     formulaParts = [`(${priceCNY} + ${localShippingCNY}) × ${rate.toFixed(2)}`];
     if (mode === "forwarder") {
       formulaParts.push(
@@ -142,30 +185,34 @@ export default function QuoteCalculator() {
     discountPct,
     estimatedMargin,
     estimatedShippingTotal,
+    marginExact,
     marginState,
   } = bundleTotals(bundle, offerEmpty ? undefined : offer);
 
   function addToBundle() {
-    if (priceCNY <= 0) return;
+    if (priceCNY <= 0 || !line) return;
     setBundle((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
         category,
-        mode,
+        // The TD route has no forwarder mode or local CN shipping.
+        mode: isWatch ? "regular" : mode,
         priceCNY,
-        localShippingCNY,
+        localShippingCNY: isWatch ? 0 : localShippingCNY,
         quote: line.quote,
         cost: line.cost,
-        estimatedWeightKg,
-        estimatedShippingPHP,
+        estimatedWeightKg: line.estimatedWeightKg,
+        estimatedShippingPHP: line.estimatedShippingPHP,
         weightClass,
-        estimatedWeightTyped,
+        estimatedWeightTyped: line.estimatedWeightTyped,
+        td: isWatch && td ? { ...td, insured } : null,
       },
     ]);
     // Reset what's specific to this item; keep mode/category/class/shipping.
     setPriceCNY(0);
     setKgStr("");
+    setInsured(true);
   }
 
   function removeFromBundle(id: string) {
@@ -231,7 +278,8 @@ export default function QuoteCalculator() {
 
         {view === "add" ? (
           <div className="space-y-6">
-            <Card>
+            {/* overflow-visible: Card clips by default, which cut off the TD Picker dropdown. */}
+            <Card className="overflow-visible">
               <CardContent className="space-y-5">
                 <Input
                   label="Item Price (CNY)"
@@ -243,49 +291,52 @@ export default function QuoteCalculator() {
                   placeholder="0.00"
                 />
 
-                <Input
-                  label="Local Shipping (CNY)"
-                  type="number"
-                  value={localShippingCNY || ""}
-                  onChange={(e) => setLocalShippingCNY(Number(e.target.value))}
-                  step="0.01"
-                  prefix="¥"
-                  placeholder="10"
-                />
+                {!isWatch && (
+                  <>
+                    <Input
+                      label="Local Shipping (CNY)"
+                      type="number"
+                      value={localShippingCNY || ""}
+                      onChange={(e) => setLocalShippingCNY(Number(e.target.value))}
+                      step="0.01"
+                      prefix="¥"
+                      placeholder="10"
+                    />
 
-                {/* Mode */}
-                <div>
-                  <label className="block text-xs font-medium text-secondary mb-2">
-                    Mode
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["regular", "forwarder"] as const).map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => setMode(m)}
-                        className={cn(
-                          "px-3 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border",
-                          mode === m
-                            ? "border-accent bg-accent-muted text-accent"
-                            : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
-                        )}
-                      >
-                        {m === "regular" ? "Regular Order" : "Bought by Forwarder"}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-tertiary mt-1.5">
-                    Rate: PHP{rate.toFixed(2)}/CNY1
-                  </p>
-                </div>
+                    <div>
+                      <label className="block text-xs font-medium text-secondary mb-2">
+                        Mode
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(["regular", "forwarder"] as const).map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setMode(m)}
+                            className={cn(
+                              "px-3 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border",
+                              mode === m
+                                ? "border-accent bg-accent-muted text-accent"
+                                : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
+                            )}
+                          >
+                            {m === "regular" ? "Regular Order" : "Bought by Forwarder"}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-tertiary mt-1.5">
+                        Rate: PHP{rate.toFixed(2)}/CNY1
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 {/* Category */}
                 <div>
                   <label className="block text-xs font-medium text-secondary mb-2">
                     Category
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {CATEGORIES.map((cat) => (
                       <button
                         key={cat.value}
@@ -332,6 +383,21 @@ export default function QuoteCalculator() {
                     )}
                   </div>
                 )}
+                {isWatch && (
+                  <>
+                    <TdPicker label="Trusted Dealer" value={tdName} onChange={setTdName} rates={td} />
+                    <Toggle
+                      label="TD insurance"
+                      description={
+                        td
+                          ? `${td.tdInsurancePct}% of the watch price`
+                          : "A % of the watch price, set by the TD"
+                      }
+                      checked={insured}
+                      onChange={setInsured}
+                    />
+                  </>
+                )}
                 {preset !== null && (
                   <Input
                     label="Weight (kg), optional"
@@ -347,7 +413,7 @@ export default function QuoteCalculator() {
             </Card>
 
             {/* Result */}
-            {priceCNY > 0 ? (
+            {line && priceCNY > 0 ? (
               <Card>
                 <CardContent className="space-y-3">
                   <div className="space-y-1">
@@ -360,9 +426,14 @@ export default function QuoteCalculator() {
                     <p className="font-mono text-2xl font-bold text-accent">
                       {formatNetPHP(line.quote)}
                     </p>
-                    {estimatedWeightKg !== null && (
+                    {line.estimatedWeightKg !== null && (
                       <p className="text-[11px] text-tertiary font-mono mt-1">
-                        {estimateLabel(estimatedWeightKg, estimatedShippingPHP)}
+                        {estimateLabel(line.estimatedWeightKg, line.estimatedShippingPHP)}
+                      </p>
+                    )}
+                    {line.tdCost && (
+                      <p className="text-[11px] text-tertiary font-mono mt-1">
+                        {formatNetPHP(line.cost)} TD-route cost · no estimated shipping
                       </p>
                     )}
                   </div>
@@ -372,7 +443,9 @@ export default function QuoteCalculator() {
               <Card>
                 <CardContent>
                   <p className="text-sm text-tertiary text-center py-4">
-                    Enter a CNY price to see the suggested selling price.
+                    {isWatch && !td
+                      ? "Pick a Trusted Dealer to quote this watch."
+                      : "Enter a CNY price to see the suggested selling price."}
                   </p>
                 </CardContent>
               </Card>
@@ -382,7 +455,7 @@ export default function QuoteCalculator() {
               type="button"
               size="lg"
               className="w-full"
-              disabled={priceCNY <= 0}
+              disabled={priceCNY <= 0 || !line}
               onClick={addToBundle}
             >
               <HugeiconsIcon icon={PlusSignIcon} size={18} strokeWidth={2} />
@@ -410,6 +483,7 @@ export default function QuoteCalculator() {
                 <MarginSignal
                   state={marginState}
                   margin={estimatedMargin}
+                  exact={marginExact}
                   discountPct={discountPct}
                   empty={offerEmpty}
                 />
@@ -450,9 +524,16 @@ export default function QuoteCalculator() {
                 </div>
 
                 {/* Supporting figures */}
-                <div className="grid grid-cols-3 gap-3 border-t border-border-subtle pt-4">
+                <div
+                  className={cn(
+                    "grid gap-3 border-t border-border-subtle pt-4",
+                    marginExact ? "grid-cols-2" : "grid-cols-3"
+                  )}
+                >
                   <Figure label="Bundle quote" value={formatNetPHP(bundleQuote)} />
-                  <Figure label="Est. shipping" value={formatNetPHP(estimatedShippingTotal)} muted />
+                  {!marginExact && (
+                    <Figure label="Est. shipping" value={formatNetPHP(estimatedShippingTotal)} muted />
+                  )}
                   <Figure label="Break-even floor" value={formatNetPHP(breakEvenFloor)} muted />
                 </div>
               </CardContent>
@@ -489,8 +570,13 @@ export default function QuoteCalculator() {
                           <p className="text-sm text-primary truncate">
                             {CATEGORY_CONFIG[it.category].label}
                           </p>
-                          <p className="text-[11px] text-tertiary font-mono">
-                            ¥{it.priceCNY} · {it.mode === "forwarder" ? "Forwarder" : "Regular"}
+                          <p className="text-[11px] text-tertiary font-mono truncate">
+                            ¥{it.priceCNY} ·{" "}
+                            {it.td
+                              ? `${it.td.name} · ${it.td.insured ? "insured" : "no insurance"}`
+                              : it.mode === "forwarder"
+                                ? "Forwarder"
+                                : "Regular"}
                           </p>
                           {it.estimatedWeightKg !== null && (
                             <p className="text-[11px] text-tertiary font-mono">
@@ -564,11 +650,13 @@ const MARGIN_META = {
 function MarginSignal({
   state,
   margin,
+  exact,
   discountPct,
   empty,
 }: {
   state: MarginState;
   margin: number;
+  exact: boolean;
   discountPct: number;
   empty: boolean;
 }) {
@@ -600,7 +688,12 @@ function MarginSignal({
         <HugeiconsIcon icon={meta.icon} size={16} strokeWidth={1.5} />
         <span className="text-xs font-semibold uppercase tracking-wide">{meta.label}</span>
       </div>
-      <p className="text-[11px] text-secondary mt-3">Estimated margin</p>
+      <p className="text-[11px] text-secondary mt-3">
+        {exact ? "Exact margin" : "Estimated margin"}
+        <span className="text-tertiary">
+          {exact ? " · all TD-route costs known" : " · rests on estimated shipping"}
+        </span>
+      </p>
       <p className={cn("font-mono text-3xl font-bold tabular-nums", meta.text)}>
         {formatNetPHP(margin)}
       </p>
