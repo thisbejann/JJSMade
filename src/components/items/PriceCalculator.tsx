@@ -1,54 +1,90 @@
 import { useState } from "react";
 import { Card, CardContent } from "../ui/Card";
 import { Input } from "../ui/Input";
+import { useSettings } from "../../hooks/useSettings";
+import {
+  ALL_CATEGORIES,
+  CATEGORY_CONFIG,
+  FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
+  type ItemCategory,
+} from "../../lib/constants";
+import { formatKgValue, formatNetPHP } from "../../lib/formatters";
+import { CATEGORY_WEIGHT_CLASS, quoteLine, weightClassFor, type QuoteMode } from "../../lib/pricing";
+import { Segmented } from "../ui/Segmented";
+import { CLASS_PICKERS, DEFAULT_CLASS_CHOICE, type ClassChoice } from "../../lib/weightClassPickers";
 
 interface PriceCalculatorProps {
-  cnyToPhpRate: number;
-  forwarderBuyServiceRate: number;
+  /** The form's values. The calculator follows them until you pick something else here. */
   priceCNY?: number;
+  category: ItemCategory;
+  isForwarderBuy: boolean;
 }
 
-type CalcMode = "regular" | "forwarder";
-type CalcCategory = "shoes_accessories" | "clothes";
+// Local CN shipping the quote assumes, same default as the Quote Calculator.
+const QUOTE_LOCAL_SHIPPING_CNY = 10;
 
-const MARKUP: Record<CalcCategory, number> = {
-  shoes_accessories: 850,
-  clothes: 750,
-};
+const CATEGORIES = ALL_CATEGORIES.map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
+const MODES: { value: QuoteMode; label: string }[] = [
+  { value: "regular", label: "Regular Order" },
+  { value: "forwarder", label: "Bought by Forwarder" },
+];
 
-export function PriceCalculator({ cnyToPhpRate, forwarderBuyServiceRate, priceCNY: formPriceCNY = 0 }: PriceCalculatorProps) {
-  // 0 means "not overridden" — fall back to the form's priceCNY
+export function PriceCalculator({
+  priceCNY: formPriceCNY = 0,
+  category: formCategory,
+  isForwarderBuy,
+}: PriceCalculatorProps) {
+  const { settings } = useSettings();
+
+  // Null / 0 means "not overridden": follow the form.
   const [calcPriceCNY, setCalcPriceCNY] = useState(0);
-  const [calcMode, setCalcMode] = useState<CalcMode>("regular");
-  const [calcCategory, setCalcCategory] = useState<CalcCategory>("shoes_accessories");
+  const [modeOverride, setModeOverride] = useState<QuoteMode | null>(null);
+  const [categoryOverride, setCategoryOverride] = useState<ItemCategory | null>(null);
+  const [classChoice, setClassChoice] = useState<ClassChoice>(DEFAULT_CLASS_CHOICE);
+  const [euSizeStr, setEuSizeStr] = useState("");
 
-  const effectivePriceCNY = calcPriceCNY > 0 ? calcPriceCNY : formPriceCNY;
-  const markup = MARKUP[calcCategory];
+  const priceCNY = calcPriceCNY > 0 ? calcPriceCNY : formPriceCNY;
+  const mode = modeOverride ?? (isForwarderBuy ? "forwarder" : "regular");
+  const category = categoryOverride ?? formCategory;
 
-  let result = 0;
-  let formulaBreakdown = "";
+  const rate = mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
+  const ratePerKg = settings.defaultForwarderRate;
+  const profitTarget = settings.calculatorProfitTarget;
+  const euSize = euSizeStr.trim() === "" ? undefined : Number(euSizeStr);
+  const classField = CATEGORY_WEIGHT_CLASS[category];
 
-  if (effectivePriceCNY > 0) {
-    if (calcMode === "regular") {
-      result = (effectivePriceCNY + 10) * cnyToPhpRate + markup;
-      formulaBreakdown = `(${effectivePriceCNY} + 10) × ${cnyToPhpRate.toFixed(2)} + ${markup}`;
-    } else {
-      result = (effectivePriceCNY + 10 + effectivePriceCNY * 0.1) * forwarderBuyServiceRate + 150 + markup;
-      formulaBreakdown = `(${effectivePriceCNY} + 10 + ${(effectivePriceCNY * 0.1).toFixed(2)}) × ${forwarderBuyServiceRate.toFixed(2)} + 150 + ${markup}`;
-    }
+  const line = quoteLine({
+    priceCNY,
+    localShippingCNY: QUOTE_LOCAL_SHIPPING_CNY,
+    mode,
+    rate,
+    category,
+    weightClass: weightClassFor(category, { ...classChoice, euSize }),
+    ratePerKg,
+    profitTarget,
+  });
+
+  const formulaParts = [`(${priceCNY} + ${QUOTE_LOCAL_SHIPPING_CNY}) × ${rate.toFixed(2)}`];
+  if (mode === "forwarder") {
+    formulaParts.push(
+      `+ ${FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT}% commission: ${line.commissionCNY.toFixed(2)} × ${rate.toFixed(2)}`,
+      `+ QC fee: ${line.qcFee}`
+    );
   }
+  if (line.estimatedWeightKg !== null) {
+    formulaParts.push(`+ shipping: ${formatKgValue(line.estimatedWeightKg)} kg × ${ratePerKg}`);
+  }
+  formulaParts.push(`+ profit target: ${profitTarget}`);
 
   return (
     <Card>
       <CardContent className="space-y-4">
-        <h2 className="font-display font-semibold text-base text-primary">
-          Price Calculator
-        </h2>
+        <h2 className="font-display font-semibold text-base text-primary">Price Calculator</h2>
 
         <Input
           label="Item Price (CNY)"
           type="number"
-          value={effectivePriceCNY || ""}
+          value={priceCNY || ""}
           onChange={(e) => {
             const val = Number(e.target.value);
             // Clearing the field reverts to the form's price
@@ -59,55 +95,60 @@ export function PriceCalculator({ cnyToPhpRate, forwarderBuyServiceRate, priceCN
           placeholder="0.00"
         />
 
-        <div>
-          <label className="block text-xs font-medium text-secondary mb-2">Mode</label>
-          <div className="grid grid-cols-2 gap-2">
-            {(["regular", "forwarder"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setCalcMode(mode)}
-                className={[
-                  "px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border",
-                  calcMode === mode
-                    ? "border-accent bg-accent-muted text-accent"
-                    : "border-border-default text-secondary hover:border-border-strong hover:bg-hover",
-                ].join(" ")}
-              >
-                {mode === "regular" ? "Regular Order" : "Bought by Forwarder"}
-              </button>
-            ))}
-          </div>
-        </div>
+        <Segmented label="Mode" options={MODES} value={mode} onChange={setModeOverride} />
 
         <div>
           <label className="block text-xs font-medium text-secondary mb-2">Category</label>
           <div className="grid grid-cols-2 gap-2">
-            {(["shoes_accessories", "clothes"] as const).map((cat) => (
+            {CATEGORIES.map((cat) => (
               <button
-                key={cat}
+                key={cat.value}
                 type="button"
-                onClick={() => setCalcCategory(cat)}
+                aria-pressed={category === cat.value}
+                onClick={() => setCategoryOverride(cat.value)}
                 className={[
-                  "px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border",
-                  calcCategory === cat
+                  "px-3 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center",
+                  category === cat.value
                     ? "border-accent bg-accent-muted text-accent"
                     : "border-border-default text-secondary hover:border-border-strong hover:bg-hover",
                 ].join(" ")}
               >
-                {cat === "shoes_accessories" ? "Shoes / Accessories" : "Clothes"}
-                <span className="ml-1 opacity-60">(+{MARKUP[cat]})</span>
+                {cat.label}
               </button>
             ))}
           </div>
         </div>
 
-        {effectivePriceCNY > 0 ? (
-          <div className="rounded-lg bg-accent-muted px-3 py-3 space-y-1">
-            <p className="text-xs text-secondary font-mono">{formulaBreakdown}</p>
+        {classField !== null && (
+          <div className={classField === "shoeBuild" ? "grid grid-cols-[1fr_5rem] gap-3 items-end" : undefined}>
+            <Segmented
+              label={CLASS_PICKERS[classField].label}
+              options={CLASS_PICKERS[classField].options}
+              value={classChoice[classField]}
+              onChange={(value) => setClassChoice((prev) => ({ ...prev, [classField]: value }))}
+            />
+            {classField === "shoeBuild" && (
+              <Input
+                label="EU size"
+                type="number"
+                value={euSizeStr}
+                onChange={(e) => setEuSizeStr(e.target.value)}
+                step="0.5"
+                placeholder="43"
+              />
+            )}
+          </div>
+        )}
+
+        {priceCNY > 0 ? (
+          <div className="rounded-lg bg-accent-muted px-3 py-3 space-y-2">
+            <div className="space-y-0.5">
+              {formulaParts.map((part, i) => (
+                <p key={i} className="text-[11px] text-secondary font-mono">{part}</p>
+              ))}
+            </div>
             <p className="font-mono text-lg font-semibold text-accent">
-              Charge customer: PHP{" "}
-              {result.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              Charge customer: {formatNetPHP(line.quote)}
             </p>
           </div>
         ) : (

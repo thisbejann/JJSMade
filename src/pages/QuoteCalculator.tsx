@@ -15,6 +15,8 @@ import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
+import { Segmented } from "../components/ui/Segmented";
+import { CLASS_PICKERS, DEFAULT_CLASS_CHOICE, type ClassChoice } from "../lib/weightClassPickers";
 import { useSettings } from "../hooks/useSettings";
 import {
   ALL_CATEGORIES,
@@ -32,7 +34,6 @@ import {
   type MarginState,
   type QuoteMode,
   type WeightClass,
-  type WeightClassField,
 } from "../lib/pricing";
 import { cn } from "../lib/utils";
 
@@ -58,37 +59,6 @@ interface BundleItem {
 
 const CATEGORIES = ALL_CATEGORIES.map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
 
-type ClassChoice = Required<Pick<WeightClass, WeightClassField>>;
-
-// The Weight Preset picker for each class field. CATEGORY_WEIGHT_CLASS says
-// which one a category shows.
-const CLASS_PICKERS: {
-  [F in WeightClassField]: { label: string; options: { value: ClassChoice[F]; label: string }[] };
-} = {
-  shoeBuild: {
-    label: "Shoe build",
-    options: [
-      { value: "light", label: "Light" },
-      { value: "regular", label: "Regular" },
-      { value: "chunky", label: "Chunky" },
-    ],
-  },
-  clothingWeight: {
-    label: "Clothing weight",
-    options: [
-      { value: "light", label: "Light" },
-      { value: "heavy", label: "Heavy" },
-    ],
-  },
-  bagSize: {
-    label: "Bag size",
-    options: [
-      { value: "small", label: "Small" },
-      { value: "large", label: "Large" },
-    ],
-  },
-};
-
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
 function estimateLabel(weightKg: number, shippingPHP: number): string {
@@ -105,11 +75,7 @@ export default function QuoteCalculator() {
   const [mode, setMode] = useState<QuoteMode>("regular");
   const [category, setCategory] = useState<ItemCategory>("shoes");
   // Weight Preset class, one choice per field. Each category reads only its own.
-  const [classChoice, setClassChoice] = useState<ClassChoice>({
-    shoeBuild: "regular",
-    clothingWeight: "light",
-    bagSize: "large",
-  });
+  const [classChoice, setClassChoice] = useState<ClassChoice>(DEFAULT_CLASS_CHOICE);
   const [euSizeStr, setEuSizeStr] = useState("");
   const [kgStr, setKgStr] = useState("");
 
@@ -640,45 +606,6 @@ function MarginSignal({
       </p>
       <p className="text-xs text-secondary mt-1">{sub}</p>
     </motion.div>
-  );
-}
-
-function Segmented<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (value: T) => void;
-}) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-secondary mb-2">{label}</label>
-      <div
-        className="grid gap-2"
-        style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
-      >
-        {options.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            aria-pressed={value === opt.value}
-            onClick={() => onChange(opt.value)}
-            className={cn(
-              "px-3 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center",
-              value === opt.value
-                ? "border-accent bg-accent-muted text-accent"
-                : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }
 

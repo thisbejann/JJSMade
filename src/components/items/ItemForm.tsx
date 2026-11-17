@@ -776,9 +776,9 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
             markupPercent={costs.markupPercent}
           />
           <PriceCalculator
-            cnyToPhpRate={settings.cnyToPhpRate}
-            forwarderBuyServiceRate={settings.forwarderBuyServiceRate ?? 8.6}
             priceCNY={priceCNY}
+            category={category}
+            isForwarderBuy={isForwarderBuy}
           />
         </div>
       </div>
