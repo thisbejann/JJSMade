@@ -1,7 +1,14 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { computeDerivedFields } from "./helpers";
-import { normalizeSize, resolveTdRates, storedTdFields, validateItemRules, watchTd } from "./items";
+import {
+  normalizeSize,
+  quotedTdRates,
+  resolveTdRates,
+  storedTdFields,
+  validateItemRules,
+  watchTd,
+} from "./items";
 import {
   bagSizeValidator,
   categoryValidator,
@@ -248,6 +255,9 @@ export const createWithItems = mutation({
         bagSize: v.optional(bagSizeValidator),
         estimatedWeightTyped: v.optional(v.boolean()),
         tdInsured: v.optional(v.boolean()),
+        // The TD rates the line was quoted with, like exchangeRateUsed.
+        tdShippingCNY: v.optional(v.number()),
+        tdInsurancePct: v.optional(v.number()),
       })
     ),
   },
@@ -285,7 +295,7 @@ export const createWithItems = mutation({
         forwarderBuyCommissionPercent,
       });
 
-      const td = watchTd(await resolveTdRates(ctx, item), item.tdInsured);
+      const td = watchTd(quotedTdRates(await resolveTdRates(ctx, item), item), item.tdInsured);
 
       const hasLocalShipping = item.localShippingCNY != null && item.localShippingCNY > 0;
 

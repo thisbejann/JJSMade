@@ -3,6 +3,7 @@ import { isShippingEstimated } from "./helpers";
 import {
   normalizeSize,
   planBagReclassification,
+  quotedTdRates,
   storedEstimateFields,
   validateItemRules,
   watchTd,
@@ -152,5 +153,33 @@ describe("watchTd", () => {
 
   it("is absent off the TD route, where there are no rates", () => {
     expect(watchTd(undefined, true)).toBeUndefined();
+  });
+});
+
+describe("quotedTdRates", () => {
+  const current = { tdShippingCNY: 300, tdInsurancePct: 12 };
+
+  it("keeps the rates a Bundle watch was quoted with over the TD's current rates", () => {
+    expect(quotedTdRates(current, { tdShippingCNY: 250, tdInsurancePct: 10 })).toEqual({
+      tdShippingCNY: 250,
+      tdInsurancePct: 10,
+    });
+  });
+
+  it("falls back to the TD's current rates when the line carries none", () => {
+    expect(quotedTdRates(current, {})).toEqual(current);
+  });
+
+  it("ignores quoted rates off the TD route", () => {
+    expect(quotedTdRates(undefined, { tdShippingCNY: 250, tdInsurancePct: 10 })).toBeUndefined();
+  });
+
+  it("rejects negative or non-numeric quoted rates", () => {
+    expect(() => quotedTdRates(current, { tdShippingCNY: -1, tdInsurancePct: 10 })).toThrow(
+      "Quoted TD rates must be 0 or higher"
+    );
+    expect(() => quotedTdRates(current, { tdShippingCNY: 250, tdInsurancePct: NaN })).toThrow(
+      "Quoted TD rates must be 0 or higher"
+    );
   });
 });

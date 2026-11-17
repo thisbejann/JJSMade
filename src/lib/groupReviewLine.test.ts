@@ -24,7 +24,7 @@ const watchLine: BundleLine = {
   estimatedWeightKg: null,
   weightClass: {},
   estimatedWeightTyped: false,
-  td: { name: "Noob Factory", insured: false },
+  td: { name: "Noob Factory", insured: false, tdShippingCNY: 250, tdInsurancePct: 10 },
 };
 
 describe("initialRow", () => {
@@ -51,7 +51,7 @@ describe("rowComplete", () => {
 describe("groupItemFromLine", () => {
   const settings = { cnyToPhpRate: 8, defaultForwarderRate: 400, forwarderBuyServiceRate: 9 };
 
-  it("sends a watch's TD as its seller with its insurance choice, and no size or rates", () => {
+  it("sends a watch's TD as its seller with its insurance choice and quoted rates, and no size", () => {
     const row = { name: " Submariner ", seller: "Noob Factory", size: "" };
     const item = groupItemFromLine(watchLine, row, settings);
 
@@ -60,14 +60,14 @@ describe("groupItemFromLine", () => {
       category: "watches",
       seller: "Noob Factory",
       tdInsured: false,
+      tdShippingCNY: 250,
+      tdInsurancePct: 10,
       priceCNY: 2000,
       sellingPrice: 18500,
       isForwarderBuy: false,
       exchangeRateUsed: 8,
     });
     expect(item.size).toBeUndefined();
-    expect(item).not.toHaveProperty("tdShippingCNY");
-    expect(item).not.toHaveProperty("tdInsurancePct");
   });
 
   it("leaves tdInsured off a China-route line and keeps its size and estimate", () => {
@@ -81,5 +81,7 @@ describe("groupItemFromLine", () => {
       shoeBuild: "regular",
     });
     expect(item.tdInsured).toBeUndefined();
+    expect(item.tdShippingCNY).toBeUndefined();
+    expect(item.tdInsurancePct).toBeUndefined();
   });
 });

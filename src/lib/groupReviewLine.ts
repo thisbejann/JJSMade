@@ -13,8 +13,8 @@ export interface BundleLine {
   estimatedWeightKg: number | null;
   weightClass: WeightClass;
   estimatedWeightTyped: boolean;
-  /** A watch line's Trusted Dealer. Null on China-route lines. */
-  td: { name: string; insured: boolean } | null;
+  /** A watch line's Trusted Dealer and the rates it was quoted with. Null on China-route lines. */
+  td: { name: string; insured: boolean; tdShippingCNY: number; tdInsurancePct: number } | null;
 }
 
 export interface RowFields {
@@ -52,7 +52,7 @@ function lineEstimate(line: BundleLine) {
   };
 }
 
-/** A TD's rates are absolute, so a watch sends only its TD and the server copies them. */
+/** A watch sends its TD and the rates it was quoted with, so its saved cost matches its quote. */
 export function groupItemFromLine(
   line: BundleLine,
   row: RowFields,
@@ -79,6 +79,8 @@ export function groupItemFromLine(
       ? FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT
       : undefined,
     tdInsured: line.td?.insured,
+    tdShippingCNY: line.td?.tdShippingCNY,
+    tdInsurancePct: line.td?.tdInsurancePct,
     ...lineEstimate(line),
   };
 }

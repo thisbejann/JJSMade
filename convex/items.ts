@@ -103,6 +103,24 @@ export async function resolveTdRates(
   return { tdShippingCNY: td.tdShippingCNY, tdInsurancePct: td.tdInsurancePct };
 }
 
+/**
+ * A Bundle watch is saved with the TD rates that set its quote, so its cost matches its price
+ * even if the TD's rates changed since. `current` comes from resolveTdRates, which also checks
+ * the seller is still a TD.
+ */
+export function quotedTdRates(
+  current: TdRates | undefined,
+  quoted: { tdShippingCNY?: number; tdInsurancePct?: number }
+): TdRates | undefined {
+  if (!current) return undefined;
+  const { tdShippingCNY, tdInsurancePct } = quoted;
+  if (tdShippingCNY == null || tdInsurancePct == null) return current;
+  if (!(tdShippingCNY >= 0) || !(tdInsurancePct >= 0)) {
+    throw new ConvexError("Quoted TD rates must be 0 or higher");
+  }
+  return { tdShippingCNY, tdInsurancePct };
+}
+
 type WatchTd = TdRates & { insured: boolean };
 
 export function watchTd(rates: TdRates | undefined, insured: boolean | undefined): WatchTd | undefined {

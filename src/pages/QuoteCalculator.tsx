@@ -61,9 +61,10 @@ interface BundleItem {
   // Carried onto the saved Item by Save as Group Order.
   weightClass: WeightClass;
   estimatedWeightTyped: boolean;
-  // A watch line's Trusted Dealer. Save as Group Order carries the name onto
-  // the Item as its seller. Null on China-route lines.
-  td: { name: string; insured: boolean } | null;
+  // A watch line's Trusted Dealer and the rates it was quoted with. Save as
+  // Group Order carries the name onto the Item as its seller, and the rates so
+  // its cost matches its quote. Null on China-route lines.
+  td: { name: string; insured: boolean; tdShippingCNY: number; tdInsurancePct: number } | null;
 }
 
 const CATEGORIES = categoryChoices().map((value) => ({ value, label: CATEGORY_CONFIG[value].label }));
@@ -205,7 +206,7 @@ export default function QuoteCalculator() {
         estimatedShippingPHP: line.estimatedShippingPHP,
         weightClass,
         estimatedWeightTyped: line.estimatedWeightTyped,
-        td: isWatch && td ? { name: td.name, insured } : null,
+        td: isWatch && td ? { ...td, insured } : null,
       },
     ]);
     // Reset what's specific to this item; keep mode/category/class/shipping.
