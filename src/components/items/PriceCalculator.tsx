@@ -18,6 +18,8 @@ interface PriceCalculatorProps {
   priceCNY?: number;
   category: ItemCategory;
   isForwarderBuy: boolean;
+  /** The form's EU size (Shoes only), used when the calculator's EU size is empty. */
+  euSize?: string;
 }
 
 // Local CN shipping the quote assumes, same default as the Quote Calculator.
@@ -33,6 +35,7 @@ export function PriceCalculator({
   priceCNY: formPriceCNY = 0,
   category: formCategory,
   isForwarderBuy,
+  euSize: formEuSizeStr = "",
 }: PriceCalculatorProps) {
   const { settings } = useSettings();
 
@@ -50,7 +53,9 @@ export function PriceCalculator({
   const rate = mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
   const ratePerKg = settings.defaultForwarderRate;
   const profitTarget = settings.calculatorProfitTarget;
-  const euSize = euSizeStr.trim() === "" ? undefined : Number(euSizeStr);
+  // Clearing the field reverts to the form's size
+  const effectiveEuSizeStr = euSizeStr.trim() || formEuSizeStr.trim();
+  const euSize = effectiveEuSizeStr === "" ? undefined : Number(effectiveEuSizeStr);
   const classField = CATEGORY_WEIGHT_CLASS[category];
 
   const line = quoteLine({
@@ -131,7 +136,7 @@ export function PriceCalculator({
               <Input
                 label="EU size"
                 type="number"
-                value={euSizeStr}
+                value={effectiveEuSizeStr}
                 onChange={(e) => setEuSizeStr(e.target.value)}
                 step="0.5"
                 placeholder="43"

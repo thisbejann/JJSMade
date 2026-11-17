@@ -779,6 +779,7 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
             priceCNY={priceCNY}
             category={category}
             isForwarderBuy={isForwarderBuy}
+            euSize={category === "shoes" ? size : undefined}
           />
         </div>
       </div>
