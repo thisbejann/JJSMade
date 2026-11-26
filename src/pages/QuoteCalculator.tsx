@@ -343,7 +343,7 @@ export default function QuoteCalculator() {
                         type="button"
                         onClick={() => setCategory(cat.value)}
                         className={cn(
-                          "px-3 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center",
+                          "px-1 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center",
                           category === cat.value
                             ? "border-accent bg-accent-muted text-accent"
                             : "border-border-default text-secondary hover:border-border-strong hover:bg-hover"
