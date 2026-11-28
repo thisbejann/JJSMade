@@ -24,12 +24,14 @@ InputPrimitive.displayName = "InputPrimitive"
 interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "prefix"> {
   label?: string;
   error?: string;
+  /** One muted line under the field. Hidden while an error shows. */
+  hint?: string;
   prefix?: React.ReactNode;
   suffix?: React.ReactNode;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, prefix, suffix, className, id, ...props }, ref) => {
+  ({ label, error, hint, prefix, suffix, className, id, ...props }, ref) => {
     const generatedId = React.useId();
     const inputId = id || generatedId;
 
@@ -56,7 +58,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               className
             )}
             aria-invalid={!!error}
-            aria-describedby={error ? `${inputId}-error` : undefined}
+            aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
             {...props}
           />
           {suffix && (
@@ -65,10 +67,16 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             </span>
           )}
         </div>
-        {error && (
+        {error ? (
           <p id={`${inputId}-error`} className="text-xs text-destructive">
             {error}
           </p>
+        ) : (
+          hint && (
+            <p id={`${inputId}-hint`} className="text-[11px] text-tertiary">
+              {hint}
+            </p>
+          )
         )}
       </div>
     );

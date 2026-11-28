@@ -7,7 +7,7 @@ export function Segmented<T extends string>({
   onChange,
 }: {
   label: string;
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; detail?: string }[];
   value: T;
   onChange: (value: T) => void;
 }) {
@@ -32,6 +32,7 @@ export function Segmented<T extends string>({
             )}
           >
             {opt.label}
+            {opt.detail && <span className="block mt-0.5 font-mono text-[10px] opacity-70">{opt.detail}</span>}
           </button>
         ))}
       </div>

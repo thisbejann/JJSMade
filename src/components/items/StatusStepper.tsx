@@ -372,7 +372,8 @@ export function StatusStepper({ item }: StatusStepperProps) {
               {isExpanded && status === "arrived_ph_warehouse" && (
                 <div className="mt-3 space-y-3 rounded-lg border border-border-subtle bg-surface p-3">
                   <Input
-                    label="Weight (kg)"
+                    label="Actual weight (kg)"
+                    hint="from the forwarder"
                     type="number"
                     value={weightDraft || ""}
                     onChange={(e) => setWeightDraft(Number(e.target.value))}
