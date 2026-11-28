@@ -10,7 +10,18 @@ import {
   keepsStoredRates,
   type TdRates,
 } from "./helpers";
-import { categoryValidator, itemStatusValidator, type ItemCategory, type ItemStatus } from "./schema";
+import {
+  bagSizeValidator,
+  categoryValidator,
+  clothingWeightValidator,
+  itemStatusValidator,
+  shoeBuildValidator,
+  type BagSize,
+  type ClothingWeight,
+  type ItemCategory,
+  type ItemStatus,
+  type ShoeBuild,
+} from "./schema";
 import { deleteUnreferencedQcPhotos } from "./qcPhotoCleanup";
 
 const CLOTHES_SIZES = new Set(["S", "M", "L", "XL"]);
@@ -136,15 +147,45 @@ export function storedTdFields(td: WatchTd | undefined) {
   };
 }
 
-/** A watch has no weight-based cost, so one reclassified from the China route drops its estimate. */
-export function storedEstimateFields(category: ItemCategory) {
-  if (!isTdRoute(category)) return {};
+/** The quote-time estimate a create or update may record. */
+const estimateArgs = {
+  estimatedWeightKg: v.optional(v.number()),
+  shoeBuild: v.optional(shoeBuildValidator),
+  clothingWeight: v.optional(clothingWeightValidator),
+  bagSize: v.optional(bagSizeValidator),
+};
+
+type EstimateFields = {
+  estimatedWeightKg?: number;
+  estimatedWeightTyped?: boolean;
+  shoeBuild?: ShoeBuild;
+  clothingWeight?: ClothingWeight;
+  bagSize?: BagSize;
+};
+
+/**
+ * The estimate fields to write. A watch has no weight-based cost, so one reclassified
+ * from the China route drops its estimate. A newly recorded estimate replaces the whole
+ * stored one, so a class from an earlier category or a typed weight doesn't linger.
+ */
+export function storedEstimateFields(category: ItemCategory, recorded: EstimateFields = {}): EstimateFields {
+  if (isTdRoute(category)) {
+    return {
+      estimatedWeightKg: undefined,
+      estimatedWeightTyped: undefined,
+      shoeBuild: undefined,
+      clothingWeight: undefined,
+      bagSize: undefined,
+    };
+  }
+  if (recorded.estimatedWeightKg === undefined) return {};
+  if (!(recorded.estimatedWeightKg > 0)) throw new ConvexError("Estimated weight must be greater than 0");
   return {
-    estimatedWeightKg: undefined,
-    estimatedWeightTyped: undefined,
-    shoeBuild: undefined,
-    clothingWeight: undefined,
-    bagSize: undefined,
+    estimatedWeightKg: recorded.estimatedWeightKg,
+    estimatedWeightTyped: recorded.estimatedWeightTyped,
+    shoeBuild: recorded.shoeBuild,
+    clothingWeight: recorded.clothingWeight,
+    bagSize: recorded.bagSize,
   };
 }
 
@@ -181,6 +222,7 @@ export const create = mutation({
     status: itemStatusValidator,
     notes: v.optional(v.string()),
     orderDate: v.number(),
+    ...estimateArgs,
   },
   handler: async (ctx, args) => {
     const size = normalizeSize(args.category, args.size);
@@ -203,6 +245,7 @@ export const create = mutation({
     });
 
     const td = watchTd(await resolveTdRates(ctx, args), args.tdInsured);
+    const estimate = storedEstimateFields(args.category, args);
 
     const derived = computeDerivedFields({
       category: args.category,
@@ -211,6 +254,7 @@ export const create = mutation({
       hasLocalShipping: args.hasLocalShipping,
       localShippingCNY: args.localShippingCNY,
       weightKg: args.weightKg,
+      estimatedWeightKg: estimate.estimatedWeightKg,
       forwarderRatePerKg: args.forwarderRatePerKg,
       isForwarderBuy,
       forwarderBuyRateUsed,
@@ -223,6 +267,7 @@ export const create = mutation({
     const id = await ctx.db.insert("items", {
       ...args,
       ...storedTdFields(td),
+      ...estimate,
       size,
       trackingNumber,
       isForwarderBuy,
@@ -277,6 +322,7 @@ export const update = mutation({
     status: v.optional(itemStatusValidator),
     notes: v.optional(v.string()),
     orderDate: v.optional(v.number()),
+    ...estimateArgs,
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -334,6 +380,7 @@ export const update = mutation({
     });
 
     const td = watchTd(await resolveTdRates(ctx, merged, existing), merged.tdInsured);
+    const estimate = storedEstimateFields(merged.category, updates);
 
     const derived = computeDerivedFields({
       category: merged.category,
@@ -360,7 +407,7 @@ export const update = mutation({
     await ctx.db.patch(id, {
       ...updates,
       ...storedTdFields(td),
-      ...storedEstimateFields(merged.category),
+      ...estimate,
       size,
       trackingNumber,
       isForwarderBuy,

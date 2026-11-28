@@ -79,3 +79,53 @@ export function shippingEstimateOptions(
     }),
   };
 }
+
+/** The quote-time estimate an Item stores. Only the category's own class field is set. */
+export interface ItemEstimate {
+  estimatedWeightKg: number;
+  shoeBuild?: ClassChoice["shoeBuild"];
+  clothingWeight?: ClassChoice["clothingWeight"];
+  bagSize?: ClassChoice["bagSize"];
+}
+
+/**
+ * The estimate an Item form saves. Null when there is none to save: a watch,
+ * or an older Item whose class was never picked (choice null).
+ */
+export function recordedEstimate(
+  category: ItemCategory,
+  choice: ClassChoice | null,
+  euSize: number | undefined
+): ItemEstimate | null {
+  if (choice === null) return null;
+  const weightClass = weightClassFor(category, { ...choice, euSize });
+  const kg = weightPreset(category, weightClass);
+  if (kg === null) return null;
+  const { shoeBuild, clothingWeight, bagSize } = weightClass;
+  return { estimatedWeightKg: kg, shoeBuild, clothingWeight, bagSize };
+}
+
+/** The class an Item opens its picker with. Null when it has no recorded estimate. */
+export function storedClassChoice(item: {
+  estimatedWeightKg?: number;
+  shoeBuild?: ClassChoice["shoeBuild"];
+  clothingWeight?: ClassChoice["clothingWeight"];
+  bagSize?: ClassChoice["bagSize"];
+}): ClassChoice | null {
+  if (item.estimatedWeightKg == null) return null;
+  return {
+    shoeBuild: item.shoeBuild ?? DEFAULT_CLASS_CHOICE.shoeBuild,
+    clothingWeight: item.clothingWeight ?? DEFAULT_CLASS_CHOICE.clothingWeight,
+    bagSize: item.bagSize ?? DEFAULT_CLASS_CHOICE.bagSize,
+  };
+}
+
+export function sameEstimate(a: ItemEstimate | null, b: ItemEstimate | null): boolean {
+  if (a === null || b === null) return a === b;
+  return (
+    a.estimatedWeightKg === b.estimatedWeightKg &&
+    a.shoeBuild === b.shoeBuild &&
+    a.clothingWeight === b.clothingWeight &&
+    a.bagSize === b.bagSize
+  );
+}

@@ -20,6 +20,8 @@ interface PriceCalculatorProps {
   isForwarderBuy: boolean;
   /** The form's EU size (Shoes only), used when the calculator's EU size is empty. */
   euSize?: string;
+  /** The form's Shipping estimate class. Null when the form's picker is blank. */
+  classChoice?: ClassChoice | null;
 }
 
 // Local CN shipping the quote assumes, same default as the Quote Calculator.
@@ -41,6 +43,7 @@ export function PriceCalculator({
   category: formCategory,
   isForwarderBuy,
   euSize: formEuSizeStr = "",
+  classChoice: formClassChoice = null,
 }: PriceCalculatorProps) {
   const { settings } = useSettings();
 
@@ -48,12 +51,14 @@ export function PriceCalculator({
   const [calcPriceCNY, setCalcPriceCNY] = useState(0);
   const [modeOverride, setModeOverride] = useState<QuoteMode | null>(null);
   const [categoryOverride, setCategoryOverride] = useState<ChinaCategory | null>(null);
-  const [classChoice, setClassChoice] = useState<ClassChoice>(DEFAULT_CLASS_CHOICE);
+  const [classOverride, setClassOverride] = useState<Partial<ClassChoice>>({});
   const [euSizeStr, setEuSizeStr] = useState("");
 
   const priceCNY = calcPriceCNY > 0 ? calcPriceCNY : formPriceCNY;
   const mode = modeOverride ?? (isForwarderBuy ? "forwarder" : "regular");
   const category = categoryOverride ?? formCategory;
+  // A blank form picker still quotes on the default class.
+  const classChoice: ClassChoice = { ...DEFAULT_CLASS_CHOICE, ...formClassChoice, ...classOverride };
 
   const rate = mode === "regular" ? settings.cnyToPhpRate : settings.forwarderBuyServiceRate;
   const ratePerKg = settings.defaultForwarderRate;
@@ -131,7 +136,7 @@ export function PriceCalculator({
         <ShippingEstimatePicker
           category={category}
           choice={classChoice}
-          onChange={setClassChoice}
+          onPick={(picked) => setClassOverride((current) => ({ ...current, ...picked }))}
           euSizeStr={effectiveEuSizeStr}
           onEuSizeChange={setEuSizeStr}
         />

@@ -6,25 +6,28 @@ import { Segmented } from "../ui/Segmented";
 
 // The Weight Preset class picker behind Estimated Shipping. Each option shows
 // its preset kg, and the selected one shows what belongs in it. Shoes also take
-// the EU size, since it picks the ≤ 42 / 43+ preset.
+// the EU size, since it picks the ≤ 42 / 43+ preset, unless the host form
+// already has an EU size field (no onEuSizeChange).
 export function ShippingEstimatePicker({
   category,
   choice,
-  onChange,
+  onPick,
   euSizeStr,
   onEuSizeChange,
 }: {
   category: ItemCategory;
-  choice: ClassChoice;
-  onChange: (choice: ClassChoice) => void;
+  /** A missing class shows no option selected. */
+  choice: Partial<ClassChoice>;
+  /** Called with only the field that was picked. */
+  onPick: (picked: Partial<ClassChoice>) => void;
   euSizeStr: string;
-  onEuSizeChange: (euSizeStr: string) => void;
+  onEuSizeChange?: (euSizeStr: string) => void;
 }) {
   const picker = shippingEstimateOptions(category, parseEuSize(euSizeStr));
   if (picker === null) return null;
   const { field, label, options } = picker;
   const selected = options.find((opt) => opt.value === choice[field]);
-  const takesEuSize = field === "shoeBuild";
+  const takesEuSize = field === "shoeBuild" && onEuSizeChange !== undefined;
 
   return (
     // EU size sits beside the buttons when the container is wide enough, and
@@ -35,7 +38,7 @@ export function ShippingEstimatePicker({
           label={`Shipping estimate · ${label}`}
           options={options.map((opt) => ({ value: opt.value, label: opt.label, detail: `${opt.kg.toFixed(1)} kg` }))}
           value={choice[field]}
-          onChange={(value) => onChange({ ...choice, [field]: value })}
+          onChange={(value) => onPick({ [field]: value })}
         />
         {takesEuSize && (
           <div className="order-2 mt-2 @md:order-none @md:mt-0">

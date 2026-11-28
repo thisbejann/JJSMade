@@ -54,4 +54,4 @@ Research and the weight history behind the presets are in `docs/research/weight-
 - The calculator's margin now includes estimated shipping. **Pre-shipping Margin** is renamed **[Estimated Margin]**, the "excl. forwarder shipping" caveat goes away, and the [Break-even Floor] rises to include shipping.
 - Shoe quoting needs the EU size and a Build up front, which is one extra choice per shoe line. The size carries into the Group Review Sheet, so it's still entered only once.
 - Changing a preset is a code change and a deploy, not a settings edit. That is deliberate.
-- Items created through ItemForm (outside the calculator) have no recorded estimate, so they show no estimate-vs-actual gap.
+- Items created through ItemForm (outside the calculator) have no recorded estimate, so they show no estimate-vs-actual gap. *Amended 2026-11-28:* ItemForm now records the estimate too. The weight class sits next to Size and is preselected on new Items. Older Items with no estimate are left blank rather than given one after the fact.
