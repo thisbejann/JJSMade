@@ -31,7 +31,7 @@ import {
 } from "../../lib/constants";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "../../lib/utils";
-import { formatPHP } from "../../lib/formatters";
+import { formatKgValue, formatPHP } from "../../lib/formatters";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
@@ -41,7 +41,7 @@ import { ShippingEstimatePicker } from "./ShippingEstimatePicker";
 import {
   DEFAULT_CLASS_CHOICE,
   parseEuSize,
-  recordedEstimate,
+  presetEstimate,
   sameEstimate,
   storedClassChoice,
   type ClassChoice,
@@ -241,13 +241,17 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
   const existingPhotoIds = (existingItem?.qcPhotoIds ?? []).filter((id) => photoIds.includes(id));
 
   const isWatch = isTdRoute(category);
-  const estimate = recordedEstimate(category, classChoice, category === "shoes" ? parseEuSize(size) : undefined);
+  const euSizeStr = category === "shoes" ? size : "";
+  const estimate = presetEstimate(category, classChoice, parseEuSize(euSizeStr));
+  // A typed weight opens with a blank picker and is kept until a class is picked.
+  const keptTypedKg =
+    existingItem?.estimatedWeightTyped && classChoice === null && !isWatch ? existingItem.estimatedWeightKg : undefined;
   // The estimate the form opened with. An edit that leaves it alone doesn't
-  // resave it, so a typed Known Weight or an older preset is kept.
+  // resave it, so a typed weight or an older preset is kept.
   const openedEstimate = useMemo(
     () =>
       existingItem
-        ? recordedEstimate(
+        ? presetEstimate(
             existingItem.category,
             storedClassChoice(existingItem),
             existingItem.category === "shoes" ? parseEuSize(existingItem.size ?? "") : undefined
@@ -500,12 +504,19 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
               )}
 
               {/* Independent of Size: an XL tee is still Light. Shoes read the EU Size above. */}
-              <ShippingEstimatePicker
-                category={category}
-                choice={classChoice ?? {}}
-                onPick={(picked) => setClassChoice((current) => ({ ...(current ?? DEFAULT_CLASS_CHOICE), ...picked }))}
-                euSizeStr={category === "shoes" ? size : ""}
-              />
+              <div className="space-y-1.5 empty:hidden">
+                <ShippingEstimatePicker
+                  category={category}
+                  choice={classChoice ?? {}}
+                  onPick={(picked) => setClassChoice((current) => ({ ...(current ?? DEFAULT_CLASS_CHOICE), ...picked }))}
+                  euSizeStr={euSizeStr}
+                />
+                {keptTypedKg != null && (
+                  <p className="text-[11px] text-tertiary">
+                    Typed estimate {formatKgValue(keptTypedKg)} kg is kept until you pick a class.
+                  </p>
+                )}
+              </div>
 
               <Select
                 label="Status"
@@ -904,7 +915,7 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
               priceCNY={priceCNY}
               category={category}
               isForwarderBuy={isForwarderBuy}
-              euSize={category === "shoes" ? size : undefined}
+              euSize={euSizeStr}
               classChoice={classChoice}
             />
           )}

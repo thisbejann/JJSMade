@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ItemCategory } from "./constants";
 import {
   DEFAULT_CLASS_CHOICE,
-  recordedEstimate,
+  presetEstimate,
   sameEstimate,
   shippingEstimateOptions,
   storedClassChoice,
@@ -42,9 +42,9 @@ describe("shippingEstimateOptions", () => {
   });
 });
 
-describe("recordedEstimate", () => {
+describe("presetEstimate", () => {
   it("records a Heavy clothes Item at 1.0 kg", () => {
-    expect(recordedEstimate("clothes", { ...DEFAULT_CLASS_CHOICE, clothingWeight: "heavy" }, undefined)).toEqual({
+    expect(presetEstimate("clothes", { ...DEFAULT_CLASS_CHOICE, clothingWeight: "heavy" }, undefined)).toEqual({
       estimatedWeightKg: 1.0,
       clothingWeight: "heavy",
     });
@@ -52,25 +52,29 @@ describe("recordedEstimate", () => {
 
   it("records a shoe's build at the kg for its EU size", () => {
     const chunky = { ...DEFAULT_CLASS_CHOICE, shoeBuild: "chunky" as const };
-    expect(recordedEstimate("shoes", chunky, 42)).toEqual({ estimatedWeightKg: 1.5, shoeBuild: "chunky" });
-    expect(recordedEstimate("shoes", chunky, 44)).toEqual({ estimatedWeightKg: 1.7, shoeBuild: "chunky" });
+    expect(presetEstimate("shoes", chunky, 42)).toEqual({ estimatedWeightKg: 1.5, shoeBuild: "chunky" });
+    expect(presetEstimate("shoes", chunky, 44)).toEqual({ estimatedWeightKg: 1.7, shoeBuild: "chunky" });
   });
 
   it("records a bag's type, and 0.5 kg for accessories", () => {
-    expect(recordedEstimate("bags", DEFAULT_CLASS_CHOICE, undefined)).toEqual({ estimatedWeightKg: 3.5, bagSize: "large" });
-    expect(recordedEstimate("accessories", DEFAULT_CLASS_CHOICE, undefined)).toEqual({ estimatedWeightKg: 0.5 });
+    expect(presetEstimate("bags", DEFAULT_CLASS_CHOICE, undefined)).toEqual({ estimatedWeightKg: 3.5, bagSize: "large" });
+    expect(presetEstimate("accessories", DEFAULT_CLASS_CHOICE, undefined)).toEqual({ estimatedWeightKg: 0.5 });
   });
 
   it("records nothing for a watch or an unpicked older Item", () => {
-    expect(recordedEstimate("watches", DEFAULT_CLASS_CHOICE, undefined)).toBeNull();
-    expect(recordedEstimate("clothes", null, undefined)).toBeNull();
-    expect(recordedEstimate("accessories", null, undefined)).toBeNull();
+    expect(presetEstimate("watches", DEFAULT_CLASS_CHOICE, undefined)).toBeNull();
+    expect(presetEstimate("clothes", null, undefined)).toBeNull();
+    expect(presetEstimate("accessories", null, undefined)).toBeNull();
   });
 });
 
 describe("storedClassChoice", () => {
   it("leaves the picker blank for an Item with no estimate", () => {
     expect(storedClassChoice({ clothingWeight: "heavy" })).toBeNull();
+  });
+
+  it("leaves the picker blank for a typed weight, which no class describes", () => {
+    expect(storedClassChoice({ estimatedWeightKg: 0.8, estimatedWeightTyped: true, clothingWeight: "light" })).toBeNull();
   });
 
   it("opens on the Item's recorded class", () => {

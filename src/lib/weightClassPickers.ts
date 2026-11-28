@@ -1,3 +1,4 @@
+import type { EstimateFields } from "../../convex/schema";
 import type { ItemCategory } from "./constants";
 import { CATEGORY_WEIGHT_CLASS, weightClassFor, weightPreset, type WeightClass, type WeightClassField } from "./pricing";
 
@@ -80,23 +81,20 @@ export function shippingEstimateOptions(
   };
 }
 
-/** The quote-time estimate an Item stores. Only the category's own class field is set. */
-export interface ItemEstimate {
+/** A Weight Preset estimate as an Item stores it. Only the category's own class field is set. */
+export type PresetEstimate = Omit<EstimateFields, "estimatedWeightKg" | "estimatedWeightTyped"> & {
   estimatedWeightKg: number;
-  shoeBuild?: ClassChoice["shoeBuild"];
-  clothingWeight?: ClassChoice["clothingWeight"];
-  bagSize?: ClassChoice["bagSize"];
-}
+};
 
 /**
  * The estimate an Item form saves. Null when there is none to save: a watch,
- * or an older Item whose class was never picked (choice null).
+ * or an Item whose class was never picked (choice null).
  */
-export function recordedEstimate(
+export function presetEstimate(
   category: ItemCategory,
   choice: ClassChoice | null,
   euSize: number | undefined
-): ItemEstimate | null {
+): PresetEstimate | null {
   if (choice === null) return null;
   const weightClass = weightClassFor(category, { ...choice, euSize });
   const kg = weightPreset(category, weightClass);
@@ -105,14 +103,12 @@ export function recordedEstimate(
   return { estimatedWeightKg: kg, shoeBuild, clothingWeight, bagSize };
 }
 
-/** The class an Item opens its picker with. Null when it has no recorded estimate. */
-export function storedClassChoice(item: {
-  estimatedWeightKg?: number;
-  shoeBuild?: ClassChoice["shoeBuild"];
-  clothingWeight?: ClassChoice["clothingWeight"];
-  bagSize?: ClassChoice["bagSize"];
-}): ClassChoice | null {
-  if (item.estimatedWeightKg == null) return null;
+/**
+ * The class an Item opens its picker with. Null leaves the picker blank: the
+ * Item has no estimate, or a typed weight that no class describes.
+ */
+export function storedClassChoice(item: EstimateFields): ClassChoice | null {
+  if (item.estimatedWeightKg == null || item.estimatedWeightTyped) return null;
   return {
     shoeBuild: item.shoeBuild ?? DEFAULT_CLASS_CHOICE.shoeBuild,
     clothingWeight: item.clothingWeight ?? DEFAULT_CLASS_CHOICE.clothingWeight,
@@ -120,7 +116,7 @@ export function storedClassChoice(item: {
   };
 }
 
-export function sameEstimate(a: ItemEstimate | null, b: ItemEstimate | null): boolean {
+export function sameEstimate(a: PresetEstimate | null, b: PresetEstimate | null): boolean {
   if (a === null || b === null) return a === b;
   return (
     a.estimatedWeightKg === b.estimatedWeightKg &&

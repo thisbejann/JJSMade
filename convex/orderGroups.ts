@@ -9,12 +9,7 @@ import {
   validateItemRules,
   watchTd,
 } from "./items";
-import {
-  bagSizeValidator,
-  categoryValidator,
-  clothingWeightValidator,
-  shoeBuildValidator,
-} from "./schema";
+import { categoryValidator, estimateFields } from "./schema";
 
 const STATUS_FLOW = [
   "ordered",
@@ -248,12 +243,8 @@ export const createWithItems = mutation({
         forwarderRatePerKg: v.number(),
         forwarderBuyRateUsed: v.optional(v.number()),
         forwarderBuyCommissionPercent: v.optional(v.number()),
-        // The line's quote-time estimate (see the items schema).
-        estimatedWeightKg: v.optional(v.number()),
-        shoeBuild: v.optional(shoeBuildValidator),
-        clothingWeight: v.optional(clothingWeightValidator),
-        bagSize: v.optional(bagSizeValidator),
-        estimatedWeightTyped: v.optional(v.boolean()),
+        // The line's quote-time estimate.
+        ...estimateFields,
         tdInsured: v.optional(v.boolean()),
         // The TD rates the line was quoted with, like exchangeRateUsed.
         tdShippingCNY: v.optional(v.number()),

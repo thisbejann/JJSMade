@@ -11,16 +11,12 @@ import {
   type TdRates,
 } from "./helpers";
 import {
-  bagSizeValidator,
   categoryValidator,
-  clothingWeightValidator,
+  estimateFields,
   itemStatusValidator,
-  shoeBuildValidator,
-  type BagSize,
-  type ClothingWeight,
+  type EstimateFields,
   type ItemCategory,
   type ItemStatus,
-  type ShoeBuild,
 } from "./schema";
 import { deleteUnreferencedQcPhotos } from "./qcPhotoCleanup";
 
@@ -147,28 +143,12 @@ export function storedTdFields(td: WatchTd | undefined) {
   };
 }
 
-/** The quote-time estimate a create or update may record. */
-const estimateArgs = {
-  estimatedWeightKg: v.optional(v.number()),
-  shoeBuild: v.optional(shoeBuildValidator),
-  clothingWeight: v.optional(clothingWeightValidator),
-  bagSize: v.optional(bagSizeValidator),
-};
-
-type EstimateFields = {
-  estimatedWeightKg?: number;
-  estimatedWeightTyped?: boolean;
-  shoeBuild?: ShoeBuild;
-  clothingWeight?: ClothingWeight;
-  bagSize?: BagSize;
-};
-
 /**
  * The estimate fields to write. A watch has no weight-based cost, so one reclassified
- * from the China route drops its estimate. A newly recorded estimate replaces the whole
+ * from the China route drops its estimate. An incoming estimate replaces the whole
  * stored one, so a class from an earlier category or a typed weight doesn't linger.
  */
-export function storedEstimateFields(category: ItemCategory, recorded: EstimateFields = {}): EstimateFields {
+export function storedEstimateFields(category: ItemCategory, incoming: EstimateFields = {}): EstimateFields {
   if (isTdRoute(category)) {
     return {
       estimatedWeightKg: undefined,
@@ -178,14 +158,14 @@ export function storedEstimateFields(category: ItemCategory, recorded: EstimateF
       bagSize: undefined,
     };
   }
-  if (recorded.estimatedWeightKg === undefined) return {};
-  if (!(recorded.estimatedWeightKg > 0)) throw new ConvexError("Estimated weight must be greater than 0");
+  if (incoming.estimatedWeightKg === undefined) return {};
+  if (!(incoming.estimatedWeightKg > 0)) throw new ConvexError("Estimated weight must be greater than 0");
   return {
-    estimatedWeightKg: recorded.estimatedWeightKg,
-    estimatedWeightTyped: recorded.estimatedWeightTyped,
-    shoeBuild: recorded.shoeBuild,
-    clothingWeight: recorded.clothingWeight,
-    bagSize: recorded.bagSize,
+    estimatedWeightKg: incoming.estimatedWeightKg,
+    estimatedWeightTyped: incoming.estimatedWeightTyped,
+    shoeBuild: incoming.shoeBuild,
+    clothingWeight: incoming.clothingWeight,
+    bagSize: incoming.bagSize,
   };
 }
 
@@ -222,7 +202,7 @@ export const create = mutation({
     status: itemStatusValidator,
     notes: v.optional(v.string()),
     orderDate: v.number(),
-    ...estimateArgs,
+    ...estimateFields,
   },
   handler: async (ctx, args) => {
     const size = normalizeSize(args.category, args.size);
@@ -322,7 +302,7 @@ export const update = mutation({
     status: v.optional(itemStatusValidator),
     notes: v.optional(v.string()),
     orderDate: v.optional(v.number()),
-    ...estimateArgs,
+    ...estimateFields,
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;

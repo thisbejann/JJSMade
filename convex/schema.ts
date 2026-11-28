@@ -1,5 +1,5 @@
 import { defineSchema, defineTable } from "convex/server";
-import { v, type Infer } from "convex/values";
+import { v, type Infer, type ObjectType } from "convex/values";
 
 // Shared validators. Declared here, not in a new module: schema.ts is never a
 // Convex function entry point, so adding to it leaves _generated/api.d.ts as is.
@@ -49,6 +49,19 @@ export type ItemStatus = Infer<typeof itemStatusValidator>;
 export type ShoeBuild = Infer<typeof shoeBuildValidator>;
 export type ClothingWeight = Infer<typeof clothingWeightValidator>;
 export type BagSize = Infer<typeof bagSizeValidator>;
+
+// An Item's quote-time estimate, recorded by the item form and by Save as
+// Group Order. Absent on Items made before either recorded one.
+export const estimateFields = {
+  estimatedWeightKg: v.optional(v.number()),
+  // The class that picked the Weight Preset. Only the category's own field is set.
+  shoeBuild: v.optional(shoeBuildValidator),
+  clothingWeight: v.optional(clothingWeightValidator),
+  bagSize: v.optional(bagSizeValidator),
+  // True when the estimate was a typed weight, not a Weight Preset.
+  estimatedWeightTyped: v.optional(v.boolean()),
+};
+export type EstimateFields = ObjectType<typeof estimateFields>;
 
 export default defineSchema({
   customers: defineTable({
@@ -111,15 +124,7 @@ export default defineSchema({
     forwarderBuyFeePHP: v.optional(v.number()),
     qcServiceFeePHP: v.optional(v.number()),
 
-    // Quote-time estimate, carried from the calculator by Save as Group Order.
-    // Absent on Items created through ItemForm and on legacy Items.
-    estimatedWeightKg: v.optional(v.number()),
-    // The class that picked the Weight Preset. Only the category's own field is set.
-    shoeBuild: v.optional(shoeBuildValidator),
-    clothingWeight: v.optional(clothingWeightValidator),
-    bagSize: v.optional(bagSizeValidator),
-    // True when the estimate was a typed weight, not a Weight Preset.
-    estimatedWeightTyped: v.optional(v.boolean()),
+    ...estimateFields,
 
     // TD route (Watches only). Rates are copied from the Trusted Dealer when
     // the watch is ordered, so a later rate change leaves this Item alone.
