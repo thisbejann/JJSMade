@@ -19,7 +19,7 @@ import { Toggle } from "../components/ui/Toggle";
 import { api } from "../../convex/_generated/api";
 import { isTdRoute } from "../../convex/helpers";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
-import { DEFAULT_CLASS_CHOICE, type ClassChoice } from "../lib/weightClassPickers";
+import { DEFAULT_CLASS_CHOICE, parseEuSize, type ClassChoice } from "../lib/weightClassPickers";
 import { ShippingEstimatePicker } from "../components/items/ShippingEstimatePicker";
 import { TdPicker } from "../components/items/TdPicker";
 import { useSettings } from "../hooks/useSettings";
@@ -117,7 +117,7 @@ export default function QuoteCalculator() {
 
   const ratePerKg = settings.defaultForwarderRate;
   const profitTarget = settings.calculatorProfitTarget;
-  const euSize = euSizeStr.trim() === "" ? undefined : Number(euSizeStr);
+  const euSize = parseEuSize(euSizeStr);
   const weightClass = weightClassFor(category, { ...classChoice, euSize });
   const preset = weightPreset(category, weightClass);
   const kgOverride = kgStr.trim() === "" ? undefined : Number(kgStr);

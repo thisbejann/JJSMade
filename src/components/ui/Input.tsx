@@ -73,7 +73,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </p>
         ) : (
           hint && (
-            <p id={`${inputId}-hint`} className="text-[11px] text-muted-foreground">
+            <p id={`${inputId}-hint`} className="text-[11px] text-tertiary">
               {hint}
             </p>
           )

@@ -1,8 +1,8 @@
 import type { ItemCategory } from "./constants";
 import { CATEGORY_WEIGHT_CLASS, weightClassFor, weightPreset, type WeightClass, type WeightClassField } from "./pricing";
 
-// UI choices for the Weight Preset class pickers, shared by the Quote
-// Calculator page and the item form's Price Calculator.
+// The Weight Preset class pickers shared by the Quote Calculator page and the
+// item form's Price Calculator: their choices, hints, and the kg each picks.
 
 export type ClassChoice = Required<Pick<WeightClass, WeightClassField>>;
 
@@ -45,8 +45,13 @@ export const CLASS_PICKERS: {
   },
 };
 
+/** A typed EU size, or undefined while the field is empty. */
+export function parseEuSize(euSizeStr: string): number | undefined {
+  return euSizeStr.trim() === "" ? undefined : Number(euSizeStr);
+}
+
 export interface ShippingEstimateOption {
-  value: string;
+  value: ClassChoice[WeightClassField];
   label: string;
   /** The Weight Preset this option picks, in kg. */
   kg: number;
@@ -67,9 +72,10 @@ export function shippingEstimateOptions(
   return {
     field,
     label: picker.label,
-    options: picker.options.map((opt) => ({
-      ...opt,
-      kg: weightPreset(category, weightClassFor(category, { [field]: opt.value, euSize })) ?? 0,
-    })),
+    options: picker.options.map((opt) => {
+      const kg = weightPreset(category, weightClassFor(category, { [field]: opt.value, euSize }));
+      if (kg === null) throw new Error(`No Weight Preset for ${category}`);
+      return { ...opt, kg };
+    }),
   };
 }

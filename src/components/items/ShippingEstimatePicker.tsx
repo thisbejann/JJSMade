@@ -1,5 +1,5 @@
 import type { ItemCategory } from "../../lib/constants";
-import { shippingEstimateOptions, type ClassChoice } from "../../lib/weightClassPickers";
+import { parseEuSize, shippingEstimateOptions, type ClassChoice } from "../../lib/weightClassPickers";
 import { cn } from "../../lib/utils";
 import { Input } from "../ui/Input";
 import { Segmented } from "../ui/Segmented";
@@ -20,24 +20,24 @@ export function ShippingEstimatePicker({
   euSizeStr: string;
   onEuSizeChange: (euSizeStr: string) => void;
 }) {
-  const euSize = euSizeStr.trim() === "" ? undefined : Number(euSizeStr);
-  const picker = shippingEstimateOptions(category, euSize);
+  const picker = shippingEstimateOptions(category, parseEuSize(euSizeStr));
   if (picker === null) return null;
   const { field, label, options } = picker;
   const selected = options.find((opt) => opt.value === choice[field]);
+  const takesEuSize = field === "shoeBuild";
 
   return (
     // EU size sits beside the buttons when the container is wide enough, and
     // below the hint when it stacks, so the hint always stays under the buttons.
     <div className="@container">
-      <div className={cn("grid gap-2", field === "shoeBuild" && "@md:grid-cols-[1fr_5.5rem] @md:gap-x-3 items-end")}>
+      <div className={cn("grid gap-2", takesEuSize && "@md:grid-cols-[1fr_5.5rem] @md:gap-x-3 items-end")}>
         <Segmented
           label={`Shipping estimate · ${label}`}
           options={options.map((opt) => ({ value: opt.value, label: opt.label, detail: `${opt.kg.toFixed(1)} kg` }))}
           value={choice[field]}
           onChange={(value) => onChange({ ...choice, [field]: value })}
         />
-        {field === "shoeBuild" && (
+        {takesEuSize && (
           <div className="order-2 mt-2 @md:order-none @md:mt-0">
             <Input
               label="EU size"
@@ -50,7 +50,7 @@ export function ShippingEstimatePicker({
           </div>
         )}
         {selected && (
-          <p className={cn("order-1 text-[11px] text-tertiary @md:order-none", field === "shoeBuild" && "@md:col-span-2")}>
+          <p className={cn("order-1 text-[11px] text-tertiary @md:order-none", takesEuSize && "@md:col-span-2")}>
             {selected.hint}
           </p>
         )}

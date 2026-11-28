@@ -10,7 +10,7 @@ import {
 import { formatKgValue, formatNetPHP } from "../../lib/formatters";
 import { quoteLine, weightClassFor, type ChinaQuoteInput, type QuoteMode } from "../../lib/pricing";
 import { Segmented } from "../ui/Segmented";
-import { DEFAULT_CLASS_CHOICE, type ClassChoice } from "../../lib/weightClassPickers";
+import { DEFAULT_CLASS_CHOICE, parseEuSize, type ClassChoice } from "../../lib/weightClassPickers";
 import { ShippingEstimatePicker } from "./ShippingEstimatePicker";
 
 interface PriceCalculatorProps {
@@ -60,7 +60,7 @@ export function PriceCalculator({
   const profitTarget = settings.calculatorProfitTarget;
   // Clearing the field reverts to the form's size
   const effectiveEuSizeStr = euSizeStr.trim() || formEuSizeStr.trim();
-  const euSize = effectiveEuSizeStr === "" ? undefined : Number(effectiveEuSizeStr);
+  const euSize = parseEuSize(effectiveEuSizeStr);
 
   const line = quoteLine({
     priceCNY,
