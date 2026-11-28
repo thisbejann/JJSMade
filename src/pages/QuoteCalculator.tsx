@@ -19,8 +19,8 @@ import { Toggle } from "../components/ui/Toggle";
 import { api } from "../../convex/_generated/api";
 import { isTdRoute } from "../../convex/helpers";
 import { GroupReviewSheet } from "../components/items/GroupReviewSheet";
-import { Segmented } from "../components/ui/Segmented";
-import { CLASS_PICKERS, DEFAULT_CLASS_CHOICE, type ClassChoice } from "../lib/weightClassPickers";
+import { DEFAULT_CLASS_CHOICE, type ClassChoice } from "../lib/weightClassPickers";
+import { ShippingEstimatePicker } from "../components/items/ShippingEstimatePicker";
 import { TdPicker } from "../components/items/TdPicker";
 import { useSettings } from "../hooks/useSettings";
 import {
@@ -32,7 +32,6 @@ import {
 import { formatKgValue, formatNetPHP } from "../lib/formatters";
 import {
   bundleTotals,
-  CATEGORY_WEIGHT_CLASS,
   quoteLine,
   weightClassFor,
   weightPreset,
@@ -119,7 +118,6 @@ export default function QuoteCalculator() {
   const ratePerKg = settings.defaultForwarderRate;
   const profitTarget = settings.calculatorProfitTarget;
   const euSize = euSizeStr.trim() === "" ? undefined : Number(euSizeStr);
-  const classField = CATEGORY_WEIGHT_CLASS[category];
   const weightClass = weightClassFor(category, { ...classChoice, euSize });
   const preset = weightPreset(category, weightClass);
   const kgOverride = kgStr.trim() === "" ? undefined : Number(kgStr);
@@ -355,34 +353,13 @@ export default function QuoteCalculator() {
                   </div>
                 </div>
 
-                {/* Weight Preset class. Shoes also take an EU size beside the build. */}
-                {classField !== null && (
-                  <div
-                    className={cn(
-                      classField === "shoeBuild" &&
-                        "grid grid-cols-1 sm:grid-cols-[1fr_6rem] gap-3 items-end"
-                    )}
-                  >
-                    <Segmented
-                      label={CLASS_PICKERS[classField].label}
-                      options={CLASS_PICKERS[classField].options}
-                      value={classChoice[classField]}
-                      onChange={(value) =>
-                        setClassChoice((prev) => ({ ...prev, [classField]: value }))
-                      }
-                    />
-                    {classField === "shoeBuild" && (
-                      <Input
-                        label="EU size"
-                        type="number"
-                        value={euSizeStr}
-                        onChange={(e) => setEuSizeStr(e.target.value)}
-                        step="0.5"
-                        placeholder="43"
-                      />
-                    )}
-                  </div>
-                )}
+                <ShippingEstimatePicker
+                  category={category}
+                  choice={classChoice}
+                  onChange={setClassChoice}
+                  euSizeStr={euSizeStr}
+                  onEuSizeChange={setEuSizeStr}
+                />
                 {isWatch && (
                   <>
                     <TdPicker label="Trusted Dealer" value={tdName} onChange={setTdName} rates={td} />
@@ -400,7 +377,8 @@ export default function QuoteCalculator() {
                 )}
                 {preset !== null && (
                   <Input
-                    label="Weight (kg), optional"
+                    label="Known weight (kg), optional"
+                    hint="replaces the estimate"
                     type="number"
                     value={kgStr}
                     onChange={(e) => setKgStr(e.target.value)}

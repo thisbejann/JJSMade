@@ -8,9 +8,10 @@ import {
   FORWARDER_BUY_DEFAULT_COMMISSION_PERCENT,
 } from "../../lib/constants";
 import { formatKgValue, formatNetPHP } from "../../lib/formatters";
-import { CATEGORY_WEIGHT_CLASS, quoteLine, weightClassFor, type ChinaQuoteInput, type QuoteMode } from "../../lib/pricing";
+import { quoteLine, weightClassFor, type ChinaQuoteInput, type QuoteMode } from "../../lib/pricing";
 import { Segmented } from "../ui/Segmented";
-import { CLASS_PICKERS, DEFAULT_CLASS_CHOICE, type ClassChoice } from "../../lib/weightClassPickers";
+import { DEFAULT_CLASS_CHOICE, type ClassChoice } from "../../lib/weightClassPickers";
+import { ShippingEstimatePicker } from "./ShippingEstimatePicker";
 
 interface PriceCalculatorProps {
   /** The form's values. The calculator follows them until you pick something else here. */
@@ -60,7 +61,6 @@ export function PriceCalculator({
   // Clearing the field reverts to the form's size
   const effectiveEuSizeStr = euSizeStr.trim() || formEuSizeStr.trim();
   const euSize = effectiveEuSizeStr === "" ? undefined : Number(effectiveEuSizeStr);
-  const classField = CATEGORY_WEIGHT_CLASS[category];
 
   const line = quoteLine({
     priceCNY,
@@ -128,26 +128,13 @@ export function PriceCalculator({
           </div>
         </div>
 
-        {classField !== null && (
-          <div className={classField === "shoeBuild" ? "grid grid-cols-[1fr_5rem] gap-3 items-end" : undefined}>
-            <Segmented
-              label={CLASS_PICKERS[classField].label}
-              options={CLASS_PICKERS[classField].options}
-              value={classChoice[classField]}
-              onChange={(value) => setClassChoice((prev) => ({ ...prev, [classField]: value }))}
-            />
-            {classField === "shoeBuild" && (
-              <Input
-                label="EU size"
-                type="number"
-                value={effectiveEuSizeStr}
-                onChange={(e) => setEuSizeStr(e.target.value)}
-                step="0.5"
-                placeholder="43"
-              />
-            )}
-          </div>
-        )}
+        <ShippingEstimatePicker
+          category={category}
+          choice={classChoice}
+          onChange={setClassChoice}
+          euSizeStr={effectiveEuSizeStr}
+          onEuSizeChange={setEuSizeStr}
+        />
 
         {priceCNY > 0 ? (
           <div className="rounded-lg bg-accent-muted px-3 py-3 space-y-2">

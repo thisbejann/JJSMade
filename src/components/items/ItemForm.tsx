@@ -779,7 +779,8 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
                       prefix="PHP"
                     />
                     <Input
-                      label="Weight (kg)"
+                      label="Actual weight (kg)"
+                      hint="from the forwarder"
                       type="number"
                       value={weightKg || ""}
                       onChange={(e) => setWeightKg(Number(e.target.value))}
