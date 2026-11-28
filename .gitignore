@@ -25,3 +25,6 @@ dist-ssr
 
 # Verification evidence (verify-jjsmade skill)
 .verify/
+
+# Ticket worktrees (/ticket)
+.claude/worktrees/
