@@ -356,7 +356,7 @@ export default function QuoteCalculator() {
                 <ShippingEstimatePicker
                   category={category}
                   choice={classChoice}
-                  onChange={setClassChoice}
+                  onPick={(picked) => setClassChoice((current) => ({ ...current, ...picked }))}
                   euSizeStr={euSizeStr}
                   onEuSizeChange={setEuSizeStr}
                 />

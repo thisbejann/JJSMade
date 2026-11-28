@@ -140,6 +140,26 @@ describe("an Item's quote-time estimate when it is edited", () => {
     expect(saved).toEqual(quoted);
     expect(isShippingEstimated(saved)).toBe(true);
   });
+
+  it("is replaced whole when a new one is recorded", () => {
+    const typed = { ...quoted, estimatedWeightTyped: true };
+    const saved = { ...typed, ...storedEstimateFields("clothes", { estimatedWeightKg: 1.0, clothingWeight: "heavy" }) };
+    expect(saved).toEqual({
+      estimatedWeightKg: 1.0,
+      estimatedWeightTyped: undefined,
+      shoeBuild: undefined,
+      clothingWeight: "heavy",
+      bagSize: undefined,
+    });
+  });
+
+  it("is never recorded for a watch", () => {
+    expect(storedEstimateFields("watches", { estimatedWeightKg: 0.5 }).estimatedWeightKg).toBeUndefined();
+  });
+
+  it("rejects a weight of 0 kg or less", () => {
+    expect(() => storedEstimateFields("accessories", { estimatedWeightKg: 0 })).toThrow();
+  });
 });
 
 describe("watchTd", () => {

@@ -10,7 +10,14 @@ import {
   keepsStoredRates,
   type TdRates,
 } from "./helpers";
-import { categoryValidator, itemStatusValidator, type ItemCategory, type ItemStatus } from "./schema";
+import {
+  categoryValidator,
+  estimateFields,
+  itemStatusValidator,
+  type EstimateFields,
+  type ItemCategory,
+  type ItemStatus,
+} from "./schema";
 import { deleteUnreferencedQcPhotos } from "./qcPhotoCleanup";
 
 const CLOTHES_SIZES = new Set(["S", "M", "L", "XL"]);
@@ -136,15 +143,29 @@ export function storedTdFields(td: WatchTd | undefined) {
   };
 }
 
-/** A watch has no weight-based cost, so one reclassified from the China route drops its estimate. */
-export function storedEstimateFields(category: ItemCategory) {
-  if (!isTdRoute(category)) return {};
+/**
+ * The estimate fields to write. A watch has no weight-based cost, so one reclassified
+ * from the China route drops its estimate. An incoming estimate replaces the whole
+ * stored one, so a class from an earlier category or a typed weight doesn't linger.
+ */
+export function storedEstimateFields(category: ItemCategory, incoming: EstimateFields = {}): EstimateFields {
+  if (isTdRoute(category)) {
+    return {
+      estimatedWeightKg: undefined,
+      estimatedWeightTyped: undefined,
+      shoeBuild: undefined,
+      clothingWeight: undefined,
+      bagSize: undefined,
+    };
+  }
+  if (incoming.estimatedWeightKg === undefined) return {};
+  if (!(incoming.estimatedWeightKg > 0)) throw new ConvexError("Estimated weight must be greater than 0");
   return {
-    estimatedWeightKg: undefined,
-    estimatedWeightTyped: undefined,
-    shoeBuild: undefined,
-    clothingWeight: undefined,
-    bagSize: undefined,
+    estimatedWeightKg: incoming.estimatedWeightKg,
+    estimatedWeightTyped: incoming.estimatedWeightTyped,
+    shoeBuild: incoming.shoeBuild,
+    clothingWeight: incoming.clothingWeight,
+    bagSize: incoming.bagSize,
   };
 }
 
@@ -181,6 +202,7 @@ export const create = mutation({
     status: itemStatusValidator,
     notes: v.optional(v.string()),
     orderDate: v.number(),
+    ...estimateFields,
   },
   handler: async (ctx, args) => {
     const size = normalizeSize(args.category, args.size);
@@ -203,6 +225,7 @@ export const create = mutation({
     });
 
     const td = watchTd(await resolveTdRates(ctx, args), args.tdInsured);
+    const estimate = storedEstimateFields(args.category, args);
 
     const derived = computeDerivedFields({
       category: args.category,
@@ -211,6 +234,7 @@ export const create = mutation({
       hasLocalShipping: args.hasLocalShipping,
       localShippingCNY: args.localShippingCNY,
       weightKg: args.weightKg,
+      estimatedWeightKg: estimate.estimatedWeightKg,
       forwarderRatePerKg: args.forwarderRatePerKg,
       isForwarderBuy,
       forwarderBuyRateUsed,
@@ -223,6 +247,7 @@ export const create = mutation({
     const id = await ctx.db.insert("items", {
       ...args,
       ...storedTdFields(td),
+      ...estimate,
       size,
       trackingNumber,
       isForwarderBuy,
@@ -277,6 +302,7 @@ export const update = mutation({
     status: v.optional(itemStatusValidator),
     notes: v.optional(v.string()),
     orderDate: v.optional(v.number()),
+    ...estimateFields,
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -334,6 +360,7 @@ export const update = mutation({
     });
 
     const td = watchTd(await resolveTdRates(ctx, merged, existing), merged.tdInsured);
+    const estimate = storedEstimateFields(merged.category, updates);
 
     const derived = computeDerivedFields({
       category: merged.category,
@@ -360,7 +387,7 @@ export const update = mutation({
     await ctx.db.patch(id, {
       ...updates,
       ...storedTdFields(td),
-      ...storedEstimateFields(merged.category),
+      ...estimate,
       size,
       trackingNumber,
       isForwarderBuy,

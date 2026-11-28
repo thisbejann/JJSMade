@@ -31,12 +31,21 @@ import {
 } from "../../lib/constants";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "../../lib/utils";
-import { formatPHP } from "../../lib/formatters";
+import { formatKgValue, formatPHP } from "../../lib/formatters";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { categoryHasSize, isTdRoute, keepsStoredRates, statusFitsRoute } from "../../../convex/helpers";
 import { CATEGORY_ICONS } from "./categoryIcons";
+import { ShippingEstimatePicker } from "./ShippingEstimatePicker";
+import {
+  DEFAULT_CLASS_CHOICE,
+  parseEuSize,
+  presetEstimate,
+  sameEstimate,
+  storedClassChoice,
+  type ClassChoice,
+} from "../../lib/weightClassPickers";
 
 const CLOTHES_SIZES = ["S", "M", "L", "XL"] as const;
 
@@ -206,6 +215,11 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
       ? forwarderRateInput
       : settings.defaultForwarderRate;
   const [weightKg, setWeightKg] = useState(existingItem?.weightKg ?? 0);
+  // New Items start on the default class. An older Item with no recorded
+  // estimate starts blank (null), and records one only once a class is picked.
+  const [classChoice, setClassChoice] = useState<ClassChoice | null>(
+    existingItem ? storedClassChoice(existingItem) : DEFAULT_CLASS_CHOICE
+  );
   const [trackingNumber, setTrackingNumber] = useState(
     existingItem?.trackingNumber ?? ""
   );
@@ -227,6 +241,25 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
   const existingPhotoIds = (existingItem?.qcPhotoIds ?? []).filter((id) => photoIds.includes(id));
 
   const isWatch = isTdRoute(category);
+  const euSizeStr = category === "shoes" ? size : "";
+  const estimate = presetEstimate(category, classChoice, parseEuSize(euSizeStr));
+  // A typed weight opens with a blank picker and is kept until a class is picked.
+  const keptTypedKg =
+    existingItem?.estimatedWeightTyped && classChoice === null && !isWatch ? existingItem.estimatedWeightKg : undefined;
+  // The estimate the form opened with. An edit that leaves it alone doesn't
+  // resave it, so a typed weight or an older preset is kept.
+  const openedEstimate = useMemo(
+    () =>
+      existingItem
+        ? presetEstimate(
+            existingItem.category,
+            storedClassChoice(existingItem),
+            existingItem.category === "shoes" ? parseEuSize(existingItem.size ?? "") : undefined
+          )
+        : null,
+    [existingItem]
+  );
+  const estimateToSave = estimate && !(existingItem && sameEstimate(estimate, openedEstimate)) ? estimate : {};
   const rateSource = keepsStoredRates(existingItem, seller)
     ? existingItem
     : dealers?.find((td) => td.name === seller.trim());
@@ -372,6 +405,7 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
         status: status as Doc<"items">["status"],
         notes: notes || undefined,
         orderDate: new Date(orderDate).getTime(),
+        ...estimateToSave,
       };
 
       if (existingItem) {
@@ -468,6 +502,21 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
                   placeholder="Select size"
                 />
               )}
+
+              {/* Independent of Size: an XL tee is still Light. Shoes read the EU Size above. */}
+              <div className="space-y-1.5 empty:hidden">
+                <ShippingEstimatePicker
+                  category={category}
+                  choice={classChoice ?? {}}
+                  onPick={(picked) => setClassChoice((current) => ({ ...(current ?? DEFAULT_CLASS_CHOICE), ...picked }))}
+                  euSizeStr={euSizeStr}
+                />
+                {keptTypedKg != null && (
+                  <p className="text-[11px] text-tertiary">
+                    Typed estimate {formatKgValue(keptTypedKg)} kg is kept until you pick a class.
+                  </p>
+                )}
+              </div>
 
               <Select
                 label="Status"
@@ -866,7 +915,8 @@ export function ItemForm({ existingItem, lockedCustomerId, groupId, onSuccess }:
               priceCNY={priceCNY}
               category={category}
               isForwarderBuy={isForwarderBuy}
-              euSize={category === "shoes" ? size : undefined}
+              euSize={euSizeStr}
+              classChoice={classChoice}
             />
           )}
         </div>

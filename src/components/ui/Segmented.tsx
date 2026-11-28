@@ -8,7 +8,8 @@ export function Segmented<T extends string>({
 }: {
   label: string;
   options: { value: T; label: string; detail?: string }[];
-  value: T;
+  /** Undefined selects no option. */
+  value: T | undefined;
   onChange: (value: T) => void;
 }) {
   return (

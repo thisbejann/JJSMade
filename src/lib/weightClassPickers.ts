@@ -1,3 +1,4 @@
+import type { EstimateFields } from "../../convex/schema";
 import type { ItemCategory } from "./constants";
 import { CATEGORY_WEIGHT_CLASS, weightClassFor, weightPreset, type WeightClass, type WeightClassField } from "./pricing";
 
@@ -78,4 +79,49 @@ export function shippingEstimateOptions(
       return { ...opt, kg };
     }),
   };
+}
+
+/** A Weight Preset estimate as an Item stores it. Only the category's own class field is set. */
+export type PresetEstimate = Omit<EstimateFields, "estimatedWeightKg" | "estimatedWeightTyped"> & {
+  estimatedWeightKg: number;
+};
+
+/**
+ * The estimate an Item form saves. Null when there is none to save: a watch,
+ * or an Item whose class was never picked (choice null).
+ */
+export function presetEstimate(
+  category: ItemCategory,
+  choice: ClassChoice | null,
+  euSize: number | undefined
+): PresetEstimate | null {
+  if (choice === null) return null;
+  const weightClass = weightClassFor(category, { ...choice, euSize });
+  const kg = weightPreset(category, weightClass);
+  if (kg === null) return null;
+  const { shoeBuild, clothingWeight, bagSize } = weightClass;
+  return { estimatedWeightKg: kg, shoeBuild, clothingWeight, bagSize };
+}
+
+/**
+ * The class an Item opens its picker with. Null leaves the picker blank: the
+ * Item has no estimate, or a typed weight that no class describes.
+ */
+export function storedClassChoice(item: EstimateFields): ClassChoice | null {
+  if (item.estimatedWeightKg == null || item.estimatedWeightTyped) return null;
+  return {
+    shoeBuild: item.shoeBuild ?? DEFAULT_CLASS_CHOICE.shoeBuild,
+    clothingWeight: item.clothingWeight ?? DEFAULT_CLASS_CHOICE.clothingWeight,
+    bagSize: item.bagSize ?? DEFAULT_CLASS_CHOICE.bagSize,
+  };
+}
+
+export function sameEstimate(a: PresetEstimate | null, b: PresetEstimate | null): boolean {
+  if (a === null || b === null) return a === b;
+  return (
+    a.estimatedWeightKg === b.estimatedWeightKg &&
+    a.shoeBuild === b.shoeBuild &&
+    a.clothingWeight === b.clothingWeight &&
+    a.bagSize === b.bagSize
+  );
 }
