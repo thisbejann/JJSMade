@@ -27,28 +27,34 @@ export function ShippingEstimatePicker({
   const selected = options.find((opt) => opt.value === choice[field]);
 
   return (
-    <div className="space-y-2">
-      <div
-        className={cn(field === "shoeBuild" && "grid grid-cols-1 sm:grid-cols-[1fr_5.5rem] gap-3 items-end")}
-      >
+    // EU size sits beside the buttons when the container is wide enough, and
+    // below the hint when it stacks, so the hint always stays under the buttons.
+    <div className="@container">
+      <div className={cn("grid gap-2", field === "shoeBuild" && "@md:grid-cols-[1fr_5.5rem] @md:gap-x-3 items-end")}>
         <Segmented
           label={`Shipping estimate · ${label}`}
-          options={options.map((opt) => ({ value: opt.value, label: `${opt.label} · ${opt.kg.toFixed(1)} kg` }))}
+          options={options.map((opt) => ({ value: opt.value, label: opt.label, detail: `${opt.kg.toFixed(1)} kg` }))}
           value={choice[field]}
           onChange={(value) => onChange({ ...choice, [field]: value })}
         />
         {field === "shoeBuild" && (
-          <Input
-            label="EU size"
-            type="number"
-            value={euSizeStr}
-            onChange={(e) => onEuSizeChange(e.target.value)}
-            step="0.5"
-            placeholder="43"
-          />
+          <div className="order-2 mt-2 @md:order-none @md:mt-0">
+            <Input
+              label="EU size"
+              type="number"
+              value={euSizeStr}
+              onChange={(e) => onEuSizeChange(e.target.value)}
+              step="0.5"
+              placeholder="43"
+            />
+          </div>
+        )}
+        {selected && (
+          <p className={cn("order-1 text-[11px] text-tertiary @md:order-none", field === "shoeBuild" && "@md:col-span-2")}>
+            {selected.hint}
+          </p>
         )}
       </div>
-      {selected && <p className="text-[11px] text-tertiary">{selected.hint}</p>}
     </div>
   );
 }
