@@ -10,6 +10,32 @@
 
 When implementing something non-obvious — a pattern, architectural decision, or tricky concept — briefly explain the _why_ inline. If you're unsure whether it warrants explanation, end your reply with a short question: _"Want me to explain why I did X?"_
 
+## Pull requests
+
+- Each new function, integration, redirection, or bugfix that is meant to ship gets its own branch off `main` and its own PR. Open it without being asked.
+- Do not open a PR for throwaway prototypes or requested artifacts (research notes, mockups, HTML previews, screenshots, one-off scripts). Put prototypes on a `prototype/<name>` branch, commit locally, and tell the user the branch name. Leave artifacts uncommitted unless the user asks for them in the repo.
+- Changes to agent preferences (memory, reply style) go in memory, not a PR.
+- Never mix unrelated commits in one PR. Check the branch before committing.
+- Write the body with the `/pr` skill.
+- After opening a PR, watch it until every check is green (Vercel, CodeRabbit).
+- A PR that changes anything visible shows it in its description: screenshots of the real app, with before/after when it changes existing UI, and a 390px mobile shot when the layout could shift. The user reviews from the PR without checking out the branch.
+  - Capture with the `verify-jjsmade` skill.
+  - Commit the images to `<slug>/` on the orphan `pr-assets` branch (never to the feature branch).
+  - Embed them with `https://raw.githubusercontent.com/thisbejann/JJSMade/pr-assets/<slug>/<file>`.
+
+## Rules and what enforces them
+
+| Rule | Enforced by |
+| --- | --- |
+| No PRs from `proto/*` or `prototype/*` branches | `.claude/hooks/block-prototype-pr.mjs` (PreToolUse hook on `gh pr create`) |
+| Shipping work never lands on `main` | `.claude/hooks/block-main-edits.mjs` (PreToolUse hook: Edit/Write to tracked files and `src/`, `convex/`, `public/`, `.claude/`; `git commit` from the shell) |
+| One worktree per ticket, two tickets at most | `/ticket` pre-flight (`.claude/skills/ticket`) |
+| PRs are watched until checks are green | This file and `/ticket` |
+| Prototypes go on `prototype/<name>` branches | This file only (judgment call) |
+| No PRs for artifacts or preference changes | This file only (judgment call) |
+| One concern per PR | This file only (judgment call) |
+| UI PRs show real-app screenshots | This file only (judgment call) |
+
 ## Agent skills
 
 ### Issue tracker
